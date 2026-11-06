@@ -25,7 +25,7 @@ main{max-width:1640px;margin:18px auto;padding:0 24px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .stat{display:flex;align-items:center;gap:16px;padding:14px 22px}
 .stat .ic{width:48px;height:48px;display:grid;place-items:center;color:#6b88a6}.stat .ic svg{width:38px;height:38px;stroke-width:1.6}
-.stat span{font-size:13px;color:#34506d}.stat b{display:block;font-size:25px;margin-top:1px;color:var(--navy)}
+.stat span{font-size:13.5px;color:#1d3d5e;font-weight:700}.stat b{display:block;font-size:25px;margin-top:1px;color:var(--navy)}
 .stat.a320 .ic,.stat.a320 b{color:var(--blue)}.stat.a330 .ic,.stat.a330 b{color:var(--red)}.stat.e19x .ic,.stat.e19x b{color:var(--green)}
 .stat.a320 .ic svg,.stat.a330 .ic svg,.stat.e19x .ic svg{fill:currentColor;stroke:none}
 
@@ -57,7 +57,7 @@ main{max-width:1640px;margin:18px auto;padding:0 24px}
 .table-head b{display:flex;align-items:center;gap:10px;font-size:17px}.table-head .muted{font-size:13px;color:#4a6580}.table-head .muted i{font-style:normal;color:#b9c8d8;margin:0 10px}
 .tablewrap{overflow:auto;padding:0 12px}
 table{width:100%;border-collapse:separate;border-spacing:0}
-th{background:#eef3f9;color:#33506d;line-height:1.3;text-transform:uppercase;font-size:11px;letter-spacing:.05em;text-align:left;padding:12px 14px;white-space:nowrap}
+th{background:#eef3f9;color:#1d3d5e;font-weight:800;line-height:1.3;text-transform:uppercase;font-size:11px;letter-spacing:.05em;text-align:left;padding:12px 14px;white-space:nowrap}
 th:first-child{border-radius:9px 0 0 9px}th:last-child{border-radius:0 9px 9px 0;text-align:center}
 th.sort{cursor:pointer;user-select:none}th.sort:hover{color:var(--blue)}th.sort svg{width:14px;height:14px;margin-left:5px;opacity:.6}
 td{padding:11px 14px;border-bottom:1px solid #e8eef4;vertical-align:top;font-size:12.5px}
@@ -88,7 +88,7 @@ tr:hover td{background:#f7fbff}
 .error{color:#b42318;font-size:13px}.muted{color:var(--muted);font-size:13px}
 .modal{position:fixed;inset:0;background:#102a4380;display:none;align-items:center;justify-content:center;padding:15px;z-index:10}.modal.show{display:flex}
 .dialog{background:#fff;border-radius:14px;padding:22px;width:min(820px,100%);max-height:92vh;overflow:auto}.dialog h2{margin-top:0}
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fields label{font-size:13px;font-weight:600}.full{grid-column:1/-1}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fields label{font-size:13.5px;font-weight:700}.full{grid-column:1/-1}
 .editorbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:7px 0}.editorbar button{padding:8px 12px;background:#eaf1f8;color:#174c7a}
 .cpick{position:relative}.cpick>button{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#eaf1f8;color:#174c7a}.cA{font-weight:800;font-size:15px;line-height:1}.cbar{display:block;width:18px;height:4px;border-radius:2px;margin-left:-22px;margin-top:20px;margin-right:4px}.caret{font-size:11px;padding-left:6px;border-left:1px solid #c6d7e8}
 .cpanel{position:fixed;z-index:30;background:#fff;border:1px solid #cfdceb;border-radius:10px;box-shadow:0 10px 28px #12365b30;padding:10px;width:max-content}
@@ -182,6 +182,7 @@ let user=null,profile=null,rows=[],editing=null,page=1,sortKey='mel_item',sortDi
 const $=id=>document.getElementById(id);const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ico=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
 function cleanHtml(input){const d=new DOMParser().parseFromString(input,'text/html');const allowed=['B','STRONG','I','EM','U','SPAN','BR','DIV','P','FONT'];const toHex=c=>{if(!c)return'';if(/^#[0-9a-f]{3,8}$/i.test(c))return c;const m=c.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);return m?'#'+[m[1],m[2],m[3]].map(v=>(+v).toString(16).padStart(2,'0')).join(''):''};function walk(n){let out='';n.childNodes.forEach(x=>{if(x.nodeType===3){out+=safe(x.nodeValue);return}if(x.nodeType!==1)return;let t=x.tagName;if(!allowed.includes(t)){out+=walk(x);return}if(t==='BR'){out+='<br>';return}if(t==='FONT')t='SPAN';let styles=[];let c=toHex(x.style.color||x.getAttribute('color')),s=x.style.fontSize;if(c)styles.push('color:'+c);if(/^(1[2-9]|2[0-9]|3[0-2])px$/.test(s))styles.push('font-size:'+s);out+='<'+t.toLowerCase()+(styles.length?' style="'+styles.join(';')+'"':'')+'>'+walk(x)+'</'+t.toLowerCase()+'>'});return out}return walk(d.body).replace(/(?:<br>\s*){3,}/g,'<br><br>')}
+const boldStars=h=>h.replace(/\*\*\*[^*<]+\*\*\*/g,'<b>$&</b>');
 function plain(html){let d=new DOMParser().parseFromString(html,'text/html');return (d.body.innerText||d.body.textContent||'').replace(/ /g,' ').trim()}
 function profileName(){return profile?.display_name||user?.email||'Operador'}
 const ROLES={admin:'Administrador',operator:'Operador',reader:'Só consulta'};
@@ -203,7 +204,7 @@ $('count').innerHTML=(f?`${safe(f)}: ${list.length} registos<i>|</i>`:`${list.le
 const start=(page-1)*PER_PAGE,slice=list.slice(start,start+PER_PAGE);const canEdit=profile?.role!=='reader';
 $('rows').innerHTML=slice.length?slice.map(r=>{const on=r.is_active!==false;const when=r.updated_at||r.created_at;
 const acts=!canEdit?'':`<button class="act" data-edit="${r.id}" title="Editar">${ico('edit')}</button><button class="act dup" data-dup="${r.id}" title="Duplicar">${ico('copy')}</button><button class="act del" data-delete="${r.id}" title="Apagar registo">${ico('trash')}</button>`;
-return `<tr><td class="code">${safe(r.mel_item)}</td><td class="impact">${r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>')}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}</span></td><td><span class="when">${ico('cal')}${when?fmtDate(when):'—'}</span></td><td><div class="actions">${acts}</div></td></tr>`}).join(''):`<tr><td colspan="5" class="empty">Nenhum registo encontrado.</td></tr>`;
+return `<tr><td class="code">${safe(r.mel_item)}</td><td class="impact">${boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'))}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}</span></td><td><span class="when">${ico('cal')}${when?fmtDate(when):'—'}</span></td><td><div class="actions">${acts}</div></td></tr>`}).join(''):`<tr><td colspan="5" class="empty">Nenhum registo encontrado.</td></tr>`;
 $('pageInfo').textContent=list.length?`A mostrar ${start+1}–${Math.min(start+PER_PAGE,list.length)} de ${list.length} registos${f?' ('+f+')':''}`:'Sem registos';
 let nums=[];for(let p=1;p<=pagesN;p++){if(p===1||p===pagesN||Math.abs(p-page)<=1||(page<=3&&p<=4))nums.push(p);else if(nums[nums.length-1]!=='…')nums.push('…')}
 $('pages').innerHTML=`<button class="nav-b" data-page="${page-1}" ${page<=1?'disabled':''}>${ico('left')}Anterior</button>`+nums.map(p=>p==='…'?'<span class="gap num">…</span>':`<button class="num ${p===page?'cur':''}" data-page="${p}">${p}</button>`).join('')+`<button class="nav-b" data-page="${page+1}" ${page>=pagesN?'disabled':''}>Seguinte${ico('right')}</button>`}
