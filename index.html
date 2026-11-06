@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAP Operational MEL</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="./config.js"></script><style>
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAP Operational MEL</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="./config.js"></script><script>try{if(localStorage.getItem("mel-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script><style>
 :root{--navy:#0b2f55;--navy2:#123e68;--blue:#0a6fc2;--blue2:#0759a0;--ink:#12365b;--muted:#6b7f93;--line:#dfe8f1;--bg:#f2f6fb;--red:#d62f37;--green:#2f8a3b;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg)}.hidden{display:none!important}
 svg.i.plane{transform:rotate(-45deg)}svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
@@ -11,7 +11,7 @@ input,select,textarea{font:inherit;color:inherit;padding:10px;border:1px solid #
 .tap-wordmark{font-size:32px;font-weight:900;font-style:italic;letter-spacing:-2.5px;line-height:1}
 .brand h1{font-size:17px;margin:0;letter-spacing:.3px}.brand small{display:block;font-size:10.5px;letter-spacing:.6px;opacity:.75;margin-top:2px}
 .nav{display:flex;gap:2px;flex:1;overflow:auto;scrollbar-width:none}
-.nav button{display:flex;align-items:center;gap:7px;background:transparent;color:#dbe9f7;padding:9px 11px;font-size:13px;white-space:nowrap}
+.nav button{display:flex;align-items:center;gap:7px;background:transparent;color:#dbe9f7;padding:9px 9px;font-size:13px;white-space:nowrap}
 .nav button:hover{background:#ffffff14;color:#fff}.nav button.on{background:var(--blue);color:#fff}
 .user{display:flex;align-items:center;gap:12px}
 .who{display:flex;align-items:center;gap:9px}.avatar{width:34px;height:34px;border-radius:50%;background:#fff;color:var(--navy);display:grid;place-items:center}
@@ -99,7 +99,37 @@ tr:hover td{background:#f7fbff}
 .dlg-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px #0004;z-index:20}
 
-@media(max-width:1320px){.top{flex-wrap:wrap;padding:10px 16px;gap:10px}.brand{border:0;padding:0}.nav{order:3;flex-basis:100%}.user{margin-left:auto}}
+/* Tema escuro */
+.theme-btn{width:38px;height:38px;display:grid;place-items:center;background:transparent;color:#fff;border:1px solid #ffffff55;border-radius:9px;flex:none}.theme-btn:hover{background:#ffffff14}
+.theme-btn .moon{display:block}.theme-btn .sun{display:none}
+[data-theme=dark] .theme-btn .moon{display:none}[data-theme=dark] .theme-btn .sun{display:block}
+[data-theme=dark]{--ink:#dbe7f3;--muted:#8fa4b9;--line:#2a3d52;--bg:#0d1722;color-scheme:dark;color:var(--ink);background:var(--bg)}
+[data-theme=dark] body{background:var(--bg)}
+[data-theme=dark] .top{background:linear-gradient(100deg,#06182b 0%,#0a2440 60%,#0b2745 100%)}
+[data-theme=dark] .card,[data-theme=dark] .fleet-card,[data-theme=dark] .dialog,[data-theme=dark] .cpanel{background:#152233;border-color:var(--line);box-shadow:0 4px 18px #0006}
+[data-theme=dark] .fleet-card .info{background:#152233}[data-theme=dark] .fleet-card,[data-theme=dark] .fleet-card .info strong{color:var(--ink)}
+[data-theme=dark] .fleet-card .info strong svg{fill:#9cc4ea}
+[data-theme=dark] .fleet-card.active{border-color:#3d9be9;box-shadow:0 0 0 3px #1e4a73}
+[data-theme=dark] .pill{background:#1e3249;color:#a9cdf0}
+[data-theme=dark] .stat span{color:#c4d4e4}[data-theme=dark] .stat b{color:#fff}[data-theme=dark] .stat .ic{color:#8fa4b9}
+[data-theme=dark] .stat.a320 .ic,[data-theme=dark] .stat.a320 b{color:#4aa3ec}[data-theme=dark] .stat.a330 .ic,[data-theme=dark] .stat.a330 b{color:#f0656b}[data-theme=dark] .stat.e19x .ic,[data-theme=dark] .stat.e19x b{color:#5cc26a}
+[data-theme=dark] .sec-head strong{color:var(--ink)}[data-theme=dark] .sec-head strong svg{color:#5cc26a}
+[data-theme=dark] input,[data-theme=dark] select,[data-theme=dark] textarea{background:#0f1b29;border-color:#2f4560;color:var(--ink)}
+[data-theme=dark] .field>svg{color:#8fa4b9}
+[data-theme=dark] .btn{background:#152233;color:#b9d6f2;border-color:#2f4560}[data-theme=dark] .btn:hover{background:#1b2c41}
+[data-theme=dark] .btn.primary{background:linear-gradient(135deg,#0a7ad0,#075ca6);color:#fff}
+[data-theme=dark] .table-head b{color:var(--ink)}[data-theme=dark] .table-head .muted{color:#a3b6c9}
+[data-theme=dark] th{background:#1c2d42;color:#d6e4f2}
+[data-theme=dark] td{border-bottom-color:#22344a}[data-theme=dark] tr:hover td{background:#18283b}
+[data-theme=dark] .code{color:#5fb0f2}[data-theme=dark] .by,[data-theme=dark] .when{color:#c4d4e4}[data-theme=dark] .by svg,[data-theme=dark] .when svg{color:#8fa4b9}
+[data-theme=dark] .act{background:#1b3350;color:#7cbcf2}[data-theme=dark] .act.dup{background:#22303f;color:#b5c5d6}[data-theme=dark] .act.del{background:#3a1d22;color:#f08a8f}
+[data-theme=dark] .pages button{color:#c4d4e4}[data-theme=dark] .pages .nav-b{background:#152233;border-color:#2f4560}[data-theme=dark] .pages button.cur{background:#0a6fc2;color:#fff}
+[data-theme=dark] .editor{background:#0f1b29;border-color:#2f4560}[data-theme=dark] .editorbar button,[data-theme=dark] .cpick>button{background:#1e3249;color:#b9d6f2}
+[data-theme=dark] .cauto{background:#1e3249;color:var(--ink)}[data-theme=dark] .clabel{color:#8fa4b9}[data-theme=dark] .caret{border-left-color:#2f4560}
+[data-theme=dark] .error{color:#f0858b}[data-theme=dark] .foot{color:#7d92a7}
+[data-theme=dark] :is(.impact,.editor) [style*="color:#17324d"],[data-theme=dark] :is(.impact,.editor) [style*="color: rgb(23, 50, 77)"],[data-theme=dark] :is(.impact,.editor) [style*="color:#000000"],[data-theme=dark] :is(.impact,.editor) [style*="color: rgb(0, 0, 0)"],[data-theme=dark] :is(.impact,.editor) [style*="color:#0b2f55"],[data-theme=dark] :is(.impact,.editor) [style*="color:#0c0c0c"],[data-theme=dark] :is(.impact,.editor) [style*="color:#262626"],[data-theme=dark] :is(.impact,.editor) [style*="color:#05172a"],[data-theme=dark] :is(.impact,.editor) [style*="color:#0b1826"],[data-theme=dark] :is(.impact,.editor) [style*="color:#112538"],[data-theme=dark] :is(.impact,.editor) [style*="color:#08233f"],[data-theme=dark] :is(.impact,.editor) [style*="color:#002060"]{color:inherit!important}
+
+@media(max-width:1320px){.top{flex-wrap:wrap;padding:10px 16px;gap:10px}.brand{border:0;padding:0}.nav{order:3;flex-basis:100%}.theme-btn{margin-left:auto}}
 @media(max-width:760px){main{padding:0 12px}.stats{grid-template-columns:repeat(2,1fr)}.stat{padding:12px}.stat .ic{display:none}.fleet{grid-template-columns:1fr}.fleet-card img{height:120px}.fields{grid-template-columns:1fr}.full{grid-column:auto}.who div{display:none}.logout span{display:none}.brand small{display:none}.search{flex-basis:100%}.fsel,.ssel{flex:1;width:auto}.table-head{flex-wrap:wrap}.pages .num{display:none}}
 </style></head><body>
 
@@ -123,6 +153,7 @@ tr:hover td{background:#f7fbff}
 <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
 <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
 <symbol id="i-sort" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></symbol>
 <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
@@ -138,7 +169,7 @@ tr:hover td{background:#f7fbff}
 <button data-nav="soon"><svg class="i"><use href="#i-chart"/></svg>Relatórios</button>
 <button data-nav="soon"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
 </nav>
-<div class="user hidden" id="userBox"><div class="who"><span class="avatar"><svg class="i"><use href="#i-user"/></svg></span><div><b id="userLabel"></b><small id="roleLabel"></small></div></div><button class="logout" id="logout"><svg class="i"><use href="#i-logout"/></svg><span>Terminar sessão</span></button></div>
+<button class="theme-btn" id="themeBtn" type="button" title="Mudar para tom escuro"><svg class="i moon"><use href="#i-moon"/></svg><svg class="i sun"><use href="#i-sun"/></svg></button><div class="user hidden" id="userBox"><div class="who"><span class="avatar"><svg class="i"><use href="#i-user"/></svg></span><div><b id="userLabel"></b><small id="roleLabel"></small></div></div><button class="logout" id="logout"><svg class="i"><use href="#i-logout"/></svg><span>Terminar sessão</span></button></div>
 </header>
 
 <section id="loginPanel" class="card login"><h2>Entrar na TAP Operational MEL</h2><p class="muted">Utiliza a conta individual que te foi atribuída.</p><form id="loginForm"><label>Email</label><input id="email" type="email" required autocomplete="username"><label style="display:block;margin-top:12px">Palavra-passe</label><input id="password" type="password" required autocomplete="current-password"><button class="btn primary" style="width:100%;margin-top:16px;justify-content:center">Entrar</button></form><p id="loginError" class="error"></p><p class="foot">Acesso restrito a utilizadores convidados pelo administrador.</p></section>
@@ -228,6 +259,8 @@ $('search').oninput=()=>{page=1;render()};
 $('fleetFilter').onchange=()=>{page=1;syncCards();render()};
 document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.onclick=()=>{$('fleetFilter').value=$('fleetFilter').value===c.dataset.f?'':c.dataset.f;page=1;syncCards();render()});
 $('refresh').onclick=async()=>{$('refresh').disabled=true;try{await loadRows();toast('Dados atualizados.')}catch(err){alert(err.message||err)}finally{$('refresh').disabled=false}};
+const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.theme==='dark'?'Mudar para tom claro':'Mudar para tom escuro'};setThemeTitle();
+$('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if(n==='soon')return toast(b.textContent.trim()+': disponível em breve.');document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));if(n==='mel')$('melSection').scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})});
 
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{$('editor').focus();document.execCommand(b.dataset.cmd,false,null)});const THEME=[['#ffffff','#000000','#17324d','#0b2f55','#0a6fc2','#d62f37','#2f8a3b','#e8a317','#7b3fa0','#5d7792'],['#f2f2f2','#7f7f7f','#d4dde7','#c9d9ec','#cce2f5','#f7d0d2','#d3ecd6','#fbeccb','#e6d6ef','#dde4eb'],['#d9d9d9','#595959','#a9bbcf','#93b3d9','#99c5eb','#efa1a5','#a8d9ae','#f6d897','#cdaedf','#bac9d7'],['#bfbfbf','#3f3f3f','#7e99b7','#5d8dc6','#66a8e0','#e6727a','#7cc686','#f2c563','#b585cf','#98aec3'],['#a5a5a5','#262626','#112538','#08233f','#085391','#a02329','#23672c','#ae7a11','#5c2f78','#45596d'],['#7f7f7f','#0c0c0c','#0b1826','#05172a','#053861','#6b171b','#17451d','#74510b','#3d1f50','#2e3b49']];
