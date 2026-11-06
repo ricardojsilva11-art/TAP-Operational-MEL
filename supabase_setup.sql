@@ -158,3 +158,26 @@ end $$;
 -- After the first invited user exists, promote that user deliberately:
 -- update public.user_profiles set role='admin' where user_id=(select id from auth.users where email='ADMIN_EMAIL');
 -- Never put Supabase service_role/secret keys in browser code.
+
+-- Apagar definitivamente uma MEL a partir do Histórico (só administradores; só MEL já desativadas).
+create or replace function public.delete_mel_permanently(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.user_profiles where user_id = auth.uid() and active = true and role = 'admin') then
+    raise exception 'Só administradores podem apagar definitivamente.';
+  end if;
+  if not exists (select 1 from public.mel_records where id = p_id and is_active = false) then
+    raise exception 'A MEL tem de estar apagada (no Histórico) antes de ser eliminada definitivamente.';
+  end if;
+  if to_regclass('public.mel_audit_log') is not null then
+    execute 'delete from public.mel_audit_log where record_id = $1' using p_id;
+  end if;
+  delete from public.mel_records where id = p_id;
+end;
+$$;
+revoke all on function public.delete_mel_permanently(uuid) from public;
+grant execute on function public.delete_mel_permanently(uuid) to authenticated;
