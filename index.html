@@ -218,7 +218,7 @@ body.table-max #homeView>.stats,body.table-max #homeView>.sec-head,body.table-ma
 </div>
 
 <section class="card">
-<div class="table-head"><b><svg class="i"><use href="#i-db"/></svg>Base de dados MEL</b><span class="th-right"><span class="muted" id="count"></span><button class="btn sm" id="resetCols" type="button" title="Repor a largura original das colunas">Repor colunas</button><button class="btn sm" id="expandBtn" type="button" title="Expandir a tabela para cima"><svg class="i"><use href="#i-expand"/></svg><span>Expandir</span></button></span></div>
+<div class="table-head"><b><svg class="i"><use href="#i-db"/></svg>Base de dados MEL</b><span class="th-right"><span class="muted" id="count"></span><button class="btn sm" id="resetCols" type="button" title="Repor a largura original das colunas">Repor colunas</button></span></div>
 <div class="tablewrap"><table id="melTable"><thead><tr><th class="sort" data-sort="mel_item">MEL Item<svg class="i"><use href="#i-sort"/></svg></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pager"><span class="muted" id="pageInfo"></span><div class="pages" id="pages"></div></div>
 </section>
@@ -298,9 +298,7 @@ const up=()=>{h.classList.remove('drag');document.body.classList.remove('resizin
 addEventListener('pointermove',mv);addEventListener('pointerup',up)})})}
 function resetCols(){const tbl=$('melTable');tbl.classList.remove('fixed');tbl.querySelectorAll('thead th').forEach(th=>th.style.width='');try{localStorage.removeItem(COLW_KEY)}catch(e){}toast('Largura das colunas reposta.')}
 setupResize();$('resetCols').onclick=resetCols;
-const setExpand=on=>{document.body.classList.toggle('table-max',on);$('expandBtn').innerHTML=on?`${ico('shrink')}<span>Reduzir</span>`:`${ico('expand')}<span>Expandir</span>`;$('expandBtn').title=on?'Voltar a mostrar os cartões':'Expandir a tabela para cima';try{localStorage.setItem('mel-expand',on?'1':'0')}catch(e){}};
-$('expandBtn').onclick=()=>{setExpand(!document.body.classList.contains('table-max'));window.scrollTo({top:0,behavior:'smooth'})};
-try{if(localStorage.getItem('mel-expand')==='1')setExpand(true)}catch(e){}
+try{localStorage.removeItem('mel-expand')}catch(e){}
 function syncCards(){document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.classList.toggle('active',c.dataset.f===$('fleetFilter').value))}
 function showModal(r,dup){editing=(r&&!dup)?r.id:null;$('modalTitle').textContent=dup?'Duplicar MEL':r?'Editar MEL':'Adicionar MEL';$('fleet').value=r?.fleet||$('fleetFilter').value||'A320';$('melItem').value=r?.mel_item||'';$('melNotes').value=r?.notes||'';$('editor').innerHTML=r?.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r?.operational_impact||'').replace(/\n/g,'<br>');$('recordError').textContent='';$('melItem').classList.remove('bad');$('melHint').classList.remove('bad');$('modal').classList.add('show');if(dup)$('melItem').select()}
 
