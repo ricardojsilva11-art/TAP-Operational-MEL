@@ -73,6 +73,10 @@ tr:hover td{background:#f7fbff}
 .act svg{width:16px;height:16px}.act:hover{filter:brightness(.95)}.act.dup{background:#eef2f6;color:#3f5a75}
 .act.del{color:#c8323a;background:#fde8e8}.act.cpy{background:#e4f5e6;color:#227a31}.act.cpy.ok{background:#227a31;color:#fff}.restore-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#e4f5e6;color:#227a31;font-size:12.5px;white-space:nowrap}.restore-btn svg{width:15px;height:15px}.restore-btn:hover{filter:brightness(.95)}[data-theme=dark] .restore-btn{background:#23753a;color:#fff;border:1px solid #47a35f}[data-theme=dark] .restore-btn:hover{filter:brightness(1.15)}.ro-banner{display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 16px;border-radius:11px;background:#fff4d6;color:#6b4700;border:1px solid #f3dc9a;font-size:13px}[data-theme=dark] .ro-banner{background:#3b2f0e;color:#f6d27a;border-color:#6b5520}
 .fleet-card[data-f="A320"] .info strong svg{fill:#0a6fc2}.fleet-card[data-f="A330"] .info strong svg{fill:#d62f37}.fleet-card[data-f="E190/E195"] .info strong svg{fill:#2f8a3b}[data-theme=dark] .fleet-card[data-f="A320"] .info strong svg{fill:#4aa3ec}[data-theme=dark] .fleet-card[data-f="A330"] .info strong svg{fill:#f0656b}[data-theme=dark] .fleet-card[data-f="E190/E195"] .info strong svg{fill:#5cc26a}
+.th-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.btn.sm{min-height:34px;padding:0 12px;font-size:12.5px}.btn.sm svg{width:15px;height:15px}
+#melTable th{position:relative}.col-rs{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;z-index:2}.col-rs:after{content:"";position:absolute;left:4px;top:25%;height:50%;width:1px;background:#9fb3c8}.col-rs:hover:after,.col-rs.drag:after{background:var(--blue);width:3px;left:3px}
+#melTable.fixed{table-layout:fixed}#melTable.fixed td{overflow-wrap:anywhere}#melTable.fixed .impact{min-width:0}body.resizing{cursor:col-resize;user-select:none}
+body.table-max #homeView>.stats,body.table-max #homeView>.sec-head,body.table-max #homeView>.fleet,body.table-max #roBanner,body.table-max #homeView>.foot{display:none!important}body.table-max #homeView>.toolbar{margin-top:0}
 .fleet-tag{font-weight:700;white-space:nowrap}.badge{background:#e42e36;color:#fff;border-radius:10px;font-size:10.5px;font-weight:800;padding:2px 6px;margin-left:2px}.ustate{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap}.ustate.on{background:#e4f5e6;color:#227a31}.ustate.pend{background:#fff4d6;color:#8a5a00}.ustate.off{background:#eef1f5;color:#5d6b7a}[data-theme=dark] .ustate.on{background:#173a22;color:#7ed48a}[data-theme=dark] .ustate.pend{background:#4a3a10;color:#f6d27a}[data-theme=dark] .ustate.off{background:#22303f;color:#b5c5d6}.role-sel{min-width:150px;padding:7px 9px;font-size:13px}.uact{display:flex;gap:6px;flex-wrap:wrap}.ubtn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;font-size:12.5px;white-space:nowrap}.ubtn.ok{background:#e4f5e6;color:#227a31}.ubtn.no{background:#fde8e8;color:#b42318}.ubtn.mute{background:#eef2f6;color:#3f5a75}[data-theme=dark] .ubtn.ok{background:#23753a;color:#fff}[data-theme=dark] .ubtn.no{background:#8f2a33;color:#fff}[data-theme=dark] .ubtn.mute{background:#3a4c60;color:#fff}.email{color:var(--muted);font-size:12px}.purge-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#fde8e8;color:#b42318;font-size:12.5px;white-space:nowrap}.purge-btn svg{width:15px;height:15px}.purge-btn:hover{filter:brightness(.95)}[data-theme=dark] .purge-btn{background:#8f2a33;color:#fff;border:1px solid #c4505a}[data-theme=dark] .purge-btn:hover{filter:brightness(1.15)}#hRows .actions{flex-wrap:wrap}
 .act.restore{color:var(--green);background:#e6f5e8}
 .empty{text-align:center;color:var(--muted);padding:36px}
@@ -159,6 +163,7 @@ tr:hover td{background:#f7fbff}
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
 <symbol id="i-clip" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 12h8M8 16h5"/></symbol>
 <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3M14.5 8.5l2 2"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></symbol><symbol id="i-shrink" viewBox="0 0 24 24"><path d="M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
 <symbol id="i-sort" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></symbol>
 <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
@@ -208,8 +213,8 @@ tr:hover td{background:#f7fbff}
 </div>
 
 <section class="card">
-<div class="table-head"><b><svg class="i"><use href="#i-db"/></svg>Base de dados MEL</b><span class="muted" id="count"></span></div>
-<div class="tablewrap"><table><thead><tr><th class="sort" data-sort="mel_item">MEL Item<svg class="i"><use href="#i-sort"/></svg></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="table-head"><b><svg class="i"><use href="#i-db"/></svg>Base de dados MEL</b><span class="th-right"><span class="muted" id="count"></span><button class="btn sm" id="resetCols" type="button" title="Repor a largura original das colunas">Repor colunas</button><button class="btn sm" id="expandBtn" type="button" title="Expandir a tabela para cima"><svg class="i"><use href="#i-expand"/></svg><span>Expandir</span></button></span></div>
+<div class="tablewrap"><table id="melTable"><thead><tr><th class="sort" data-sort="mel_item">MEL Item<svg class="i"><use href="#i-sort"/></svg></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pager"><span class="muted" id="pageInfo"></span><div class="pages" id="pages"></div></div>
 </section>
 <p class="foot">Registos e alterações são guardados centralmente. A identificação do operador e os carimbos temporais são definidos pelo servidor. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.</p>
@@ -274,6 +279,23 @@ $('pageInfo').textContent=list.length?`A mostrar ${start+1}–${Math.min(start+P
 let nums=[];for(let p=1;p<=pagesN;p++){if(p===1||p===pagesN||Math.abs(p-page)<=1||(page<=3&&p<=4))nums.push(p);else if(nums[nums.length-1]!=='…')nums.push('…')}
 $('pages').innerHTML=`<button class="nav-b" data-page="${page-1}" ${page<=1?'disabled':''}>${ico('left')}Anterior</button>`+nums.map(p=>p==='…'?'<span class="gap num">…</span>':`<button class="num ${p===page?'cur':''}" data-page="${p}">${p}</button>`).join('')+`<button class="nav-b" data-page="${page+1}" ${page>=pagesN?'disabled':''}>Seguinte${ico('right')}</button>`}
 
+const COLW_KEY='mel-colw';
+function setupResize(){const tbl=$('melTable');const ths=[...tbl.querySelectorAll('thead th')];
+const apply=w=>{if(!w||w.length!==ths.length)return;ths.forEach((th,i)=>th.style.width=w[i]+'px');tbl.classList.add('fixed')};
+try{apply(JSON.parse(localStorage.getItem(COLW_KEY)||'null'))}catch(e){}
+ths.slice(0,-1).forEach((th,i)=>{const h=document.createElement('span');h.className='col-rs';h.title='Arrasta para alargar · duplo clique repõe';th.appendChild(h);
+h.addEventListener('click',e=>e.stopPropagation());
+h.addEventListener('dblclick',e=>{e.stopPropagation();resetCols()});
+h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const widths=ths.map(x=>x.getBoundingClientRect().width);ths.forEach((x,j)=>x.style.width=widths[j]+'px');tbl.classList.add('fixed');
+const x0=e.clientX,w0=widths[i],wn=widths[i+1];h.classList.add('drag');document.body.classList.add('resizing');
+const mv=ev=>{const d=Math.max(70-w0,Math.min(ev.clientX-x0,wn-70));th.style.width=(w0+d)+'px';ths[i+1].style.width=(wn-d)+'px'};
+const up=()=>{h.classList.remove('drag');document.body.classList.remove('resizing');removeEventListener('pointermove',mv);removeEventListener('pointerup',up);try{localStorage.setItem(COLW_KEY,JSON.stringify(ths.map(x=>Math.round(x.getBoundingClientRect().width))))}catch(e){}};
+addEventListener('pointermove',mv);addEventListener('pointerup',up)})})}
+function resetCols(){const tbl=$('melTable');tbl.classList.remove('fixed');tbl.querySelectorAll('thead th').forEach(th=>th.style.width='');try{localStorage.removeItem(COLW_KEY)}catch(e){}toast('Largura das colunas reposta.')}
+setupResize();$('resetCols').onclick=resetCols;
+const setExpand=on=>{document.body.classList.toggle('table-max',on);$('expandBtn').innerHTML=on?`${ico('shrink')}<span>Reduzir</span>`:`${ico('expand')}<span>Expandir</span>`;$('expandBtn').title=on?'Voltar a mostrar os cartões':'Expandir a tabela para cima';try{localStorage.setItem('mel-expand',on?'1':'0')}catch(e){}};
+$('expandBtn').onclick=()=>{setExpand(!document.body.classList.contains('table-max'));window.scrollTo({top:0,behavior:'smooth'})};
+try{if(localStorage.getItem('mel-expand')==='1')setExpand(true)}catch(e){}
 function syncCards(){document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.classList.toggle('active',c.dataset.f===$('fleetFilter').value))}
 function showModal(r,dup){editing=(r&&!dup)?r.id:null;$('modalTitle').textContent=dup?'Duplicar MEL':r?'Editar MEL':'Adicionar MEL';$('fleet').value=r?.fleet||$('fleetFilter').value||'A320';$('melItem').value=r?.mel_item||'';$('editor').innerHTML=r?.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r?.operational_impact||'').replace(/\n/g,'<br>');$('recordError').textContent='';$('melItem').classList.remove('bad');$('melHint').classList.remove('bad');$('modal').classList.add('show');if(dup)$('melItem').select()}
 
