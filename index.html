@@ -71,7 +71,7 @@ tr:hover td{background:#f7fbff}
 .actions{display:flex;gap:7px;justify-content:center}
 .act{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:#e6f0fb;border:0;color:var(--blue)}
 .act svg{width:16px;height:16px}.act:hover{filter:brightness(.95)}.act.dup{background:#eef2f6;color:#3f5a75}
-.act.del{color:#c8323a;background:#fde8e8}
+.act.del{color:#c8323a;background:#fde8e8}.restore-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#e4f5e6;color:#227a31;font-size:12.5px;white-space:nowrap}.restore-btn svg{width:15px;height:15px}.restore-btn:hover{filter:brightness(.95)}[data-theme=dark] .restore-btn{background:#173a22;color:#7ed48a}.fleet-tag{font-weight:700;white-space:nowrap}
 .act.restore{color:var(--green);background:#e6f5e8}
 .empty{text-align:center;color:var(--muted);padding:36px}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 20px}
@@ -164,9 +164,8 @@ tr:hover td{background:#f7fbff}
 <nav class="nav hidden" id="nav">
 <button class="on" data-nav="home"><svg class="i"><use href="#i-home"/></svg>Início</button>
 <button data-nav="mel"><svg class="i"><use href="#i-list"/></svg>MEL</button>
-<button data-nav="soon"><svg class="i"><use href="#i-clock"/></svg>Histórico</button>
+<button data-nav="history"><svg class="i"><use href="#i-clock"/></svg>Histórico</button>
 <button data-nav="soon"><svg class="i"><use href="#i-users"/></svg>Utilizadores</button>
-<button data-nav="soon"><svg class="i"><use href="#i-chart"/></svg>Relatórios</button>
 <button data-nav="soon"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
 </nav>
 <button class="theme-btn" id="themeBtn" type="button" title="Mudar para tom escuro"><svg class="i moon"><use href="#i-moon"/></svg><svg class="i sun"><use href="#i-sun"/></svg></button><div class="user hidden" id="userBox"><div class="who"><span class="avatar"><svg class="i"><use href="#i-user"/></svg></span><div><b id="userLabel"></b><small id="roleLabel"></small></div></div><button class="logout" id="logout"><svg class="i"><use href="#i-logout"/></svg><span>Terminar sessão</span></button></div>
@@ -174,7 +173,7 @@ tr:hover td{background:#f7fbff}
 
 <section id="loginPanel" class="card login"><h2>Entrar na TAP Operational MEL</h2><p class="muted">Utiliza a conta individual que te foi atribuída.</p><form id="loginForm"><label>Email</label><input id="email" type="email" required autocomplete="username"><label style="display:block;margin-top:12px">Palavra-passe</label><input id="password" type="password" required autocomplete="current-password"><button class="btn primary" style="width:100%;margin-top:16px;justify-content:center">Entrar</button></form><p id="loginError" class="error"></p><p class="foot">Acesso restrito a utilizadores convidados pelo administrador.</p></section>
 
-<main id="appPanel" class="hidden">
+<main id="appPanel" class="hidden"><div id="homeView">
 <div class="stats">
 <div class="card stat"><span class="ic"><svg class="i"><use href="#i-db"/></svg></span><div><span>Total de registos</span><b id="total">—</b></div></div>
 <div class="card stat a320"><span class="ic"><svg class="i plane"><use href="#i-plane"/></svg></span><div><span>A320</span><b id="n320">—</b></div></div>
@@ -203,6 +202,16 @@ tr:hover td{background:#f7fbff}
 <div class="pager"><span class="muted" id="pageInfo"></span><div class="pages" id="pages"></div></div>
 </section>
 <p class="foot">Registos e alterações são guardados centralmente. A identificação do operador e os carimbos temporais são definidos pelo servidor. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.</p>
+</div>
+<div id="historyView" class="hidden">
+<section class="card">
+<div class="table-head"><b><svg class="i"><use href="#i-clock"/></svg>Histórico · MEL apagadas</b><span class="muted" id="hCount"></span></div>
+<p class="muted" style="margin:-6px 20px 12px">Se apagaste uma MEL por engano, carrega em <b>Reativar</b> para ela voltar à base de dados.</p>
+<div class="toolbar" style="margin:0 20px 14px"><label class="field search"><svg class="i"><use href="#i-search"/></svg><input id="hSearch" placeholder="Pesquisar nas MEL apagadas…"></label><label class="field fsel"><svg class="i plane"><use href="#i-plane"/></svg><select id="hFleet"><option value="">Todas</option><option>A320</option><option>A330</option><option>E190/E195</option></select></label></div>
+<div class="tablewrap"><table><thead><tr><th>MEL Item</th><th>Frota</th><th>Impacto operacional</th><th>Apagado por</th><th>Data</th><th>Ações</th></tr></thead><tbody id="hRows"></tbody></table></div>
+<div style="height:14px"></div>
+</section>
+</div>
 </main>
 
 <div class="modal" id="modal"><div class="dialog"><h2 id="modalTitle">Adicionar MEL</h2><form id="recordForm"><div class="fields"><div><label>Frota</label><select id="fleet"><option>A320</option><option>A330</option><option>E190/E195</option></select></div><div><label>MEL Item</label><input id="melItem" required maxlength="80"></div><div class="full"><label>Impacto operacional</label><div class="editorbar"><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="underline"><u>U</u></button><div class="cpick"><button type="button" id="colorBtn" title="Cor das letras"><span class="cA">A</span><span class="cbar" id="cbar"></span><span class="caret">▾</span></button><div class="cpanel hidden" id="cpanel"><button type="button" class="cauto" data-color="#17324d"><span class="sw" style="background:#17324d"></span>Automática</button><div class="clabel">Cores do tema</div><table class="ctable" id="ctheme"></table><div class="clabel">Cores padrão</div><table class="ctable" id="cstd"></table></div></div><label style="display:flex;align-items:center;gap:5px">Tamanho <select id="size" style="width:90px"><option>12px</option><option selected>14px</option><option>16px</option><option>18px</option><option>20px</option><option>24px</option><option>28px</option><option>32px</option></select></label></div><div id="editor" class="editor" contenteditable="true"></div></div></div><p id="recordError" class="error"></p><div class="dlg-actions"><button type="button" class="btn" id="cancel">Cancelar</button><button class="btn primary">Guardar</button></div></form></div></div>
@@ -224,7 +233,7 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 const fmtDate=d=>{const x=new Date(d);return x.toLocaleDateString('pt-PT')+', '+x.toLocaleTimeString('pt-PT')};
 
 async function loadProfile(){let {data,error}=await sb.from('user_profiles').select('*').eq('user_id',user.id).single();if(error)throw error;profile=data;if(!profile.active)throw new Error('A tua conta está desativada. Contacta o administrador.');}
-async function loadRows(){const {data,error}=await sb.from('mel_records').select('*').order('fleet').order('mel_item');if(error)throw error;rows=data||[];render()}
+async function loadRows(){const {data,error}=await sb.from('mel_records').select('*').order('fleet').order('mel_item');if(error)throw error;rows=data||[];render();if(!$('historyView').classList.contains('hidden'))renderHistory()}
 
 function filtered(){const q=$('search').value.toLowerCase().trim(),f=$('fleetFilter').value;
 return rows.filter(r=>(!f||r.fleet===f)&&r.is_active!==false&&(!q||[r.mel_item,r.fleet,r.operational_impact].join(' ').toLowerCase().includes(q)))
@@ -261,7 +270,14 @@ document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.onclick=()=>{$
 $('refresh').onclick=async()=>{$('refresh').disabled=true;try{await loadRows();toast('Dados atualizados.')}catch(err){alert(err.message||err)}finally{$('refresh').disabled=false}};
 const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.theme==='dark'?'Mudar para tom claro':'Mudar para tom escuro'};setThemeTitle();
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
-document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if(n==='soon')return toast(b.textContent.trim()+': disponível em breve.');document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));if(n==='mel')$('melSection').scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})});
+document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if(n==='soon')return toast(b.textContent.trim()+': disponível em breve.');document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));const hist=n==='history';$('homeView').classList.toggle('hidden',hist);$('historyView').classList.toggle('hidden',!hist);if(hist){renderHistory();window.scrollTo({top:0,behavior:'smooth'})}else if(n==='mel')$('melSection').scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})});
+function renderHistory(){const q=$('hSearch').value.toLowerCase().trim(),f=$('hFleet').value;const del=rows.filter(r=>r.is_active===false);
+const list=del.filter(r=>(!f||r.fleet===f)&&(!q||[r.mel_item,r.fleet,r.operational_impact].join(' ').toLowerCase().includes(q))).sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0));
+$('hCount').textContent=`${list.length} de ${del.length} MEL apagadas`;const canEdit=profile?.role!=='reader';
+$('hRows').innerHTML=list.length?list.map(r=>`<tr><td class="code">${safe(r.mel_item)}</td><td class="fleet-tag">${safe(r.fleet)}</td><td class="impact">${boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'))}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||'—')}</span></td><td><span class="when">${ico('cal')}${r.updated_at?fmtDate(r.updated_at):'—'}</span></td><td><div class="actions">${canEdit?`<button class="restore-btn" data-restore="${r.id}">${ico('undo')}Reativar</button>`:''}</div></td></tr>`).join(''):`<tr><td colspan="6" class="empty">${del.length?'Nenhuma MEL apagada corresponde à pesquisa.':'Não há MEL apagadas.'}</td></tr>`;
+document.querySelectorAll('#hRows td.impact').forEach(boldFirstLine)}
+$('hSearch').oninput=renderHistory;$('hFleet').onchange=renderHistory;
+$('hRows').addEventListener('click',async e=>{const btn=e.target.closest('[data-restore]');if(!btn)return;const rec=rows.find(r=>r.id===btn.dataset.restore);if(!rec)return;if(!confirm(`Reativar a MEL ${rec.mel_item} (${rec.fleet})? Volta a aparecer na base de dados.`))return;btn.disabled=true;try{const {error}=await sb.from('mel_records').update({is_active:true,updated_by:user.id,updated_by_name:profileName(),updated_at:new Date().toISOString()}).eq('id',rec.id);if(error)throw error;await loadRows();toast(`MEL ${rec.mel_item} reativada.`)}catch(err){alert('Não foi possível reativar: '+(err.message||err));btn.disabled=false}});
 
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{$('editor').focus();document.execCommand(b.dataset.cmd,false,null)});const THEME=[['#ffffff','#000000','#17324d','#0b2f55','#0a6fc2','#d62f37','#2f8a3b','#e8a317','#7b3fa0','#5d7792'],['#f2f2f2','#7f7f7f','#d4dde7','#c9d9ec','#cce2f5','#f7d0d2','#d3ecd6','#fbeccb','#e6d6ef','#dde4eb'],['#d9d9d9','#595959','#a9bbcf','#93b3d9','#99c5eb','#efa1a5','#a8d9ae','#f6d897','#cdaedf','#bac9d7'],['#bfbfbf','#3f3f3f','#7e99b7','#5d8dc6','#66a8e0','#e6727a','#7cc686','#f2c563','#b585cf','#98aec3'],['#a5a5a5','#262626','#112538','#08233f','#085391','#a02329','#23672c','#ae7a11','#5c2f78','#45596d'],['#7f7f7f','#0c0c0c','#0b1826','#05172a','#053861','#6b171b','#17451d','#74510b','#3d1f50','#2e3b49']];
 const STD=['#c00000','#ff0000','#ffc000','#ffff00','#92d050','#00b050','#00b0f0','#0070c0','#002060','#7030a0'];
