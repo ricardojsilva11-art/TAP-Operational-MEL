@@ -71,7 +71,7 @@ tr:hover td{background:#f7fbff}
 .actions{display:flex;gap:7px;justify-content:center}
 .act{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:#e6f0fb;border:0;color:var(--blue)}
 .act svg{width:16px;height:16px}.act:hover{filter:brightness(.95)}.act.dup{background:#eef2f6;color:#3f5a75}
-.act.del{color:#c8323a;background:#fde8e8}.restore-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#e4f5e6;color:#227a31;font-size:12.5px;white-space:nowrap}.restore-btn svg{width:15px;height:15px}.restore-btn:hover{filter:brightness(.95)}[data-theme=dark] .restore-btn{background:#23753a;color:#fff;border:1px solid #47a35f}[data-theme=dark] .restore-btn:hover{filter:brightness(1.15)}.fleet-tag{font-weight:700;white-space:nowrap}.purge-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#fde8e8;color:#b42318;font-size:12.5px;white-space:nowrap}.purge-btn svg{width:15px;height:15px}.purge-btn:hover{filter:brightness(.95)}[data-theme=dark] .purge-btn{background:#8f2a33;color:#fff;border:1px solid #c4505a}[data-theme=dark] .purge-btn:hover{filter:brightness(1.15)}#hRows .actions{flex-wrap:wrap}
+.act.del{color:#c8323a;background:#fde8e8}.act.cpy{background:#e4f5e6;color:#227a31}.act.cpy.ok{background:#227a31;color:#fff}.restore-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#e4f5e6;color:#227a31;font-size:12.5px;white-space:nowrap}.restore-btn svg{width:15px;height:15px}.restore-btn:hover{filter:brightness(.95)}[data-theme=dark] .restore-btn{background:#23753a;color:#fff;border:1px solid #47a35f}[data-theme=dark] .restore-btn:hover{filter:brightness(1.15)}.fleet-tag{font-weight:700;white-space:nowrap}.purge-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:#fde8e8;color:#b42318;font-size:12.5px;white-space:nowrap}.purge-btn svg{width:15px;height:15px}.purge-btn:hover{filter:brightness(.95)}[data-theme=dark] .purge-btn{background:#8f2a33;color:#fff;border:1px solid #c4505a}[data-theme=dark] .purge-btn:hover{filter:brightness(1.15)}#hRows .actions{flex-wrap:wrap}
 .act.restore{color:var(--green);background:#e6f5e8}
 .empty{text-align:center;color:var(--muted);padding:36px}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 20px}
@@ -122,7 +122,7 @@ tr:hover td{background:#f7fbff}
 [data-theme=dark] th{background:#1c2d42;color:#d6e4f2}
 [data-theme=dark] td{border-bottom-color:#22344a}[data-theme=dark] tr:hover td{background:#18283b}
 [data-theme=dark] .code{color:#5fb0f2}[data-theme=dark] .by,[data-theme=dark] .when{color:#c4d4e4}[data-theme=dark] .by svg,[data-theme=dark] .when svg{color:#8fa4b9}
-[data-theme=dark] .act{background:#1f5c99;color:#fff;border:1px solid #4d8fd1}[data-theme=dark] .act.dup{background:#3a4c60;color:#fff;border-color:#62788f}[data-theme=dark] .act.del{background:#8f2a33;color:#fff;border-color:#c4505a}[data-theme=dark] .act:hover{filter:brightness(1.2)}[data-theme=dark] .act svg{stroke-width:2.3}
+[data-theme=dark] .act{background:#1f5c99;color:#fff;border:1px solid #4d8fd1}[data-theme=dark] .act.dup{background:#3a4c60;color:#fff;border-color:#62788f}[data-theme=dark] .act.del{background:#8f2a33;color:#fff;border-color:#c4505a}[data-theme=dark] .act.cpy{background:#23753a;color:#fff;border-color:#47a35f}[data-theme=dark] .act:hover{filter:brightness(1.2)}[data-theme=dark] .act svg{stroke-width:2.3}
 [data-theme=dark] .pages button{color:#c4d4e4}[data-theme=dark] .pages .nav-b{background:#152233;border-color:#2f4560}[data-theme=dark] .pages button.cur{background:#0a6fc2;color:#fff}
 [data-theme=dark] .editor{background:#0f1b29;border-color:#2f4560}[data-theme=dark] .editorbar button,[data-theme=dark] .cpick>button{background:#1e3249;color:#b9d6f2}
 [data-theme=dark] .cauto{background:#1e3249;color:var(--ink)}[data-theme=dark] .clabel{color:#8fa4b9}[data-theme=dark] .caret{border-left-color:#2f4560}
@@ -154,6 +154,7 @@ tr:hover td{background:#f7fbff}
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
 <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M8 12h8M8 16h5"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
 <symbol id="i-sort" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></symbol>
 <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
@@ -246,7 +247,7 @@ const f=$('fleetFilter').value,list=filtered(),pagesN=Math.max(1,Math.ceil(list.
 $('count').innerHTML=(f?`${safe(f)}: ${list.length} registos<i>|</i>`:`${list.length} registos<i>|</i>`)+`Total: ${active.length} registos`;
 const start=(page-1)*PER_PAGE,slice=list.slice(start,start+PER_PAGE);const canEdit=profile?.role!=='reader';
 $('rows').innerHTML=slice.length?slice.map(r=>{const on=r.is_active!==false;const when=r.updated_at||r.created_at;
-const acts=!canEdit?'':`<button class="act" data-edit="${r.id}" title="Editar">${ico('edit')}</button><button class="act dup" data-dup="${r.id}" title="Duplicar">${ico('copy')}</button><button class="act del" data-delete="${r.id}" title="Apagar registo">${ico('trash')}</button>`;
+const cp=`<button class="act cpy" data-copy="${r.id}" title="Copiar impacto operacional">${ico('clip')}</button>`;const acts=!canEdit?cp:cp+`<button class="act" data-edit="${r.id}" title="Editar">${ico('edit')}</button><button class="act dup" data-dup="${r.id}" title="Duplicar">${ico('copy')}</button><button class="act del" data-delete="${r.id}" title="Apagar registo">${ico('trash')}</button>`;
 return `<tr><td class="code">${safe(r.mel_item)}</td><td class="impact">${boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'))}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}</span></td><td><span class="when">${ico('cal')}${when?fmtDate(when):'—'}</span></td><td><div class="actions">${acts}</div></td></tr>`}).join(''):`<tr><td colspan="5" class="empty">Nenhum registo encontrado.</td></tr>`;
 document.querySelectorAll('#rows td.impact').forEach(boldFirstLine);
 $('pageInfo').textContent=list.length?`A mostrar ${start+1}–${Math.min(start+PER_PAGE,list.length)} de ${list.length} registos${f?' ('+f+')':''}`:'Sem registos';
@@ -256,7 +257,10 @@ $('pages').innerHTML=`<button class="nav-b" data-page="${page-1}" ${page<=1?'dis
 function syncCards(){document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.classList.toggle('active',c.dataset.f===$('fleetFilter').value))}
 function showModal(r,dup){editing=(r&&!dup)?r.id:null;$('modalTitle').textContent=dup?'Duplicar MEL':r?'Editar MEL':'Adicionar MEL';$('fleet').value=r?.fleet||$('fleetFilter').value||'A320';$('melItem').value=r?.mel_item||'';$('editor').innerHTML=r?.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r?.operational_impact||'').replace(/\n/g,'<br>');$('recordError').textContent='';$('modal').classList.add('show');if(dup)$('melItem').select()}
 
-$('rows').addEventListener('click',async e=>{const btn=e.target.closest('button');if(!btn)return;const rec=rows.find(r=>r.id===(btn.dataset.delete||btn.dataset.restore||btn.dataset.edit||btn.dataset.dup));if(!rec)return;
+$('rows').addEventListener('click',async e=>{const btn=e.target.closest('button');if(!btn)return;
+if(btn.dataset.copy){const r=rows.find(x=>x.id===btn.dataset.copy);if(!r)return;const txt=(r.operational_impact||plain(r.operational_impact_html||'')).trim();
+const done=()=>{btn.classList.add('ok');btn.innerHTML=ico('check');toast('Impacto operacional copiado.');setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=ico('clip')},1500)};
+try{await navigator.clipboard.writeText(txt);done()}catch(_){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();ok?done():alert('Não foi possível copiar.')}return}const rec=rows.find(r=>r.id===(btn.dataset.delete||btn.dataset.restore||btn.dataset.edit||btn.dataset.dup));if(!rec)return;
 if(btn.dataset.edit)return showModal(rec);if(btn.dataset.dup)return showModal(rec,true);
 const restoring=!!btn.dataset.restore;
 if(!restoring&&!confirm(`Confirmas que pretendes retirar o registo ${rec.mel_item} da base MEL? O registo será desativado, mantendo o histórico na base de dados.`))return;
