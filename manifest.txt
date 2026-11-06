@@ -1,0 +1,5 @@
+Total: 365
+A320: 184
+A330: 98
+E190/E195: 83
+Source: embedded original data in TAP_Operational_MEL_v21.html; validated against original workbook filename TAP MELs.xlsx
