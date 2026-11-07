@@ -73,12 +73,17 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 ## Funcionalidades
 
 ### MEL
-- **MEL Item** tem de seguir o formato `M-00-00-00` ou `C-00`, com mais grupos se for preciso e uma letra no fim (ex.: `M-21-26-01-02`, `C-21-01`, `M-21-26-01A`). Fora disto não grava.
+- **MEL Item** tem de seguir o formato `M-00-00-00` ou `C-00`, com mais grupos se for preciso e uma letra no fim (ex.: `M-21-26-01-02`, `C-21-01`, `M-21-26-01A`). Fora disto não grava — a regra é aplicada também pela base de dados.
 - Ao adicionar, pode escolher-se mais de uma frota de uma vez.
 - **Notas** opcionais, que aparecem por baixo do MEL Item.
 - **Duplicados:** não pode haver duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional. O mesmo item com impactos diferentes é permitido. As MEL do Histórico não contam.
 - **Histórico:** apagar uma MEL só a desativa. Pode ser **reativada** no separador Histórico; um administrador pode apagá-la definitivamente.
 - Quem fez cada registo e quando é definido pelo servidor, não pelo browser. A tabela `mel_audit_log` guarda o estado antes e depois de cada alteração.
+- **Ver alterações** (ícone do relógio em cada MEL, também no Histórico): mostra quem mudou, quando e o quê, com o texto retirado a vermelho e o acrescentado a verde. Operadores e administradores podem **repor** uma versão anterior; a reposição fica também registada.
+
+### Tempo real
+- Quando outra pessoa adiciona, altera, apaga ou reativa uma MEL, aparece um aviso discreto no canto do ecrã ("Ana alterou M-21-26-01 (A320)"). Carregar no aviso leva à MEL, que fica realçada por instantes.
+- Se um administrador mudar o tipo de acesso de alguém, a app dessa pessoa ajusta-se logo, sem recarregar. Se a conta for desativada, a sessão termina; se for definida uma palavra-passe temporária, a pessoa tem de a mudar.
 
 ### Pesquisa e favoritas
 - A pesquisa ignora acentos e hífens: `212601`, `21-26` ou `m212601` encontram `M-21-26-01`; `pressao` encontra "pressão". Várias palavras têm de aparecer todas. O termo encontrado fica realçado.
