@@ -1,10 +1,10 @@
 // Service worker da TAP Operational MEL: guarda a "casca" da app para abrir sem ligação.
 // Os dados das MEL NÃO passam por aqui: a app guarda a última cópia no próprio browser.
-const CACHE = 'mel-shell-v3';
+const CACHE = 'mel-shell-v4';
 const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
-               './img/a320.webp', './img/a330.webp', './img/e190.webp'];
+               './img/a320.webp', './img/a330.webp', './img/e190.webp',
+               './vendor/supabase-js-2.119.0.js'];
 const CDN = [
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'
 ];
 
@@ -49,7 +49,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.hostname === 'cdn.jsdelivr.net' || url.hostname === 'cdn.sheetjs.com') {                    // bibliotecas: cópia, atualizada em segundo plano
+  if (url.hostname === 'cdn.sheetjs.com') {                    // bibliotecas: cópia, atualizada em segundo plano
     e.respondWith((async () => {
       const c = await caches.open(CACHE);
       const hit = await c.match(req.url);
