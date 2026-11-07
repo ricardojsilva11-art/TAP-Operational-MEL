@@ -10,6 +10,7 @@ Para criar a base de dados do zero, no Supabase (SQL Editor > New query), correr
 | 4 | `004_so_consulta.sql` | Utilizadores `reader` só podem consultar (a base de dados recusa alterações) | 001 |
 | 5 | `005_notas.sql` | Coluna de notas nas MEL | 001 |
 | 6 | `006_duplicados.sql` | Impede MEL ativas iguais (frota + MEL Item + impacto operacional) | 001 |
+| 7 | `007_favoritos.sql` | Favoritas e usadas recentemente, por utilizador | 001 |
 
 Depois do `001`, importar os registos iniciais (`mel_seed.csv`) para a tabela `mel_records`, antes de continuar com os restantes.
 

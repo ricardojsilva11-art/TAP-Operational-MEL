@@ -14,7 +14,7 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 ## Passo 1 — criar Supabase
 1. Criar um projeto Supabase dedicado, idealmente numa organização controlada pela empresa.
 2. Guardar o Project URL e a publishable key (ou anon key legada). Nunca usar `service_role`/secret key no browser.
-3. No SQL Editor, correr os scripts da pasta `sql/` por ordem (`001` a `006`), um de cada vez. Ver `sql/LEIAME.md`.
+3. No SQL Editor, correr os scripts da pasta `sql/` por ordem (`001` a `007`), um de cada vez. Ver `sql/LEIAME.md`.
 4. Em Authentication > Sign In / Providers, manter email/password ativo e desativar inscrições públicas. Utilizar convites apenas.
 5. Configurar SMTP de domínio autorizado antes de convidar utilizadores reais.
 
@@ -60,3 +60,9 @@ Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guar
 - A app tenta voltar a ligar a cada minuto, ou quando se carrega em "Tentar ligar".
 - "Terminar sessão" apaga a cópia do dispositivo. A cópia também é apagada se a sessão expirar e o servidor estiver disponível.
 - `sw.js` (service worker) guarda a própria app para abrir sem rede; `manifest.webmanifest` e os ícones permitem instalá-la como app no telemóvel ou no PC.
+
+## Pesquisa e favoritas
+- A pesquisa ignora acentos e hífens: `212601`, `21-26` ou `m212601` encontram `M-21-26-01`; `pressao` encontra "pressão". Várias palavras têm de aparecer todas. O termo encontrado fica realçado.
+- Atalho `/` para ir à caixa de pesquisa; `Esc` limpa a pesquisa.
+- Estrela em cada MEL para a marcar como favorita. O filtro "Favoritas / Usadas recentemente" mostra só essas. As usadas recentemente são as últimas 30 cujo impacto foi copiado.
+- Favoritas e recentes são de cada utilizador e ficam guardadas no servidor (`sql/007_favoritos.sql`), por isso são as mesmas no PC e no telemóvel.
