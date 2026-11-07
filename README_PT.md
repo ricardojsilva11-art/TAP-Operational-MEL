@@ -5,7 +5,7 @@ Este pacote contém a base inicial para migrar a aplicação local para uma apli
 ## Conteúdo
 - `index.html` — interface web com login, pesquisa, filtros, criação/edição, formatação básica, exportação Excel e atualização em tempo real.
 - `config.js` — preencher com o URL e a chave pública do projeto Supabase.
-- `supabase_setup.sql` — tabelas, perfis, auditoria, timestamps de servidor, RLS e Realtime.
+- `sql/` — scripts da base de dados, numerados pela ordem em que se correm (ver `sql/LEIAME.md`).
 - `mel_seed.csv` — 365 registos iniciais para importação.
 
 ## Antes de começar — segurança
@@ -14,7 +14,7 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 ## Passo 1 — criar Supabase
 1. Criar um projeto Supabase dedicado, idealmente numa organização controlada pela empresa.
 2. Guardar o Project URL e a publishable key (ou anon key legada). Nunca usar `service_role`/secret key no browser.
-3. No SQL Editor, executar todo o ficheiro `supabase_setup.sql`.
+3. No SQL Editor, correr os scripts da pasta `sql/` por ordem (`001` a `006`), um de cada vez. Ver `sql/LEIAME.md`.
 4. Em Authentication > Sign In / Providers, manter email/password ativo e desativar inscrições públicas. Utilizar convites apenas.
 5. Configurar SMTP de domínio autorizado antes de convidar utilizadores reais.
 
@@ -52,4 +52,4 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 - O código carrega Supabase JS e SheetJS a partir de CDN; para produção, fixar versões e avaliar self-hosting conforme a política de IT.
 
 ## MEL duplicadas
-Correr `supabase_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional; o mesmo item com impactos diferentes é permitido (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
+Correr `sql/006_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional; o mesmo item com impactos diferentes é permitido (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
