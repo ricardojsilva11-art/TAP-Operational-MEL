@@ -13,6 +13,7 @@ Para criar a base de dados do zero, no Supabase (SQL Editor > New query), correr
 | 7 | `007_favoritos.sql` | Favoritas, por utilizador | 001 |
 | 8 | `008_mudar_palavra_passe.sql` | Palavra-passe definida pelo administrador é temporária: obriga a mudar no próximo início de sessão | 003, 004 |
 | 9 | `009_formato_e_tempo_real.sql` | Valida o formato do MEL Item na base de dados; tempo real nos perfis (mudanças de acesso sem recarregar) | 001 |
+| 10 | `010_configuracoes.sql` | Configurações: registos de novas contas, duração da sessão, cópia de segurança e revisão da MEL por frota | 002, 008 |
 
 Depois do `001`, importar os registos iniciais (`mel_seed.csv`) para a tabela `mel_records`, antes de continuar com os restantes.
 

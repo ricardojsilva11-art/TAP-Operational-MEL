@@ -96,6 +96,13 @@ Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guar
 - A app tenta voltar a ligar a cada minuto, ou quando se carrega em "Tentar ligar".
 - **Terminar sessão** apaga a cópia do dispositivo. Em PCs partilhados, terminar sempre a sessão no fim do turno.
 
+### Configurações (só administradores)
+- **Cópia de segurança:** descarrega um Excel com todas as MEL (ativas e do Histórico), notas, texto formatado e revisões. A página mostra a data e o autor da última cópia e avisa se já passaram mais de 7 dias.
+- **Registos de novas contas:** abrir ou fechar a criação de conta na app. Fechados, o separador "Criar conta" desaparece e a base de dados recusa registos novos (o painel do Supabase continua a poder criar utilizadores).
+- **Duração da sessão:** 4, 8, 12 ou 24 horas sem atividade, ou sem limite. Ao fim desse tempo, a sessão termina nesse dispositivo e a cópia offline é apagada.
+- **Revisão da MEL por frota:** número e data da revisão em vigor. Aparece nos cartões das frotas e numa coluna do Excel exportado.
+- **Atividade recente:** todas as alterações (últimas 24 h, 7, 30 ou 90 dias), filtráveis por frota e pessoa. Carregar numa linha abre o histórico dessa MEL.
+
 ## Notas técnicas e pendentes
 - A app usa Realtime do Supabase para atualizar a lista nos outros utilizadores sem recarregar.
 - O Supabase JS está alojado no próprio repositório (`vendor/`, versão 2.119.0 fixa, com verificação `integrity`). O SheetJS vem de `cdn.sheetjs.com`, a fonte oficial, fixado na versão 0.20.3.
