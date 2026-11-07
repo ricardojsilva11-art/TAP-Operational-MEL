@@ -73,7 +73,7 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 ## Funcionalidades
 
 ### MEL
-- **MEL Item** tem de seguir o formato `M-00-00-00` ou `C-00`, com mais grupos se for preciso e uma letra no fim (ex.: `M-21-26-01-02`, `C-21-01`, `M-21-26-01A`). Fora disto não grava — a regra é aplicada também pela base de dados.
+- **MEL Item** tem de seguir o formato `M-00-00` ou `C-00`, com mais grupos se for preciso e até 2 letras no fim, juntas ou depois de hífen (ex.: `M-34-50`, `M-21-26-01-02`, `C-21-01`, `M-21-26-01A`, `M-21-51-00-A`). Comentários vão nas Notas, não no MEL Item. Fora disto não grava — a regra é aplicada também pela base de dados.
 - Ao adicionar, pode escolher-se mais de uma frota de uma vez.
 - **Notas** opcionais, que aparecem por baixo do MEL Item.
 - **Duplicados:** não pode haver duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional. O mesmo item com impactos diferentes é permitido. As MEL do Histórico não contam.
