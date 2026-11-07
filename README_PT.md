@@ -50,3 +50,6 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 - Os nomes apresentados dependem do perfil criado a partir do email; o administrador deve corrigir `display_name` para o nome profissional correto.
 - O protótipo é uma base de implementação. Antes de produção, fazer revisão de segurança, testes de concorrência, backups/restore, monitorização, política de retenção e validação documental/operacional com a TAP.
 - O código carrega Supabase JS e SheetJS a partir de CDN; para produção, fixar versões e avaliar self-hosting conforme a política de IT.
+
+## MEL duplicadas
+Correr `supabase_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas com o mesmo MEL Item na mesma frota (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
