@@ -528,7 +528,7 @@ $('search').oninput=()=>{page=1;render()};
 $('fleetFilter').onchange=()=>{page=1;syncCards();render()};
 $('showFilter').onchange=()=>{page=1;render()};
 $('clearFav').onclick=async e=>{e.stopPropagation();if(offline)return toast('Sem ligação: não é possível alterar as favoritas agora.');const ids=Object.keys(prefs).filter(id=>prefs[id].fav);if(!ids.length)return;
-if(!confirm(`Retirar todas as tuas ${ids.length} favorita${ids.length>1?'s':''}?\n\nSó afeta as tuas favoritas; as dos outros utilizadores ficam iguais.`))return;
+if(!confirm(`Retirar todas as tuas ${ids.length} favorita${ids.length>1?'s':''}?`))return;
 const b=e.currentTarget;b.disabled=true;try{if(prefsRemote){const {error}=await sb.from('mel_user_prefs').delete().eq('user_id',user.id);if(error)throw error}ids.forEach(id=>{prefs[id].fav=false});savePrefsLocal();if($('showFilter').value==='fav')$('showFilter').value='';page=1;updateShowCounts();render();toast('Favoritas retiradas.')}
 catch(err){alert('Não foi possível retirar as favoritas: '+(err.message||err))}finally{b.disabled=false}};
 document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;if($('appPanel').classList.contains('hidden')||document.querySelector('.modal.show'))return;e.preventDefault();const hist=!$('historyView').classList.contains('hidden');if(!hist&&$('homeView').classList.contains('hidden'))document.querySelector('[data-nav="home"]')?.click();const inp=hist?$('hSearch'):$('search');inp.scrollIntoView({block:'center',behavior:'smooth'});inp.focus();inp.select()});
