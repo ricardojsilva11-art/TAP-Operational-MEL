@@ -92,6 +92,6 @@ Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guar
 
 ## Notas técnicas e pendentes
 - A app usa Realtime do Supabase para atualizar a lista nos outros utilizadores sem recarregar.
-- O código carrega Supabase JS e SheetJS a partir de CDN. A versão do Supabase JS não está fixada e o SheetJS 0.18.5 está desatualizado; para produção, fixar versões e avaliar alojar as bibliotecas localmente, conforme a política de IT.
+- O código carrega Supabase JS e SheetJS a partir de CDN. O SheetJS está fixado na versão 0.20.3 (de `cdn.sheetjs.com`, a fonte oficial). A versão do Supabase JS ainda não está fixada; para produção, fixá-la e avaliar alojar as bibliotecas localmente, conforme a política de IT.
 - Os nomes apresentados vêm do nome dado no registo; o administrador pode corrigir `display_name` para o nome profissional correto.
 - Antes de uso em produção: revisão de segurança, backups e reposição, monitorização, política de retenção e validação documental/operacional com a TAP.
