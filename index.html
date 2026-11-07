@@ -59,7 +59,7 @@ main{max-width:1640px;margin:18px auto;padding:0 24px}
 table{width:100%;border-collapse:separate;border-spacing:0}
 th{background:#eef3f9;color:#1d3d5e;font-weight:800;line-height:1.3;text-transform:uppercase;font-size:11px;letter-spacing:.05em;text-align:left;padding:12px 14px;white-space:nowrap}
 th:first-child{border-radius:9px 0 0 9px}th:last-child{border-radius:0 9px 9px 0;text-align:center}
-th.sort{cursor:pointer;user-select:none}th.sort:hover{color:var(--blue)}th.sort svg{width:14px;height:14px;margin-left:5px;opacity:.6}
+th.sort{cursor:pointer;user-select:none}.clearfav{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:3px 9px;border-radius:999px;border:1px solid #e9cf86;background:#fff6dc;color:#8a5a00;font-size:11px;font-weight:700;text-transform:none;letter-spacing:0;cursor:pointer;vertical-align:middle}.clearfav svg{width:12px!important;height:12px!important;margin:0!important;opacity:1!important;fill:currentColor}.clearfav:hover{background:#ffeab0}.clearfav.hidden{display:none}[data-theme=dark] .clearfav{background:#3b2f0e;color:#f6d27a;border-color:#6b5520}th.sort:hover{color:var(--blue)}th.sort svg{width:14px;height:14px;margin-left:5px;opacity:.6}
 td{padding:11px 14px;border-bottom:1px solid #e8eef4;vertical-align:top;font-size:12.5px}
 tr:hover td{background:#f7fbff}
 .code{font-weight:800;color:var(--blue);white-space:nowrap;font-size:14px}
@@ -251,7 +251,7 @@ tr.flash td{animation:rowFlash 3s ease-out}@keyframes rowFlash{0%,30%{background
 
 <section class="card">
 <div class="table-head"><b><svg class="i"><use href="#i-db"/></svg>Base de dados MEL</b><span class="th-right"><span class="muted" id="count"></span><button class="btn sm" id="resetCols" type="button" title="Repor a largura original das colunas">Repor colunas</button></span></div>
-<div class="tablewrap"><table id="melTable"><thead><tr><th class="sort" data-sort="mel_item">MEL Item<svg class="i"><use href="#i-sort"/></svg></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="tablewrap"><table id="melTable"><thead><tr><th class="sort" data-sort="mel_item">MEL Item<svg class="i"><use href="#i-sort"/></svg><button type="button" class="clearfav hidden" id="clearFav" title="Retirar todas as minhas favoritas"><svg class="i"><use href="#i-star"/></svg>Limpar favoritas</button></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pager"><span class="muted" id="pageInfo"></span><div class="pages" id="pages"></div></div>
 </section>
 <p class="foot">Registos e alterações são guardados centralmente. A identificação do operador e os carimbos temporais são definidos pelo servidor. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.</p>
@@ -355,7 +355,7 @@ const prefKey=()=>'mel_prefs_'+(user?.id||'x');
 function savePrefsLocal(){try{localStorage.setItem(prefKey(),JSON.stringify(prefs))}catch(e){}}
 function loadPrefsLocal(){try{prefs=JSON.parse(localStorage.getItem(prefKey())||'{}')||{}}catch(e){prefs={}}}
 async function loadPrefs(){loadPrefsLocal();if(sb&&!offline){try{const {data,error}=await sb.from('mel_user_prefs').select('record_id,is_favorite,last_used_at');if(error)throw error;prefs={};(data||[]).forEach(p=>prefs[p.record_id]={fav:!!p.is_favorite});prefsRemote=true;savePrefsLocal()}catch(e){prefsRemote=false}}updateShowCounts();render()}
-function updateShowCounts(){const act=new Set(rows.filter(r=>r.is_active!==false).map(r=>r.id));const nf=Object.entries(prefs).filter(([id,p])=>p.fav&&act.has(id)).length;$('showFilter').options[1].textContent=`Favoritas (${nf})`}
+function updateShowCounts(){const act=new Set(rows.filter(r=>r.is_active!==false).map(r=>r.id));const nf=Object.entries(prefs).filter(([id,p])=>p.fav&&act.has(id)).length;$('showFilter').options[1].textContent=`Favoritas (${nf})`;$('clearFav').classList.toggle('hidden',offline||!Object.values(prefs).some(p=>p.fav))}
 async function toggleFav(id){if(offline)return toast('Sem ligação: não é possível alterar as favoritas agora.');const p=prefs[id]||(prefs[id]={});p.fav=!p.fav;savePrefsLocal();updateShowCounts();render();toast(p.fav?'Adicionada às favoritas.':'Retirada das favoritas.');if(prefsRemote){const {error}=await sb.from('mel_user_prefs').upsert({user_id:user.id,record_id:id,is_favorite:p.fav},{onConflict:'user_id,record_id'});if(error)toast('Não foi possível guardar a favorita no servidor.')}}
 
 /* ---- Formato do MEL Item recusado pela base de dados ---- */
@@ -527,6 +527,10 @@ $('add').onclick=()=>showModal();$('cancel').onclick=()=>$('modal').classList.re
 $('search').oninput=()=>{page=1;render()};
 $('fleetFilter').onchange=()=>{page=1;syncCards();render()};
 $('showFilter').onchange=()=>{page=1;render()};
+$('clearFav').onclick=async e=>{e.stopPropagation();if(offline)return toast('Sem ligação: não é possível alterar as favoritas agora.');const ids=Object.keys(prefs).filter(id=>prefs[id].fav);if(!ids.length)return;
+if(!confirm(`Retirar todas as tuas ${ids.length} favorita${ids.length>1?'s':''}?\n\nSó afeta as tuas favoritas; as dos outros utilizadores ficam iguais.`))return;
+const b=e.currentTarget;b.disabled=true;try{if(prefsRemote){const {error}=await sb.from('mel_user_prefs').delete().eq('user_id',user.id);if(error)throw error}ids.forEach(id=>{prefs[id].fav=false});savePrefsLocal();if($('showFilter').value==='fav')$('showFilter').value='';page=1;updateShowCounts();render();toast('Favoritas retiradas.')}
+catch(err){alert('Não foi possível retirar as favoritas: '+(err.message||err))}finally{b.disabled=false}};
 document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;const a=document.activeElement;if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))return;if($('appPanel').classList.contains('hidden')||document.querySelector('.modal.show'))return;e.preventDefault();const hist=!$('historyView').classList.contains('hidden');if(!hist&&$('homeView').classList.contains('hidden'))document.querySelector('[data-nav="home"]')?.click();const inp=hist?$('hSearch'):$('search');inp.scrollIntoView({block:'center',behavior:'smooth'});inp.focus();inp.select()});
 ['search','hSearch'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Escape'){e.target.value='';e.target.dispatchEvent(new Event('input'));e.target.blur()}}));
 document.querySelectorAll('#fleetCards .fleet-card').forEach(c=>c.onclick=()=>{$('fleetFilter').value=$('fleetFilter').value===c.dataset.f?'':c.dataset.f;page=1;syncCards();render()});
