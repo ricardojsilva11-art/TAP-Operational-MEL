@@ -64,5 +64,5 @@ Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guar
 ## Pesquisa e favoritas
 - A pesquisa ignora acentos e hífens: `212601`, `21-26` ou `m212601` encontram `M-21-26-01`; `pressao` encontra "pressão". Várias palavras têm de aparecer todas. O termo encontrado fica realçado.
 - Atalho `/` para ir à caixa de pesquisa; `Esc` limpa a pesquisa.
-- Estrela em cada MEL para a marcar como favorita. O filtro "Favoritas / Usadas recentemente" mostra só essas. As usadas recentemente são as últimas 30 cujo impacto foi copiado.
-- Favoritas e recentes são de cada utilizador e ficam guardadas no servidor (`sql/007_favoritos.sql`), por isso são as mesmas no PC e no telemóvel.
+- Estrela antes de cada MEL Item para a marcar como favorita. O filtro "Favoritas" mostra só essas.
+- As favoritas são de cada utilizador e ficam guardadas no servidor (`sql/007_favoritos.sql`), por isso são as mesmas no PC e no telemóvel.

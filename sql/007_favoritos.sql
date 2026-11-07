@@ -1,4 +1,4 @@
--- Favoritas e "usadas recentemente", por utilizador (as mesmas no PC e no telemóvel).
+-- Favoritas, por utilizador (as mesmas no PC e no telemóvel).
 -- Cada utilizador só vê e altera as suas. Funciona para todos os tipos de acesso, incluindo "só consulta".
 -- Correr uma vez no Supabase: SQL Editor > New query > colar tudo > Run.
 

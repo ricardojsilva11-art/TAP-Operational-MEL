@@ -218,7 +218,7 @@ body.table-max #homeView>.stats,body.table-max #homeView>.sec-head,body.table-ma
 <div class="toolbar" id="melSection">
 <label class="field search"><svg class="i"><use href="#i-search"/></svg><input id="search" placeholder="Pesquisar MEL Item (ex.: 212601 ou 21-26), descrição ou impacto…  [ / ]" aria-keyshortcuts="/"></label>
 <label class="field fsel"><svg class="i plane"><use href="#i-plane"/></svg><select id="fleetFilter"><option value="">Todas</option><option>A320</option><option>A330</option><option>E190/E195</option></select></label>
-<label class="field fsel show" title="Mostrar todas, só as favoritas ou as usadas recentemente"><svg class="i"><use href="#i-star"/></svg><select id="showFilter"><option value="">Todas as MEL</option><option value="fav">Favoritas</option><option value="recent">Usadas recentemente</option></select></label>
+<label class="field fsel show" title="Mostrar todas ou só as favoritas"><svg class="i"><use href="#i-star"/></svg><select id="showFilter"><option value="">Todas as MEL</option><option value="fav">Favoritas</option></select></label>
 <button class="btn primary" id="add"><svg class="i"><use href="#i-plus"/></svg>Adicionar MEL</button>
 <button class="btn" id="export"><svg class="i"><use href="#i-download"/></svg>Exportar Excel (.xlsx)</button>
 <button class="btn icon" id="refresh" title="Atualizar"><svg class="i"><use href="#i-refresh"/></svg></button>
@@ -301,22 +301,19 @@ const fr=document.createDocumentFragment();let last=0;for(const [a,b] of mg){if(
 function highlightRows(tbody,toks,getRow){if(!toks.length)return;const terms=toks.map(k=>k.t).filter(t=>t.length>=2);tbody.querySelectorAll('tr[data-id]').forEach(tr=>{const r=getRow(tr.dataset.id);const code=tr.querySelector('.code');if(code){hlEl(code,terms);if(r&&!code.querySelector('mark')&&toks.some(k=>groupMatch(k,r)))code.classList.add('hl-code')}tr.querySelectorAll('td.impact,.mel-note span').forEach(el=>hlEl(el,terms))})}
 const cellHtmlForCopy=cell=>{const c=cell.cloneNode(true);c.querySelectorAll('mark.hl').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));return c.innerHTML};
 
-/* ---- Favoritas e usadas recentemente (por utilizador) ---- */
-let prefs={},prefsRemote=false;const RECENT_MAX=30;
+/* ---- Favoritas (por utilizador) ---- */
+let prefs={},prefsRemote=false;
 const prefKey=()=>'mel_prefs_'+(user?.id||'x');
 function savePrefsLocal(){try{localStorage.setItem(prefKey(),JSON.stringify(prefs))}catch(e){}}
 function loadPrefsLocal(){try{prefs=JSON.parse(localStorage.getItem(prefKey())||'{}')||{}}catch(e){prefs={}}}
-async function loadPrefs(){loadPrefsLocal();if(sb&&!offline){try{const {data,error}=await sb.from('mel_user_prefs').select('record_id,is_favorite,last_used_at');if(error)throw error;prefs={};(data||[]).forEach(p=>prefs[p.record_id]={fav:!!p.is_favorite,used:p.last_used_at});prefsRemote=true;savePrefsLocal()}catch(e){prefsRemote=false}}updateShowCounts();render()}
-const recentIds=()=>Object.entries(prefs).filter(([,p])=>p.used).sort((a,b)=>new Date(b[1].used)-new Date(a[1].used)).map(([id])=>id);
-function updateShowCounts(){const act=new Set(rows.filter(r=>r.is_active!==false).map(r=>r.id));const nf=Object.entries(prefs).filter(([id,p])=>p.fav&&act.has(id)).length;const nr=Math.min(RECENT_MAX,recentIds().filter(id=>act.has(id)).length);const o=$('showFilter').options;o[1].textContent=`Favoritas (${nf})`;o[2].textContent=`Usadas recentemente (${nr})`}
+async function loadPrefs(){loadPrefsLocal();if(sb&&!offline){try{const {data,error}=await sb.from('mel_user_prefs').select('record_id,is_favorite,last_used_at');if(error)throw error;prefs={};(data||[]).forEach(p=>prefs[p.record_id]={fav:!!p.is_favorite});prefsRemote=true;savePrefsLocal()}catch(e){prefsRemote=false}}updateShowCounts();render()}
+function updateShowCounts(){const act=new Set(rows.filter(r=>r.is_active!==false).map(r=>r.id));const nf=Object.entries(prefs).filter(([id,p])=>p.fav&&act.has(id)).length;$('showFilter').options[1].textContent=`Favoritas (${nf})`}
 async function toggleFav(id){if(offline)return toast('Sem ligação: não é possível alterar as favoritas agora.');const p=prefs[id]||(prefs[id]={});p.fav=!p.fav;savePrefsLocal();updateShowCounts();render();toast(p.fav?'Adicionada às favoritas.':'Retirada das favoritas.');if(prefsRemote){const {error}=await sb.from('mel_user_prefs').upsert({user_id:user.id,record_id:id,is_favorite:p.fav},{onConflict:'user_id,record_id'});if(error)toast('Não foi possível guardar a favorita no servidor.')}}
-function markUsed(id){const p=prefs[id]||(prefs[id]={});p.used=new Date().toISOString();savePrefsLocal();updateShowCounts();if(prefsRemote&&!offline)sb.from('mel_user_prefs').upsert({user_id:user.id,record_id:id,last_used_at:p.used},{onConflict:'user_id,record_id'}).then(()=>{},()=>{})}
 
-const EMPTY={fav:'Ainda não tens favoritas aqui. Carrega na estrela de uma MEL para a juntar.',recent:'Ainda não há MEL usadas recentemente aqui. As MEL cujo impacto copiares aparecem nesta lista.'};
+const EMPTY={fav:'Ainda não tens favoritas aqui. Carrega na estrela de uma MEL para a juntar.'};
 const emptyMsg=()=>(!$('search').value.trim()&&EMPTY[$('showFilter').value])||'Nenhum registo encontrado.';
 function filtered(){const toks=parseQ($('search').value),f=$('fleetFilter').value,sh=$('showFilter').value;
-const base=rows.filter(r=>(!f||r.fleet===f)&&r.is_active!==false&&(sh!=='fav'||prefs[r.id]?.fav)&&(sh!=='recent'||prefs[r.id]?.used)&&rowMatches(r,toks));
-if(sh==='recent')return base.sort((a,b)=>new Date(prefs[b.id].used)-new Date(prefs[a.id].used)).slice(0,RECENT_MAX);
+const base=rows.filter(r=>(!f||r.fleet===f)&&r.is_active!==false&&(sh!=='fav'||prefs[r.id]?.fav)&&rowMatches(r,toks));
 return base.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];if(sortKey==='updated_at'){x=new Date(x||a.created_at||0).getTime();y=new Date(y||b.created_at||0).getTime()}else{x=String(x||'');y=String(y||'');return x.localeCompare(y,'pt',{numeric:true})*sortDir}return (x-y)*sortDir})}
 
 function render(){const active=rows.filter(r=>r.is_active!==false);const by=f=>active.filter(r=>r.fleet===f).length;
@@ -353,7 +350,7 @@ function showModal(r,dup){editing=(r&&!dup)?r.id:null;$('modalTitle').textConten
 
 $('rows').addEventListener('click',async e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.dataset.fav)return toggleFav(btn.dataset.fav);
 if(btn.dataset.copy){const r=rows.find(x=>x.id===btn.dataset.copy);if(!r)return;const cell=btn.closest('tr')?.querySelector('td.impact');const txt=(cell?cell.innerText:(r.operational_impact||plain(r.operational_impact_html||''))).replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();const html=cell?`<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.4">${cellHtmlForCopy(cell)}</div>`:'';
-const done=()=>{markUsed(r.id);btn.classList.add('ok');btn.innerHTML=ico('check');toast('Impacto operacional copiado.');setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=ico('clip')},1500)};
+const done=()=>{btn.classList.add('ok');btn.innerHTML=ico('check');toast('Impacto operacional copiado.');setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=ico('clip')},1500)};
 try{if(html&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob([txt],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})})])}else{await navigator.clipboard.writeText(txt)}done()}catch(_){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();ok?done():alert('Não foi possível copiar.')}return}const rec=rows.find(r=>r.id===(btn.dataset.delete||btn.dataset.restore||btn.dataset.edit||btn.dataset.dup));if(!rec)return;
 if(btn.dataset.edit)return showModal(rec);if(btn.dataset.dup)return showModal(rec,true);
 const restoring=!!btn.dataset.restore;
