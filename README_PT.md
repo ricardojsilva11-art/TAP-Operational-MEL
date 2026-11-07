@@ -53,3 +53,10 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 
 ## MEL duplicadas
 Correr `sql/006_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional; o mesmo item com impactos diferentes é permitido (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
+
+## Consulta offline
+Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guardada no próprio dispositivo, em modo só de consulta, com o aviso "Sem ligação ao servidor… dados das HH:MM". Pesquisar, copiar e exportar continuam a funcionar.
+- A cópia é atualizada sempre que a app carrega dados do servidor. É preciso ter aberto a app pelo menos uma vez com ligação nesse dispositivo.
+- A app tenta voltar a ligar a cada minuto, ou quando se carrega em "Tentar ligar".
+- "Terminar sessão" apaga a cópia do dispositivo. A cópia também é apagada se a sessão expirar e o servidor estiver disponível.
+- `sw.js` (service worker) guarda a própria app para abrir sem rede; `manifest.webmanifest` e os ícones permitem instalá-la como app no telemóvel ou no PC.
