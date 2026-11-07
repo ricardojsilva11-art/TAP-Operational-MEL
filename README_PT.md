@@ -52,4 +52,4 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 - O código carrega Supabase JS e SheetJS a partir de CDN; para produção, fixar versões e avaliar self-hosting conforme a política de IT.
 
 ## MEL duplicadas
-Correr `supabase_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas com o mesmo MEL Item na mesma frota (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
+Correr `supabase_duplicados.sql` uma vez no SQL Editor. Impede duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional; o mesmo item com impactos diferentes é permitido (as do Histórico não contam). Se já houver duplicados, o script não altera nada e mostra a lista para resolver primeiro.
