@@ -1,7 +1,8 @@
 // Service worker da TAP Operational MEL: guarda a "casca" da app para abrir sem ligação.
 // Os dados das MEL NÃO passam por aqui: a app guarda a última cópia no próprio browser.
-const CACHE = 'mel-shell-v1';
-const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'mel-shell-v2';
+const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
+               './img/a320.webp', './img/a330.webp', './img/e190.webp'];
 const CDN = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
