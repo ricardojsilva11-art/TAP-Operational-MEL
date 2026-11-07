@@ -11,6 +11,7 @@ Para criar a base de dados do zero, no Supabase (SQL Editor > New query), correr
 | 5 | `005_notas.sql` | Coluna de notas nas MEL | 001 |
 | 6 | `006_duplicados.sql` | Impede MEL ativas iguais (frota + MEL Item + impacto operacional) | 001 |
 | 7 | `007_favoritos.sql` | Favoritas, por utilizador | 001 |
+| 8 | `008_mudar_palavra_passe.sql` | Palavra-passe definida pelo administrador é temporária: obriga a mudar no próximo início de sessão | 003, 004 |
 
 Depois do `001`, importar os registos iniciais (`mel_seed.csv`) para a tabela `mel_records`, antes de continuar com os restantes.
 

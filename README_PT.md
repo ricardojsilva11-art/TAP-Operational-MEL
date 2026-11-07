@@ -14,7 +14,7 @@ Como estes dados são de contexto operacional de aviação, não publicar nem ca
 ## Passo 1 — criar Supabase
 1. Criar um projeto Supabase dedicado, idealmente numa organização controlada pela empresa.
 2. Guardar o Project URL e a publishable key (ou anon key legada). Nunca usar `service_role`/secret key no browser.
-3. No SQL Editor, correr os scripts da pasta `sql/` por ordem (`001` a `007`), um de cada vez. Ver `sql/LEIAME.md`.
+3. No SQL Editor, correr os scripts da pasta `sql/` por ordem (`001` a `008`), um de cada vez. Ver `sql/LEIAME.md`.
 4. Em Authentication > Sign In / Providers, manter email/password ativo e desativar inscrições públicas. Utilizar convites apenas.
 5. Configurar SMTP de domínio autorizado antes de convidar utilizadores reais.
 
@@ -66,3 +66,6 @@ Se a internet ou o Supabase falharem, a app mostra a última cópia das MEL guar
 - Atalho `/` para ir à caixa de pesquisa; `Esc` limpa a pesquisa.
 - Estrela antes de cada MEL Item para a marcar como favorita. O filtro "Favoritas" mostra só essas.
 - As favoritas são de cada utilizador e ficam guardadas no servidor (`sql/007_favoritos.sql`), por isso são as mesmas no PC e no telemóvel.
+
+## Palavra-passe temporária
+Quando o administrador define uma palavra-passe a alguém (página Utilizadores), essa palavra-passe é temporária. No próximo início de sessão a pessoa tem de escolher uma nova antes de ver a app; enquanto não o fizer, a base de dados também não lhe mostra MEL (`sql/008_mudar_palavra_passe.sql`). O administrador não pode usar esta função na própria conta; para isso usa o botão da chave, no topo.
