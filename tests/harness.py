@@ -129,6 +129,10 @@ class MockSupabase:
             return route.fulfill(status=204, body='')
         if '/rpc/signups_open' in u:
             return self._json(route, bool(self.settings['signups_open']))
+        if '/rpc/admin_delete_user' in u:
+            uid = json.loads(req.post_data)['p_user']
+            self.users = [x for x in self.users if x['user_id'] != uid]
+            return route.fulfill(status=204, body='')
         if '/rpc/admin_list_users' in u:
             return self._json(route, self.users)
         if '/rest/v1/user_profiles' in u:

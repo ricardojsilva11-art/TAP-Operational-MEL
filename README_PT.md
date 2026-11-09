@@ -22,7 +22,7 @@ Este repositório tem **apenas o código**. As MEL nunca são guardadas aqui: es
 ## Como funciona o acesso
 1. **Registo:** qualquer pessoa pode criar conta na própria app (separador "Criar conta", com nome, email e palavra-passe).
 2. **Pendente:** a conta nova fica **Pendente** e sem acesso a nenhuma MEL até ser aprovada. Se a confirmação de email estiver ativa no Supabase, a pessoa tem também de confirmar o email.
-3. **Aprovação:** um administrador abre a página **Utilizadores**, escolhe o tipo de acesso e carrega em **Aprovar**. Também pode **Recusar** (apaga um registo pendente) ou, mais tarde, **Desativar** uma conta aprovada.
+3. **Aprovação:** um administrador abre a página **Utilizadores**, escolhe o tipo de acesso e carrega em **Aprovar**. Também pode **Recusar** (apaga um registo pendente), **Desativar** uma conta aprovada ou **Eliminar** uma conta de vez (as MEL e o histórico dessa pessoa mantêm-se, com o nome).
 4. **Esqueci-me da palavra-passe:** o pedido é feito no ecrã de entrada e aparece ao administrador na página Utilizadores. O administrador define uma **palavra-passe temporária** e comunica-a; no início de sessão seguinte a pessoa é obrigada a escolher uma nova antes de continuar.
 
 ### Tipos de acesso

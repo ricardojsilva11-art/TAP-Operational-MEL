@@ -97,3 +97,23 @@ def test_editar_nome_de_utilizador(browser, server, mock):
     assert page.inner_text('#userLabel') == 'Ricardo Silva'
     assert not errors
     ctx.close()
+
+
+def test_eliminar_conta_aprovada(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    base = {'approved_before': True, 'reset_requested': False, 'created_at': '2026-11-01T10:00:00Z', 'last_sign_in_at': None}
+    mock.users = [dict(base, user_id=UID, email='r@x.pt', display_name='Ricardo', role='admin', active=True),
+                  dict(base, user_id=OTHER, email='jplemos@xn--tap-uh5a.pt', display_name='Joao Lemos', role='reader', active=True)]
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    msgs = []
+    page.on('dialog', lambda d: (msgs.append(d.message), d.accept()))
+    page.click('#navUsers')
+    page.wait_for_selector(f'[data-uerase="{OTHER}"]')
+    assert page.evaluate(f"document.querySelectorAll('[data-uerase=\"{UID}\"]').length") == 0  # não se elimina a si próprio
+    page.click(f'[data-uerase="{OTHER}"]')
+    page.wait_for_timeout(600)
+    assert 'não pode ser desfeita' in msgs[0]
+    assert any('/rpc/admin_delete_user' in p and OTHER in (b or '') for m, p, b in mock.requests)
+    assert page.evaluate(f"document.querySelectorAll('[data-ucell=\"{OTHER}\"]').length") == 0
+    assert not errors
+    ctx.close()
