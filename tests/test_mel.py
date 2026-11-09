@@ -99,3 +99,46 @@ def test_exportar_excel_ordenado_e_formatado(browser, server, mock, tmp_path):
     assert ws.cell(2, 4).alignment.wrap_text
     assert rows[0][6] == 'Rev. 45 · desde 01/10/2026'
     ctx.close()
+
+
+def test_adicionar_item_existente_preenche_campos(browser, server, mock):
+    mock.rows = [rec('a1', 'A320', 'M-21-26-01', html='<div><b>*** NO OFP IMPLICATION ***</b></div><div>Linha A320</div>', notes='Nota A320'),
+                 rec('a2', 'A330', 'M-21-26-01', 'Texto A330', notes='Nota A330', updated_at='2026-11-08T10:00:00Z'),
+                 rec('a3', 'A320', 'M-32-12-60', 'Outro')]
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.click('#add')
+    page.fill('#melItem', 'm-21-26-01')
+    page.dispatch_event('#melItem', 'input')
+    assert page.input_value('#melNotes') == 'Nota A320'
+    assert 'Linha A320' in page.inner_text('#editor')
+    assert 'já existe nas frotas A320, A330' in page.inner_text('#melFound')
+    # escolher a frota A330 carrega os dados da A330
+    page.evaluate("document.querySelector('#fleetPick input[value=\"A330\"]').click()")
+    assert page.input_value('#melNotes') == 'Nota A330' and page.inner_text('#editor') == 'Texto A330'
+    # item que não existe limpa o que foi preenchido automaticamente
+    page.fill('#melItem', 'M-21-26-09')
+    page.dispatch_event('#melItem', 'input')
+    assert page.input_value('#melNotes') == '' and page.inner_text('#editor') == ''
+    assert page.evaluate("document.getElementById('melFound').classList.contains('hidden')")
+    # o que o utilizador escreveu não é substituído
+    page.fill('#melNotes', 'Escrito por mim')
+    page.fill('#melItem', 'M-32-12-60')
+    page.dispatch_event('#melItem', 'input')
+    assert page.input_value('#melNotes') == 'Escrito por mim'
+    page.click('[data-mffill]')
+    assert page.input_value('#melNotes') == '' and page.inner_text('#editor') == 'Outro'
+    # editar a existente abre a MEL em modo de edição
+    page.click('[data-mfedit="a3"]')
+    assert page.inner_text('#modalTitle') == 'Editar MEL'
+    assert not errors
+    ctx.close()
+
+
+def test_editar_nao_preenche_de_outra_mel(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in())
+    page.click('#rows tr[data-id="r1"] [data-edit]')
+    page.fill('#melItem', 'M-21-26-02')
+    page.dispatch_event('#melItem', 'input')
+    assert page.inner_text('#editor') == 'Impacto 1'
+    assert page.evaluate("document.getElementById('melFound').classList.contains('hidden')")
+    ctx.close()
