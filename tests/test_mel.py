@@ -142,3 +142,22 @@ def test_editar_nao_preenche_de_outra_mel(browser, server, mock):
     assert page.inner_text('#editor') == 'Impacto 1'
     assert page.evaluate("document.getElementById('melFound').classList.contains('hidden')")
     ctx.close()
+
+
+def test_copiar_sai_branco_com_letras_pretas_no_tema_escuro(browser, server, mock):
+    mock.rows = [rec('r1', 'A320', 'M-25-11-01', html='<div>COPILOT SEAT INOP</div><div>- May be inoperative.</div>')]
+    ctx, page, _ = open_app(browser, server, mock, logged_in())
+    ctx.grant_permissions(['clipboard-read', 'clipboard-write'], origin=server.url[:-1])
+    page.evaluate("document.documentElement.dataset.theme='dark'")
+    read_html = "navigator.clipboard.read().then(it=>it[0].getType('text/html')).then(b=>b.text())"
+    page.click('#rows tr[data-id="r1"] [data-copy]')
+    page.wait_for_timeout(300)
+    h1 = page.evaluate(read_html)
+    page.evaluate("""()=>{const td=document.querySelector('#rows tr[data-id=r1] td.impact');const r=document.createRange();r.selectNodeContents(td);getSelection().removeAllRanges();getSelection().addRange(r)}""")
+    page.keyboard.press('Control+c')
+    page.wait_for_timeout(300)
+    h2 = page.evaluate(read_html)
+    for h in (h1, h2):
+        assert 'color:#000000;background-color:#ffffff' in h
+        assert 'rgb(219' not in h and 'COPILOT SEAT INOP' in h
+    ctx.close()
