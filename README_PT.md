@@ -86,6 +86,11 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 - Quando outra pessoa adiciona, altera, apaga ou reativa uma MEL, aparece um aviso discreto no canto do ecrã ("Ana alterou M-21-26-01 (A320)"). Carregar no aviso leva à MEL, que fica realçada por instantes.
 - Se um administrador mudar o tipo de acesso de alguém, a app dessa pessoa ajusta-se logo, sem recarregar. Se a conta for desativada, a sessão termina; se for definida uma palavra-passe temporária, a pessoa tem de a mudar.
 
+### Anexos PDF
+- Botão do clipe em cada MEL (também no Histórico), com o número de anexos. Abre a lista de PDFs dessa MEL: abrir, descarregar e, para operadores e administradores, anexar (escolher ou arrastar) e apagar.
+- Só PDF, até 20 MB cada. Os ficheiros ficam num espaço privado do Supabase Storage e só abrem com um link temporário (5 minutos) gerado para quem tem sessão iniciada.
+- Ao apagar definitivamente uma MEL do Histórico, os anexos são apagados também. Os anexos não estão disponíveis em modo offline nem entram no Excel.
+
 ### Pesquisa e favoritas
 - A pesquisa ignora acentos e hífens: `212601`, `21-26` ou `m212601` encontram `M-21-26-01`; `pressao` encontra "pressão". Várias palavras têm de aparecer todas. O termo encontrado fica realçado.
 - Atalho `/` para ir à caixa de pesquisa; `Esc` limpa a pesquisa.

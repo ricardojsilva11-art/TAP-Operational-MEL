@@ -67,6 +67,9 @@ class MockSupabase:
         self.users = []
         self.settings = {'id': 1, 'signups_open': True, 'session_hours': 12, 'last_backup_at': None, 'last_backup_by': None, 'updated_at': None, 'updated_by': None}
         self.revisions = [{'fleet': f, 'revision': '', 'effective_date': None, 'updated_at': None, 'updated_by_name': None} for f in ('A320', 'A330', 'E190/E195')]
+        self.attachments = []
+        self.storage = {}
+        self.attach_missing = False
         self.tables_missing = False
         self.fail_format = False
         self.requests = []  # (método, caminho, corpo) dos pedidos que alteram dados
@@ -85,6 +88,34 @@ class MockSupabase:
         obj = 'vnd.pgrst.object' in (req.headers.get('accept') or '')
         one = lambda d: self._json(route, d if obj else [d])
 
+        if '/storage/v1/object/sign/mel-pdfs/' in u:
+            path = u.split('/object/sign/mel-pdfs/')[1].split('?')[0]
+            return self._json(route, {'signedURL': f'/object/sign/mel-pdfs/{path}?token=t'})
+        if '/storage/v1/object/mel-pdfs' in u:
+            if m == 'DELETE':
+                for pth in json.loads(req.post_data or '{}').get('prefixes', []):
+                    self.storage.pop(pth, None)
+                return self._json(route, [])
+            if m == 'POST':
+                path = u.split('/object/mel-pdfs/')[1].split('?')[0]
+                self.storage[path] = len(req.post_data_buffer or b'')
+                return self._json(route, {'Key': 'mel-pdfs/' + path})
+        if '/rest/v1/mel_attachments' in u:
+            if self.attach_missing:
+                return self._json(route, {'code': '42P01', 'message': 'relation does not exist'}, 404)
+            if m == 'POST':
+                d = json.loads(req.post_data)
+                d.update(id='att%d' % (len(self.attachments) + 1), uploaded_by=UID, uploaded_by_name='Ricardo', uploaded_at='2026-11-09T10:00:00Z')
+                self.attachments.append(d)
+                return route.fulfill(status=201, body='')
+            if m == 'DELETE':
+                aid = u.split('id=eq.')[1].split('&')[0]
+                self.attachments = [a for a in self.attachments if a['id'] != aid]
+                return route.fulfill(status=204, body='')
+            if 'record_id=eq.' in u:
+                rid = u.split('record_id=eq.')[1].split('&')[0]
+                return self._json(route, [a for a in self.attachments if a['record_id'] == rid])
+            return self._json(route, self.attachments)
         if '/auth/v1/health' in u:
             return self._json(route, {})
         if '/auth/v1/user' in u and m == 'PUT':
