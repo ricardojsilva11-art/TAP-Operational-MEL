@@ -261,7 +261,7 @@ tr.flash td{animation:rowFlash 3s ease-out}@keyframes rowFlash{0%,30%{background
 <div class="tablewrap"><table id="melTable"><thead><tr><th class="sort" data-sort="mel_item"><button type="button" class="clearfav hidden" id="clearFav" title="Retirar todas as minhas favoritas" aria-label="Limpar favoritas"><svg class="i"><use href="#i-star"/></svg>Limpar</button>MEL Item<svg class="i"><use href="#i-sort"/></svg></th><th>Impacto operacional</th><th>Responsável pelo<br>registo</th><th class="sort" data-sort="updated_at">Última alteração<svg class="i"><use href="#i-sort"/></svg></th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pager"><span class="muted" id="pageInfo"></span><div class="pages" id="pages"></div></div>
 </section>
-<p class="foot">Registos e alterações são guardados centralmente. A identificação do operador e os carimbos temporais são definidos pelo servidor. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.</p>
+<p class="foot">Registos e alterações são guardados centralmente. A identificação do utilizador e os carimbos temporais são definidos pelo servidor. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.</p>
 </div>
 <div id="usersView" class="hidden">
 <section class="card">
@@ -320,8 +320,8 @@ function boldFirstLine(cell){let box=cell;while(true){const kids=[...box.childNo
 const take=[];for(const n of [...box.childNodes]){if(n.nodeName==='BR'||n.nodeName==='DIV'||n.nodeName==='P'){if(take.some(x=>x.nodeType!==3||x.nodeValue.trim()))break;continue}if(n.nodeType===1&&n.querySelector('br,div,p')){if(!take.length)take.push(n);break}take.push(n)}
 if(!take.length)return;const s=document.createElement('strong');box.insertBefore(s,take[0]);take.forEach(n=>s.appendChild(n))}
 function plain(html){let d=new DOMParser().parseFromString(html,'text/html');return (d.body.innerText||d.body.textContent||'').replace(/ /g,' ').trim()}
-function profileName(){return profile?.display_name||user?.email||'Operador'}
-const ROLES={admin:'Administrador',operator:'Operador',reader:'Só consulta'};
+function profileName(){return profile?.display_name||user?.email||'Utilizador'}
+const ROLES={admin:'Administrador',operator:'Supervisor',reader:'Só consulta'};
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 const fmtDate=d=>{const x=new Date(d);return x.toLocaleDateString('pt-PT')+', '+x.toLocaleTimeString('pt-PT')};
 

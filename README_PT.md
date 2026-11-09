@@ -29,7 +29,7 @@ Este repositório tem **apenas o código**. As MEL nunca são guardadas aqui: es
 | Tipo | Pode |
 |------|------|
 | **Só consulta** (`reader`) | Ver, pesquisar, copiar, exportar e marcar favoritas. Não pode adicionar, alterar ou apagar MEL. |
-| **Operador** (`operator`) | O mesmo, mais adicionar, editar, apagar e reativar MEL. |
+| **Supervisor** (`operator`) | O mesmo, mais adicionar, editar, apagar e reativar MEL. |
 | **Administrador** (`admin`) | O mesmo, mais aprovar/recusar/desativar contas, definir palavras-passe temporárias e apagar definitivamente MEL do Histórico. |
 
 As permissões são aplicadas pela base de dados, não só pela app: uma conta pendente, desativada, só de consulta ou com palavra-passe temporária por mudar é recusada pelo servidor mesmo que tente aceder sem passar pela app.
@@ -80,14 +80,14 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 - **Duplicados:** não pode haver duas MEL ativas na mesma frota com o mesmo MEL Item e o mesmo impacto operacional. O mesmo item com impactos diferentes é permitido. As MEL do Histórico não contam.
 - **Histórico:** apagar uma MEL só a desativa. Pode ser **reativada** no separador Histórico; um administrador pode apagá-la definitivamente.
 - Quem fez cada registo e quando é definido pelo servidor, não pelo browser. A tabela `mel_audit_log` guarda o estado antes e depois de cada alteração.
-- **Ver alterações** (ícone do relógio em cada MEL, também no Histórico): mostra quem mudou, quando e o quê, com o texto retirado a vermelho e o acrescentado a verde. Operadores e administradores podem **repor** uma versão anterior; a reposição fica também registada.
+- **Ver alterações** (ícone do relógio em cada MEL, também no Histórico): mostra quem mudou, quando e o quê, com o texto retirado a vermelho e o acrescentado a verde. Supervisores e administradores podem **repor** uma versão anterior; a reposição fica também registada.
 
 ### Tempo real
 - Quando outra pessoa adiciona, altera, apaga ou reativa uma MEL, aparece um aviso discreto no canto do ecrã ("Ana alterou M-21-26-01 (A320)"). Carregar no aviso leva à MEL, que fica realçada por instantes.
 - Se um administrador mudar o tipo de acesso de alguém, a app dessa pessoa ajusta-se logo, sem recarregar. Se a conta for desativada, a sessão termina; se for definida uma palavra-passe temporária, a pessoa tem de a mudar.
 
 ### Anexos PDF
-- Botão do clipe em cada MEL (também no Histórico), com o número de anexos. Abre a lista de PDFs dessa MEL: abrir, descarregar e, para operadores e administradores, anexar (escolher ou arrastar) e apagar.
+- Botão do clipe em cada MEL (também no Histórico), com o número de anexos. Abre a lista de PDFs dessa MEL: abrir, descarregar e, para supervisores e administradores, anexar (escolher ou arrastar) e apagar.
 - Também se anexam no próprio formulário **Adicionar/Editar MEL** (secção "Anexos PDF"): os ficheiros novos e os retirados só são enviados/apagados ao carregar em **Guardar**; **Cancelar** não altera nada. Ao adicionar para várias frotas, o PDF fica anexado a cada uma.
 - Só PDF, até 20 MB cada. Os ficheiros ficam num espaço privado do Supabase Storage e só abrem com um link temporário (5 minutos) gerado para quem tem sessão iniciada.
 - Ao apagar definitivamente uma MEL do Histórico, os anexos são apagados também. Os anexos não estão disponíveis em modo offline nem entram no Excel.

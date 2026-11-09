@@ -1,6 +1,6 @@
 -- Anexos PDF nas MEL.
 --  • Os ficheiros ficam num espaço privado do Supabase Storage ("mel-pdfs"), só PDF, até 20 MB cada.
---  • Todos os utilizadores ativos podem abrir os anexos; operadores e administradores podem anexar e apagar.
+--  • Todos os utilizadores ativos podem abrir os anexos; supervisores e administradores podem anexar e apagar.
 --  • Os ficheiros só se abrem com um link temporário gerado pela app para quem tem sessão iniciada.
 -- Correr uma vez no Supabase: SQL Editor > New query > colar tudo > Run.
 
