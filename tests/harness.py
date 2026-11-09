@@ -140,6 +140,10 @@ class MockSupabase:
             if m in ('PATCH', 'POST'):
                 if self.fail_format:
                     return self._json(route, {'code': '23514', 'message': 'violates check constraint "mel_item_format"'}, 400)
+                if m == 'POST' and 'return=representation' in (req.headers.get('prefer') or ''):
+                    body = json.loads(req.post_data)
+                    body = body if isinstance(body, list) else [body]
+                    return self._json(route, [{'id': 'new%d' % (i + 1)} for i in range(len(body))], 201)
                 return route.fulfill(status=204, body='')
             return self._json(route, self.rows)
         if '/rest/v1/mel_user_prefs' in u:

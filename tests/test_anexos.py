@@ -97,3 +97,66 @@ def test_sem_sql_011_nao_mostra_botao(browser, server, mock):
     assert page.evaluate("document.querySelectorAll('#rows tr[data-id]').length") == 3
     assert not errors
     ctx.close()
+
+
+def test_formulario_adicionar_com_anexos_em_varias_frotas(browser, server, mock, tmp_path):
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id="r1"] [data-att]')
+    page.click('#add')
+    assert visible(page, '#fAttWrap')
+    page.fill('#melItem', 'M-21-99-01')
+    page.dispatch_event('#melItem', 'input')
+    page.evaluate("['A320','A330'].forEach(v=>document.querySelector(`#fleetPick input[value=\"${v}\"]`).click())")
+    page.evaluate("document.getElementById('editor').innerText='Novo impacto'")
+    f = tmp_path / 'Procedimento.pdf'
+    f.write_bytes(PDF)
+    page.set_input_files('#fAttFile', str(f))
+    assert page.inner_text('#fAttList .fatt-item b') == 'Procedimento.pdf'
+    assert mock.storage == {}  # só envia ao guardar
+    page.click('#recordForm button.primary')
+    page.wait_for_selector('#modal:not(.show)', state='attached', timeout=10000)
+    page.wait_for_timeout(300)
+    assert sorted(a['record_id'] for a in mock.attachments) == ['new1', 'new2']
+    assert len(mock.storage) == 2
+    assert not errors
+    ctx.close()
+
+
+def test_formulario_editar_retirar_e_juntar(browser, server, mock, tmp_path):
+    mock.attachments = [att('a1', 'r1', 'Antigo.pdf', 'r1/a.pdf'), att('a2', 'r1', 'Fica.pdf', 'r1/b.pdf')]
+    mock.storage = {'r1/a.pdf': 1, 'r1/b.pdf': 1}
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id="r1"] [data-att] .n')
+    page.click('#rows tr[data-id="r1"] [data-edit]')
+    page.wait_for_selector('#fAttList .fatt-item')
+    assert page.evaluate("document.querySelectorAll('#fAttList .fatt-item').length") == 2
+    page.click('[data-fattrm="a1"]')
+    assert 'Vai ser apagado' in page.inner_text('#fAttList')
+    page.click('[data-fattundo="a1"]')
+    page.click('[data-fattrm="a1"]')
+    f = tmp_path / 'Novo.pdf'
+    f.write_bytes(PDF)
+    page.set_input_files('#fAttFile', str(f))
+    page.click('#recordForm button.primary')
+    page.wait_for_selector('#modal:not(.show)', state='attached', timeout=10000)
+    page.wait_for_timeout(300)
+    assert sorted(a['file_name'] for a in mock.attachments) == ['Fica.pdf', 'Novo.pdf']
+    assert 'r1/a.pdf' not in mock.storage and 'r1/b.pdf' in mock.storage
+    assert not errors
+    ctx.close()
+
+
+def test_formulario_cancelar_nao_envia(browser, server, mock, tmp_path):
+    mock.attachments = [att('a1', 'r1', 'Antigo.pdf', 'r1/a.pdf')]
+    ctx, page, _ = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id="r1"] [data-att] .n')
+    page.click('#rows tr[data-id="r1"] [data-edit]')
+    page.wait_for_selector('[data-fattrm="a1"]')
+    page.click('[data-fattrm="a1"]')
+    f = tmp_path / 'X.pdf'
+    f.write_bytes(PDF)
+    page.set_input_files('#fAttFile', str(f))
+    page.click('#cancel')
+    page.wait_for_timeout(300)
+    assert [a['id'] for a in mock.attachments] == ['a1'] and mock.storage == {}
+    ctx.close()

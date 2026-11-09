@@ -88,6 +88,7 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 
 ### Anexos PDF
 - Botão do clipe em cada MEL (também no Histórico), com o número de anexos. Abre a lista de PDFs dessa MEL: abrir, descarregar e, para operadores e administradores, anexar (escolher ou arrastar) e apagar.
+- Também se anexam no próprio formulário **Adicionar/Editar MEL** (secção "Anexos PDF"): os ficheiros novos e os retirados só são enviados/apagados ao carregar em **Guardar**; **Cancelar** não altera nada. Ao adicionar para várias frotas, o PDF fica anexado a cada uma.
 - Só PDF, até 20 MB cada. Os ficheiros ficam num espaço privado do Supabase Storage e só abrem com um link temporário (5 minutos) gerado para quem tem sessão iniciada.
 - Ao apagar definitivamente uma MEL do Histórico, os anexos são apagados também. Os anexos não estão disponíveis em modo offline nem entram no Excel.
 
