@@ -116,6 +116,10 @@ class MockSupabase:
                 rid = u.split('record_id=eq.')[1].split('&')[0]
                 return self._json(route, [a for a in self.attachments if a['record_id'] == rid])
             return self._json(route, self.attachments)
+        if '/auth/v1/signup' in u:
+            return self._json(route, {'user': {'id': 'nu1', 'email': json.loads(req.post_data)['email'], 'identities': [{'id': 'i1'}]}, 'session': None})
+        if '/auth/v1/token' in u:
+            return self._json(route, {'error': 'invalid_grant', 'error_description': 'Invalid login credentials', 'msg': 'Invalid login credentials'}, 400)
         if '/auth/v1/health' in u:
             return self._json(route, {})
         if '/auth/v1/user' in u and m == 'PUT':

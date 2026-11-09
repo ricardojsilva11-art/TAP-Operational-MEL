@@ -15,6 +15,7 @@ Para criar a base de dados do zero, no Supabase (SQL Editor > New query), correr
 | 9 | `009_formato_e_tempo_real.sql` | Valida o formato do MEL Item na base de dados; tempo real nos perfis (mudanças de acesso sem recarregar) | 001 |
 | 10 | `010_configuracoes.sql` | Configurações: registos de novas contas, duração da sessão, cópia de segurança e revisão da MEL por frota | 002, 008 |
 | 11 | `011_anexos_pdf.sql` | Anexos PDF nas MEL (espaço privado `mel-pdfs` no Storage e tabela `mel_attachments`) | 001, 008 |
+| 12 | `012_email_valido.sql` | Recusa emails com caracteres escondidos ou símbolos estranhos no registo | — |
 
 Depois do `001`, importar os registos iniciais (`mel_seed.csv`) para a tabela `mel_records`, antes de continuar com os restantes.
 
