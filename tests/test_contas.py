@@ -50,7 +50,7 @@ def test_so_consulta_sem_botoes_de_edicao(browser, server, mock):
 def test_tipo_de_acesso_muda_em_tempo_real(browser, server, mock):
     ctx, page, _ = open_app(browser, server, mock, logged_in())
     page.evaluate("onProfileChange({eventType:'UPDATE',new:{...profile,role:'reader'},old:{user_id:'%s'}})" % UID)
-    assert page.inner_text('#roleLabel') == 'Só consulta'
+    assert page.inner_text('#roleLabel') == 'Line OPS'
     assert page.evaluate("document.querySelectorAll('#rows [data-edit]').length") == 0
     page.evaluate("onProfileChange({eventType:'UPDATE',new:{...profile,role:'admin'},old:{user_id:'%s'}})" % UID)
     assert visible(page, '#navUsers') and visible(page, '#navSettings')

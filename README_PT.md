@@ -30,7 +30,7 @@ Este repositório tem **apenas o código**. As MEL nunca são guardadas aqui: es
 ### Tipos de acesso
 | Tipo | Pode |
 |------|------|
-| **Só consulta** (`reader`) | Ver o TAF e as MEL, pesquisar, copiar, exportar e marcar favoritas. Não pode adicionar, alterar ou apagar MEL. |
+| **Line OPS** (`reader`, só consulta) | Ver o TAF e as MEL, pesquisar, copiar, exportar e marcar favoritas. Não pode adicionar, alterar ou apagar MEL. |
 | **Supervisor** (`operator`) | O mesmo, mais adicionar, editar, apagar e reativar MEL. |
 | **Administrador** (`admin`) | O mesmo, mais alterar as **Definições do TAF**, aprovar/recusar/desativar contas, definir palavras-passe temporárias e apagar definitivamente MEL do Histórico. |
 

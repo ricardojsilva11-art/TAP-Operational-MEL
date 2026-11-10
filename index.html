@@ -407,7 +407,7 @@ const take=[];for(const n of [...box.childNodes]){if(n.nodeName==='BR'||n.nodeNa
 if(!take.length)return;const s=document.createElement('strong');box.insertBefore(s,take[0]);take.forEach(n=>s.appendChild(n))}
 function plain(html){let d=new DOMParser().parseFromString(html,'text/html');return (d.body.innerText||d.body.textContent||'').replace(/ /g,' ').trim()}
 function profileName(){return profile?.display_name||user?.email||'Utilizador'}
-const ROLES={admin:'Administrador',operator:'Supervisor',reader:'Só consulta'};
+const ROLES={admin:'Administrador',operator:'Supervisor',reader:'Line OPS'};
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 const fmtDate=d=>{const x=new Date(d);return x.toLocaleDateString('pt-PT')+', '+x.toLocaleTimeString('pt-PT')};
 
