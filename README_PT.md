@@ -83,7 +83,7 @@ Resumo das duas ferramentas: TAF novos ou emendados (AMD) na última hora, aerop
 ### TAF
 - É o TAF Monitor tal como era, com a mesma grelha, filtros e painel lateral, agora dentro do portal e com a mesma entrada das MEL. Aberto diretamente (`/taf/`) reencaminha para o portal.
 - O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) na última hora; desaparece quando não há nenhum.
-- **Definições do TAF:** só Administradores do portal (deixou de haver PIN). As definições continuam guardadas no navegador de quem as altera.
+- **Definições do TAF:** só Administradores do portal (deixou de haver PIN). Ficam guardadas no Supabase (`sql/014_definicoes_taf.sql`) e valem para todos; quando o Administrador grava, o TAF de todos atualiza logo. Só o modo (ao vivo / exemplo / manual) fica no navegador do Administrador, para testes não afetarem ninguém; os outros veem sempre ao vivo. As definições que um Administrador tinha no site antigo do TAF Monitor são trazidas para o portal na primeira vez que abre o link antigo.
 - Os TAF/METAR vêm do Worker `taf` (Cloudflare). Esse Worker tem de aceitar pedidos do endereço do portal (variável `ALLOWED_ORIGIN` = `https://ricardojsilva11-art.github.io`).
 - **Atualizar o TAF Monitor:** substituir `tools/taf-monitor-original.html` pela versão nova e correr `python3 tools/build_taf.py`; o script avisa se alguma parte que adapta deixou de existir.
 

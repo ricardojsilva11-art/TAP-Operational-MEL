@@ -2,7 +2,8 @@
 
 O conteúdo do monitor fica igual; só se acrescenta:
   - verificação de acesso: só abre dentro do portal, com sessão aprovada (senão vai para o portal);
-  - Definições: abrem só para Administradores do portal (deixa de haver PIN);
+  - Definições: abrem só para Administradores do portal (deixa de haver PIN) e ficam guardadas no Supabase,
+    iguais para todos (o modo ao vivo/exemplo/manual fica só no navegador do Administrador);
   - ponte com o portal: envia o resumo (TAF novos/AMD, alertas) e aceita "abrir aeroporto".
 Para atualizar o monitor: substituir tools/taf-monitor-original.html e correr  python3 tools/build_taf.py
 """
@@ -28,6 +29,20 @@ s = rep(s, '<link rel="apple-touch-icon" href="apple-touch-icon.png">', '<link r
 # 2) Definições só para Administradores do portal (em vez do PIN guardado neste navegador)
 s = rep(s, 'let isAdmin = [ADMIN_HASH, ADMIN_HASH_FNV].includes(store.get("tafmon.admin", ""));',
         'let isAdmin = window.__portalRole === "admin"; // portal: Definições só para Administradores')
+# definições partilhadas pelo portal (Supabase): iguais para todos; só o modo (ao vivo/exemplo/manual) fica por navegador, e só para Administradores
+s = rep(s, 'if (SETTINGS_LOCKED && !isAdmin) cfg = Object.assign({}, DEFAULTS);\nasync function pinHash',
+        'function portalCfg(){ const c = Object.assign({}, DEFAULTS, window.__portalTafCfg || {}); c.mode = isAdmin ? store.get("tafmon.mode", DEFAULTS.mode) : DEFAULTS.mode; return c; }\n'
+        'cfg = portalCfg();\nasync function pinHash')
+s = rep(s, '  store.set("tafmon.cfg", cfg);\n  closeSettings(); selected = null; load();',
+        '  store.set("tafmon.mode", cfg.mode);\n'
+        '  const shared = Object.assign({}, cfg); delete shared.mode;\n'
+        '  window.parent.postMessage({type: "taf-cfg-save", cfg: shared}, location.origin);\n'
+        '  closeSettings(); selected = null; load();')
+s = rep(s, '  dlg.hidden = false; $("#fWorker").focus();\n}',
+        '  let pi = $("#portalCfgInfo"); if (!pi){ pi = document.createElement("p"); pi.id = "portalCfgInfo"; pi.className = "muted"; pi.style.cssText = "margin:0 0 10px;font-size:12.5px"; $("#setForm").prepend(pi); }\n'
+        '  const m = window.__portalTafMeta; pi.textContent = "Estas definições valem para todos os utilizadores do portal." + (m && m.at ? " Última alteração: " + (m.by || "?") + ", " + new Date(m.at).toLocaleString("pt-PT") + "." : "");\n'
+        '  dlg.hidden = false; $("#fWorker").focus();\n}')
+s = rep(s, 'paintLock();\n$("#setClose")', 'paintLock();\n$("#setLock").hidden = true; // o acesso vem do portal\n$("#setClose")')
 s = rep(s, '$("#btnSettings").addEventListener("click", () => { if (!SETTINGS_LOCKED || isAdmin) openSettings(); else openPin(); });',
         '$("#btnSettings").addEventListener("click", () => { if (!SETTINGS_LOCKED || isAdmin) openSettings(); else portalNotAdmin(); });\n'
         'function portalNotAdmin(){ const b = $("#banner"); b.innerHTML = "<b>Definições bloqueadas.</b> <span>Só um Administrador do portal pode alterar as definições do TAF.</span>"; b.className = "banner"; b.hidden = false; setTimeout(() => { if (b.textContent.startsWith("Definições bloqueadas")) b.hidden = true; }, 6000); }')
@@ -57,9 +72,15 @@ s = rep(s, main_end,
         '  } else if (d.type === "taf-refresh") load();\n'
         '  else if (d.type === "taf-role"){\n'
         '    isAdmin = d.role === "admin";\n'
-        '    cfg = SETTINGS_LOCKED && !isAdmin ? Object.assign({}, DEFAULTS) : Object.assign({}, DEFAULTS, store.get("tafmon.cfg", {}));\n'
+        '    cfg = portalCfg();\n'
         '    if (!isAdmin) dlg.hidden = true;\n'
         '    paintLock(); load();\n'
+        '  } else if (d.type === "taf-cfg"){\n'
+        '    window.__portalTafCfg = d.cfg || null; window.__portalTafMeta = d.meta || null;\n'
+        '    if (dlg.hidden){ cfg = portalCfg(); load(); }\n'
+        '  } else if (d.type === "taf-cfg-saved" && !d.ok){\n'
+        '    cfg = portalCfg(); load();\n'
+        '    setTimeout(() => { const b = $("#banner"); b.innerHTML = "<b>As definições não foram guardadas.</b> <span>" + esc(d.error || "Erro desconhecido") + "</span>"; b.className = "banner err"; b.hidden = false; }, 300);\n'
         '  }\n'
         '});\n'
         'load();\n</script>')
@@ -82,15 +103,15 @@ gate = r'''<script>
   (function wait(){
     var P = null;
     try { P = window.parent.__portal; } catch(e){}
-    if (P && P.role){
-      window.__portalRole = P.role;
+    if (P && P.role && P.cfgReady){
+      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null;
       var x = document.createElement("script");
       x.textContent = document.getElementById("tafMain").textContent;
       document.documentElement.classList.remove("gate");
       document.body.appendChild(x);
       return;
     }
-    if (++tries > 100){ document.body.innerHTML = '<p style="padding:24px;font-family:system-ui,sans-serif">Abre o TAF a partir do portal, com sessão iniciada.</p>'; document.documentElement.classList.remove("gate"); return; }
+    if (++tries > 300){ document.body.innerHTML = '<p style="padding:24px;font-family:system-ui,sans-serif">Abre o TAF a partir do portal, com sessão iniciada.</p>'; document.documentElement.classList.remove("gate"); return; }
     setTimeout(wait, 100);
   })();
 })();

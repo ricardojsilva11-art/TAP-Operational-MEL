@@ -664,11 +664,22 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal={role:profile?.role||'reader'};if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
+/* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
+const TAF_CFG_KEY='mel_taf_cfg_v1';let tafCfgTimer=null;
+async function loadTafCfg(){let cfg=null,meta=null;try{if(!sb||offline)throw 0;const {data,error}=await sb.from('taf_settings').select('cfg,updated_at,updated_by_name').eq('id',1).maybeSingle();if(error)throw error;cfg=data?.cfg||null;meta=data?.updated_at?{at:data.updated_at,by:data.updated_by_name}:null;try{localStorage.setItem(TAF_CFG_KEY,JSON.stringify({cfg,meta}))}catch(_){}}catch(e){try{const c=JSON.parse(localStorage.getItem(TAF_CFG_KEY)||'null');if(c){cfg=c.cfg;meta=c.meta}}catch(_){}}
+const P=window.__portal=Object.assign(window.__portal||{},{cfg,meta});const first=!P.cfgReady;P.cfgReady=true;if(!first)postTaf({type:'taf-cfg',cfg,meta});return cfg}
+function postTaf(m){try{$('tafFrame')?.contentWindow.postMessage(m,location.origin)}catch(e){}}
+async function saveTafCfg(cfg){const fail=m=>postTaf({type:'taf-cfg-saved',ok:false,error:m});if(profile?.role!=='admin')return fail('Só Administradores podem alterar as definições do TAF.');if(offline||!sb)return fail('Sem ligação ao servidor.');
+try{const {data,error}=await sb.from('taf_settings').update({cfg}).eq('id',1).select('cfg,updated_at,updated_by_name');if(error)throw error;if(!data||!data.length)throw new Error('a linha de definições não existe');postTaf({type:'taf-cfg-saved',ok:true});await loadTafCfg();toast('Definições do TAF guardadas para todos ✅')}
+catch(e){const m=e.message||String(e);fail(/taf_settings|relation|schema cache|não existe/i.test(m)?'Falta preparar a base de dados: correr sql/014_definicoes_taf.sql no Supabase.':m)}}
+async function importOldTafCfg(raw){/* definições trazidas do site antigo do TAF Monitor (só Administradores, só se ainda não houver partilhadas) */
+let cfg=null;try{cfg=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')))))}catch(e){return}if(!cfg||typeof cfg!=='object'||profile?.role!=='admin'||offline)return;delete cfg.mode;
+if(window.__portal?.cfg&&!confirm('Encontrei as definições que tinhas no TAF Monitor antigo. Substituir as definições do TAF que estão agora no portal (valem para todos)?'))return;await saveTafCfg(cfg)}
 const zTime=ms=>{const d=new Date(ms);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+'Z'};
-window.addEventListener('message',e=>{if(e.origin!==location.origin||!$('tafFrame')||e.source!==$('tafFrame').contentWindow)return;const d=e.data||{};if(d.type!=='taf-summary')return;tafSum=d;const n=(d.newTafs||[]).length,b=$('tafBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hidden',!n);renderPortalTaf()});
+window.addEventListener('message',e=>{if(e.origin!==location.origin||!$('tafFrame')||e.source!==$('tafFrame').contentWindow)return;const d=e.data||{};if(d.type==='taf-cfg-save')return saveTafCfg(d.cfg);if(d.type!=='taf-summary')return;tafSum=d;const n=(d.newTafs||[]).length,b=$('tafBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hidden',!n);renderPortalTaf()});
 function renderPortalTaf(){const d=tafSum;if(!d)return;const nw=d.newTafs||[],now=d.now||[],nx=d.next6||[];$('pNew').textContent=nw.length;$('pNow').textContent=now.length;$('pNext').textContent=nx.length;
 $('pTafUpd').textContent=d.updatedAt?`${d.total} aeroportos · TAF carregados às ${zTime(d.updatedAt)}`:`${d.total||0} aeroportos`;
 $('pTafErr').textContent=d.error?'Não foi possível atualizar os TAF: '+d.error:'';$('pTafErr').classList.toggle('hidden',!d.error);
@@ -687,7 +698,7 @@ $('portalView').addEventListener('click',e=>{const g=e.target.closest('[data-go]
 $('pSearchForm').onsubmit=e=>{e.preventDefault();openMel($('pSearch').value.trim());$('pSearch').value=''};
 {const r0=render;render=function(){r0.apply(this,arguments);try{renderPortal()}catch(e){}}}
 {const a0=applyRole;applyRole=function(){a0.apply(this,arguments);syncTafRole()}}
-function enterPortal(){ensureTaf();renderPortal();if(location.hash==='#taf'){goNav('taf');history.replaceState(null,'',location.pathname+location.search)}}
+function enterPortal(){const imp=location.hash.match(/[#&]taf-import=([^&]+)/);ensureTaf();loadTafCfg().then(()=>{if(imp)importOldTafCfg(imp[1])});if(sb&&!offline)sb.channel('taf-settings-live').on('postgres_changes',{event:'*',schema:'public',table:'taf_settings'},()=>{clearTimeout(tafCfgTimer);tafCfgTimer=setTimeout(loadTafCfg,400)}).subscribe();renderPortal();if(/^#taf\b/.test(location.hash)){goNav('taf');history.replaceState(null,'',location.pathname+location.search)}}
 const VIEW_OF={portal:'portalView',taf:'tafView',home:'homeView',history:'historyView',users:'usersView',settings:'settingsView'};
 function goNav(n){document.querySelector(`[data-nav="${n}"]`)?.click()}
 document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if((n==='users'||n==='settings')&&(offline||profile?.role!=='admin'))return;document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));Object.entries(VIEW_OF).forEach(([k,id])=>$(id).classList.toggle('hidden',k!==n));document.body.classList.toggle('taf-mode',n==='taf');if(n==='taf'){ensureTaf();try{$('tafFrame').focus()}catch(e){}}else if(n==='settings'){renderSettings();loadActivity()}else if(n==='users')loadUsers();else if(n==='history')renderHistory();else if(n==='portal')renderPortal();window.scrollTo({top:0,behavior:'smooth'})});

@@ -68,6 +68,8 @@ class MockSupabase:
         self.settings = {'id': 1, 'signups_open': True, 'session_hours': 12, 'last_backup_at': None, 'last_backup_by': None, 'updated_at': None, 'updated_by': None}
         self.revisions = [{'fleet': f, 'revision': '', 'effective_date': None, 'updated_at': None, 'updated_by_name': None} for f in ('A320', 'A330', 'E190/E195')]
         self.attachments = []
+        self.taf_cfg = {'id': 1, 'cfg': None, 'updated_at': None, 'updated_by_name': None}
+        self.taf_missing = False
         self.storage = {}
         self.attach_missing = False
         self.tables_missing = False
@@ -100,6 +102,13 @@ class MockSupabase:
                 path = u.split('/object/mel-pdfs/')[1].split('?')[0]
                 self.storage[path] = len(req.post_data_buffer or b'')
                 return self._json(route, {'Key': 'mel-pdfs/' + path})
+        if '/rest/v1/taf_settings' in u:
+            if self.taf_missing:
+                return self._json(route, {'code': '42P01', 'message': 'relation "public.taf_settings" does not exist'}, 404)
+            if m == 'PATCH':
+                self.taf_cfg.update(json.loads(req.post_data), updated_at='2026-11-10T10:40:00Z', updated_by_name=self.profile['display_name'])
+                return self._json(route, [self.taf_cfg])
+            return one(self.taf_cfg)
         if '/rest/v1/mel_attachments' in u:
             if self.attach_missing:
                 return self._json(route, {'code': '42P01', 'message': 'relation does not exist'}, 404)

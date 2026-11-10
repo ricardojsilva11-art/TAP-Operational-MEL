@@ -865,7 +865,8 @@ const SETTINGS_LOCKED = true;
 const ADMIN_HASH = "1aeee01204238406b44a9d14559e3be047e70ed08a637d106cb452069545b99a";
 const ADMIN_HASH_FNV = "c03d6ca4"; // alternativa para navegadores sem crypto.subtle
 let isAdmin = window.__portalRole === "admin"; // portal: Definições só para Administradores
-if (SETTINGS_LOCKED && !isAdmin) cfg = Object.assign({}, DEFAULTS);
+function portalCfg(){ const c = Object.assign({}, DEFAULTS, window.__portalTafCfg || {}); c.mode = isAdmin ? store.get("tafmon.mode", DEFAULTS.mode) : DEFAULTS.mode; return c; }
+cfg = portalCfg();
 async function pinHash(pin){
   const txt = "taf-monitor:" + pin;
   try {
@@ -2041,6 +2042,8 @@ function openSettings(){
   $("#fWind").value = cfg.wind; $("#fInt").checked = cfg.intensity;
   $("#fPhen").innerHTML = PHEN.map(p => `<label><input type="checkbox" id="ph_${p.k}" value="${p.k}"${(cfg.phen || []).includes(p.k) ? " checked" : ""}> ${esc(p.label)}</label>`).join("");
   $("#fHours").value = String(cfg.hours); $("#fRefresh").value = cfg.refresh;
+  let pi = $("#portalCfgInfo"); if (!pi){ pi = document.createElement("p"); pi.id = "portalCfgInfo"; pi.className = "muted"; pi.style.cssText = "margin:0 0 10px;font-size:12.5px"; $("#setForm").prepend(pi); }
+  const m = window.__portalTafMeta; pi.textContent = "Estas definições valem para todos os utilizadores do portal." + (m && m.at ? " Última alteração: " + (m.by || "?") + ", " + new Date(m.at).toLocaleString("pt-PT") + "." : "");
   dlg.hidden = false; $("#fWorker").focus();
 }
 function closeSettings(){ dlg.hidden = true; $("#btnSettings").focus(); }
@@ -2071,6 +2074,7 @@ function paintLock(){
   const ed = $("#lnkEditBox"); if (ed) ed.hidden = SETTINGS_LOCKED && !isAdmin;
 }
 paintLock();
+$("#setLock").hidden = true; // o acesso vem do portal
 $("#setClose").addEventListener("click", closeSettings);
 dlg.addEventListener("click", e => { if (e.target === dlg) closeSettings(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !dlg.hidden) closeSettings(); });
@@ -2086,7 +2090,9 @@ $("#setForm").addEventListener("submit", e => {
     intensity: $("#fInt").checked,
     hours: +$("#fHours").value || 30, refresh: Math.min(60, Math.max(5, +$("#fRefresh").value || 10))
   });
-  store.set("tafmon.cfg", cfg);
+  store.set("tafmon.mode", cfg.mode);
+  const shared = Object.assign({}, cfg); delete shared.mode;
+  window.parent.postMessage({type: "taf-cfg-save", cfg: shared}, location.origin);
   closeSettings(); selected = null; load();
 });
 
@@ -2608,9 +2614,15 @@ window.addEventListener("message", e => {
   } else if (d.type === "taf-refresh") load();
   else if (d.type === "taf-role"){
     isAdmin = d.role === "admin";
-    cfg = SETTINGS_LOCKED && !isAdmin ? Object.assign({}, DEFAULTS) : Object.assign({}, DEFAULTS, store.get("tafmon.cfg", {}));
+    cfg = portalCfg();
     if (!isAdmin) dlg.hidden = true;
     paintLock(); load();
+  } else if (d.type === "taf-cfg"){
+    window.__portalTafCfg = d.cfg || null; window.__portalTafMeta = d.meta || null;
+    if (dlg.hidden){ cfg = portalCfg(); load(); }
+  } else if (d.type === "taf-cfg-saved" && !d.ok){
+    cfg = portalCfg(); load();
+    setTimeout(() => { const b = $("#banner"); b.innerHTML = "<b>As definições não foram guardadas.</b> <span>" + esc(d.error || "Erro desconhecido") + "</span>"; b.className = "banner err"; b.hidden = false; }, 300);
   }
 });
 load();
@@ -2627,15 +2639,15 @@ load();
   (function wait(){
     var P = null;
     try { P = window.parent.__portal; } catch(e){}
-    if (P && P.role){
-      window.__portalRole = P.role;
+    if (P && P.role && P.cfgReady){
+      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null;
       var x = document.createElement("script");
       x.textContent = document.getElementById("tafMain").textContent;
       document.documentElement.classList.remove("gate");
       document.body.appendChild(x);
       return;
     }
-    if (++tries > 100){ document.body.innerHTML = '<p style="padding:24px;font-family:system-ui,sans-serif">Abre o TAF a partir do portal, com sessão iniciada.</p>'; document.documentElement.classList.remove("gate"); return; }
+    if (++tries > 300){ document.body.innerHTML = '<p style="padding:24px;font-family:system-ui,sans-serif">Abre o TAF a partir do portal, com sessão iniciada.</p>'; document.documentElement.classList.remove("gate"); return; }
     setTimeout(wait, 100);
   })();
 })();

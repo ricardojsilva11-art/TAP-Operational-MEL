@@ -147,3 +147,65 @@ def test_ultimas_alteracoes_e_favoritas_no_inicio(browser, server, mock):
 
 def location_hash(page):
     return page.evaluate('location.hash')
+
+
+def test_definicoes_do_taf_partilhadas(browser, server, mock):
+    mock.taf_cfg.update(cfg={'vis': 600, 'wind': 35, 'mode': 'sample'}, updated_at='2026-11-10T09:00:00Z', updated_by_name='Ana')
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    # quem não é Administrador usa as definições partilhadas, mas sempre no modo ao vivo
+    assert f.evaluate('cfg.vis') == 600 and f.evaluate('cfg.wind') == 35 and f.evaluate('cfg.mode') == 'live'
+    # o Administrador muda em tempo real e todos recebem
+    mock.taf_cfg['cfg'] = {'vis': 700}
+    page.evaluate('loadTafCfg()')
+    page.wait_for_function("document.getElementById('tafFrame').contentWindow.eval('cfg.vis')===700", timeout=5000)
+    # quem não é Administrador não grava, mesmo que a página do TAF o tente
+    f.evaluate("parent.postMessage({type:'taf-cfg-save',cfg:{vis:1}},location.origin)")
+    page.wait_for_timeout(500)
+    assert not any('taf_settings' in p for m, p, _ in mock.requests)
+    assert 'não foram guardadas' in f.inner_text('#banner')
+    assert not errors
+    ctx.close()
+
+
+def test_administrador_grava_definicoes_do_taf(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.click('[data-nav="taf"]')
+    f.click('#btnSettings')
+    assert 'valem para todos' in f.inner_text('#portalCfgInfo')
+    f.fill('#fVis', '900')
+    f.click('#mSample')
+    f.evaluate("document.getElementById('setForm').requestSubmit()")
+    page.wait_for_function("window.__portal.cfg&&window.__portal.cfg.vis===900", timeout=5000)
+    body = next(b for m, p, b in mock.requests if m == 'PATCH' and 'taf_settings' in p)
+    assert '"vis":900' in body and '"mode"' not in body  # o modo fica só neste navegador
+    assert f.evaluate('cfg.mode') == 'sample'
+    assert not errors
+    ctx.close()
+
+
+def test_sem_tabela_de_definicoes_avisa(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    mock.taf_missing = True
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    assert f.evaluate('cfg.vis') == f.evaluate('DEFAULTS.vis')
+    f.evaluate("parent.postMessage({type:'taf-cfg-save',cfg:{vis:1}},location.origin)")
+    page.wait_for_timeout(600)
+    assert '014_definicoes_taf.sql' in f.inner_text('#banner')
+    ctx.close()
+
+
+def test_importa_definicoes_do_site_antigo(browser, server, mock):
+    import base64, json
+    mock.profile['role'] = 'admin'
+    raw = base64.urlsafe_b64encode(json.dumps({'vis': 1234, 'icao': 'LPPT LPPR', 'mode': 'manual'}).encode()).decode().rstrip('=')
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    page.goto(server.url + '#taf&taf-import=' + raw)
+    page.reload()  # só mudar o # não recarrega a página
+    page.wait_for_function("window.__portal&&window.__portal.cfg&&window.__portal.cfg.vis===1234", timeout=15000)
+    assert mock.taf_cfg['cfg'] == {'vis': 1234, 'icao': 'LPPT LPPR'}
+    assert visible(page, '#tafView') and page.evaluate('location.hash') == ''
+    ctx.close()
