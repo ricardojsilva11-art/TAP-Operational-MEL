@@ -2002,6 +2002,7 @@ $("#grid").addEventListener("click", e => {
   document.querySelectorAll("#grid tr.sel").forEach(x => x.classList.remove("sel"));
   tr.classList.add("sel");
   ui.detailClosed = false; saveUI();
+  try { if (window.parent !== window) window.parent.postMessage({type: "taf-opened", icao: selected}, location.origin); } catch(e){}
   const t0 = Math.floor(Date.now() / HOUR) * HOUR;
   renderDetail(Array.from({length: +cfg.hours || 30}, (_, k) => t0 + k * HOUR));
 });

@@ -79,7 +79,7 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 
 ### Início
 Ecrã dividido a meio. **À esquerda, TAF:**
-- **TAF novos / AMD com alerta, por ver:** só contam TAF novos ou emendados que cumprem os critérios de alerta da análise de TAF; um TAF emendado sem alerta não aparece. Depois de abrires o separador TAF, saem da lista e do contador.
+- **TAF novos / AMD com alerta, por ver:** só contam TAF novos ou emendados que cumprem os critérios de alerta da análise de TAF; um TAF emendado sem alerta não aparece. Cada um sai da lista e do contador quando abres esse aeroporto (no Início, no aviso do canto ou na grelha do TAF); os outros continuam por ver. "Marcar todos como vistos" limpa tudo de uma vez.
 - **Em alerta agora / próximas 6 h:** só destinos; clicar no número abre o TAF já com esse filtro.
 - **Meteorologia nos destinos:** até 6 destinos em alerta (primeiro os que estão agora), uma linha cada: quando (ex.: Agora–14Z ou 12Z–16Z), a categoria mais grave (LVO, Thunderstorm, Wind / gust…) e até 3 valores do TAF (ex.: VIS400m FG BKN002). Passar o rato mostra as outras categorias; "Ver todos" abre o TAF filtrado. Carregar numa linha abre o painel lateral desse aeroporto.
 
@@ -87,7 +87,7 @@ Ecrã dividido a meio. **À esquerda, TAF:**
 
 ### TAF
 - É o TAF Monitor tal como era, com a mesma grelha, filtros e painel lateral, agora dentro do portal e com a mesma entrada das MEL. Aberto diretamente (`/taf/`) reencaminha para o portal.
-- O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) **com alerta** que ainda não viste; limpa quando abres o separador TAF e só volta a aparecer quando chega outro TAF novo ou emenda. Passar o rato por cima do número mostra quais os aeroportos. Quando chega um TAF novo ou emenda aparece um aviso no canto a dizer qual o aeroporto (ex.: "TAF emendado (AMD): LPMA Madeira"); carregar no aviso abre o TAF nesse aeroporto. No Início, os que ainda não viste ficam destacados.
+- O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) **com alerta** que ainda não viste; cada um conta como visto quando abres esse aeroporto, e o número só volta a subir quando chega outro TAF novo ou emenda com alerta. Passar o rato por cima do número mostra quais os aeroportos. Quando chega um TAF novo ou emenda aparece um aviso no canto a dizer qual o aeroporto (ex.: "TAF emendado (AMD): LPMA Madeira"); carregar no aviso abre o TAF nesse aeroporto. No Início, os que ainda não viste ficam destacados.
 - **Definições do TAF:** só Administradores do portal (deixou de haver PIN). Ficam guardadas no Supabase (`sql/014_definicoes_taf.sql`) e valem para todos; quando o Administrador grava, o TAF de todos atualiza logo. Só o modo (ao vivo / exemplo / manual) fica no navegador do Administrador, para testes não afetarem ninguém; os outros veem sempre ao vivo. As definições que um Administrador tinha no site antigo do TAF Monitor são trazidas para o portal na primeira vez que abre o link antigo.
 - Os TAF/METAR vêm do Worker `taf` (Cloudflare). Esse Worker tem de aceitar pedidos do endereço do portal (variável `ALLOWED_ORIGIN` = `https://ricardojsilva11-art.github.io`).
 - **Atualizar o TAF Monitor:** substituir `tools/taf-monitor-original.html` pela versão nova e correr `python3 tools/build_taf.py`; o script avisa se alguma parte que adapta deixou de existir.

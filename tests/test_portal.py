@@ -155,22 +155,44 @@ def test_sem_alteracoes_nas_ultimas_24h(browser, server, mock):
     ctx.close()
 
 
-def test_abrir_taf_limpa_o_alerta(browser, server, mock):
+def test_ver_um_taf_so_limpa_esse(browser, server, mock):
     ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
     f = taf_frame(page)
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_function("document.getElementById('tafBadge').textContent==='2'")
+    # abrir o separador TAF sem escolher um aeroporto não limpa nada
     page.click('[data-nav="taf"]')
-    assert not visible(page, '#tafBadge')
     page.click('[data-nav="portal"]')
-    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)  # os mesmos TAF: continua limpo
-    page.wait_for_timeout(300)
-    assert not visible(page, '#tafBadge')
-    assert 'LPFR' not in page.inner_text('#pNewList')  # depois de abrir o TAF, sai também do Início
-    assert page.inner_text('#pNew') == '0' and 'por ver' in page.inner_text('#pNewList')
+    assert page.inner_text('#tafBadge') == '2'
+    # abrir LPFR (no Início) limpa só LPFR
+    page.click('#pNewList [data-icao="LPFR"]')
+    page.click('[data-nav="portal"]')
+    assert page.inner_text('#tafBadge') == '1' and page.inner_text('#pNew') == '1'
+    lst = page.inner_text('#pNewList')
+    assert 'LPFR' not in lst and 'LEMD' in lst
+    # abrir LEMD na grelha do próprio TAF Monitor também conta como visto
+    f.evaluate("parent.postMessage({type:'taf-opened',icao:'LEMD'},location.origin)")  # o que a grelha envia ao abrir o painel
+    page.wait_for_function("document.getElementById('tafBadge').classList.contains('hidden')")
     # um TAF novo volta a acender o alerta (só esse)
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", NEW_LPMA))
     page.wait_for_function("document.getElementById('tafBadge').textContent==='1'")
+    # marcar todos como vistos
+    page.click('#pSeenAll')
+    assert not visible(page, '#tafBadge') and page.inner_text('#pNew') == '0'
+    ctx.close()
+
+
+def test_grelha_do_taf_avisa_o_portal(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    page.evaluate("window.__op=[];addEventListener('message',e=>{if(e.data&&e.data.type==='taf-opened')__op.push(e.data.icao)})")
+    page.click('[data-nav="taf"]')
+    ic = f.evaluate("document.querySelector('#grid tr[data-icao]').dataset.icao")
+    f.click(f'#grid tr[data-icao="{ic}"]')
+    page.wait_for_timeout(300)
+    assert page.evaluate('__op') == [ic]
     ctx.close()
 
 
@@ -317,7 +339,7 @@ def test_aviso_diz_qual_o_aeroporto(browser, server, mock):
     assert visible(page, '#tafView')
     page.wait_for_timeout(300)
     assert f.evaluate('__sel') == ['LPMA']
-    assert page.evaluate("document.querySelectorAll('#pNewList .p-item.unseen').length") == 0
+    assert page.evaluate("[...document.querySelectorAll('#pNewList .p-item.unseen')].map(e=>e.dataset.icao)") == ['LPFR', 'LEMD']  # só LPMA ficou vista
     ctx.close()
 
 
@@ -387,13 +409,14 @@ def test_carregar_no_alerta_do_inicio_faz_desaparecer(browser, server, mock):
     page.click('#pNewList [data-icao="LPFR"]')
     assert visible(page, '#tafView')
     page.click('[data-nav="portal"]')
-    assert page.evaluate("document.querySelectorAll('#pNewList [data-icao]').length") == 0
-    assert page.inner_text('#pNew') == '0' and not visible(page, '#tafBadge')
+    assert page.evaluate("[...document.querySelectorAll('#pNewList [data-icao]')].map(e=>e.dataset.icao)") == ['LEMD']
+    assert page.inner_text('#pNew') == '1' and page.inner_text('#tafBadge') == '1'
     page.reload()  # e continua assim depois de recarregar
     page.wait_for_selector('#appPanel:not(.hidden)')
     f = taf_frame(page)
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_timeout(500)
-    assert page.inner_text('#pNew') == '0' and not visible(page, '#tafBadge')
-    assert page.evaluate("document.querySelectorAll('.taf-toast').length") == 0
+    assert page.inner_text('#pNew') == '1' and page.inner_text('#tafBadge') == '1'
+    t = page.inner_text('.taf-toast')
+    assert 'LEMD' in t and 'LPFR' not in t  # o aviso só repete o que falta ver
     ctx.close()

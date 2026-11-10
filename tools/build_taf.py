@@ -68,6 +68,10 @@ s = rep(s, '  $("#legendCodes").textContent = ',
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
         '  $("#legendCodes").textContent = ')
 
+# 3b) abrir um aeroporto no painel lateral avisa o portal (esse TAF novo/AMD passa a "visto")
+s = rep(s, '  ui.detailClosed = false; saveUI();\n  const t0 = Math.floor(Date.now() / HOUR) * HOUR;',
+        '  ui.detailClosed = false; saveUI();\n  try { if (window.parent !== window) window.parent.postMessage({type: "taf-opened", icao: selected}, location.origin); } catch(e){}\n  const t0 = Math.floor(Date.now() / HOUR) * HOUR;')
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
