@@ -2,7 +2,7 @@
 from harness import UID, logged_in, open_app, visible
 
 SUMMARY = ("{type:'taf-summary',updatedAt:Date.UTC(2026,10,10,9,30),total:42,"
-           "now:[{icao:'LPPT',name:'Lisboa'}],next10:[{icao:'LPPT',name:'Lisboa'},{icao:'LPPR',name:'Porto'}],noTaf:0,error:null,"
+           "now:[{icao:'LPPT',name:'Lisboa'}],win:8,nextWin:[{icao:'LPPT',name:'Lisboa'},{icao:'LPPR',name:'Porto'}],noTaf:0,error:null,"
            "alerts:[{icao:'LPPT',name:'Lisboa',now:true,from:Date.UTC(2026,10,10,9),to:Date.UTC(2026,10,10,14),open:false,cats:['LVO','Wind / gust'],cond:['VIS400m','FG','BKN002','G35']},"
            "{icao:'LPPR',name:'Porto',now:false,from:Date.UTC(2026,10,10,12),to:Date.UTC(2026,10,10,16),open:false,cats:['Thunderstorm'],cond:['TSRA']}],"
            "newTafs:[{icao:'LPFR',name:'Faro',amd:true,at:Date.UTC(2026,10,10,9,12),level:'amber',alert:true},"
@@ -276,7 +276,7 @@ def test_numeros_do_taf_abrem_o_filtro_certo(browser, server, mock):
     f = taf_frame(page)
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_function("document.getElementById('pNew').textContent==='2'")
-    for tf, lst in (('now', 'DST'), ('next10', 'DST'), ('new', '')):
+    for tf, lst in (('now', 'DST'), ('nextwin', 'DST'), ('new', '')):
         page.click('[data-nav="portal"]')
         page.click(f'[data-tf="{tf}"]')
         assert visible(page, '#tafView')
@@ -291,7 +291,7 @@ def test_resumo_do_taf_so_com_destinos(browser, server, mock):
     taf_frame(page)
     page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
     f = next(x for x in page.frames if '/taf/' in x.url)
-    icaos = page.evaluate("tafSum.now.concat(tafSum.next10).map(a=>a.icao)")
+    icaos = page.evaluate("tafSum.now.concat(tafSum.nextWin).map(a=>a.icao)")
     assert icaos and all(f.evaluate(f"inList('{ic}','DST')") for ic in icaos)
     ctx.close()
 
@@ -383,7 +383,7 @@ def test_meteorologia_nos_destinos(browser, server, mock):
     page.click('.p-wxall')
     assert visible(page, '#tafView')
     page.wait_for_timeout(300)
-    assert f.evaluate('ui.filter') == 'next10' and f.evaluate('ui.list') == 'DST'
+    assert f.evaluate('ui.filter') == 'nextwin' and f.evaluate('ui.list') == 'DST'
     ctx.close()
 
 

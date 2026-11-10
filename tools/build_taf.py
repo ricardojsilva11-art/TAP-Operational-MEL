@@ -9,6 +9,8 @@ Para atualizar o monitor: substituir tools/taf-monitor-original.html e correr  p
 """
 import os, re, sys
 
+WX_H = 8  # horas do resumo do Início (alerta nas próximas WX_H horas)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src = open(os.path.join(ROOT, 'tools', 'taf-monitor-original.html'), encoding='utf-8').read()
 
@@ -61,9 +63,9 @@ s = rep(s, '<input type="number" id="fRefresh" min="5" max="60" step="5">', '<in
 s = rep(s, '  $("#legendCodes").textContent = ',
         '  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,\n'
         '    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
-        '    next10: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 10).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
+        f'    win: {WX_H}, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => ({{icao: r.icao, name: nameOf(r.icao)}})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
-        '    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 10).includes("red")).map(r => { const a = r.levels.indexOf("red"); let b = r.levels.slice(0, 10).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, 10).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {}).label || k), cond: cellLabels(hard).slice(0, 10)}; }).sort((x, y) => (y.now - x.now) || (x.from - y.from)),\n'
+        f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (y.now - x.now) || (x.from - y.from)),\n'
         '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
         '  $("#legendCodes").textContent = ')
@@ -72,8 +74,8 @@ s = rep(s, '  $("#legendCodes").textContent = ',
 s = rep(s, '  ui.detailClosed = false; saveUI();\n  const t0 = Math.floor(Date.now() / HOUR) * HOUR;',
         '  ui.detailClosed = false; saveUI();\n  try { if (window.parent !== window) window.parent.postMessage({type: "taf-opened", icao: selected}, location.origin); } catch(e){}\n  const t0 = Math.floor(Date.now() / HOUR) * HOUR;')
 
-# 3c) filtro só do portal: alerta nas próximas 10 h (o Início usa 10 h)
-s = rep(s, 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");', 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");\n    if (ui.filter === "next10") return r.levels.slice(0, 10).includes("red");')
+# 3c) filtro só do portal: alerta nas próximas WX_H horas (o resumo do Início)
+s = rep(s, 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");', 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");\n    if (ui.filter === "nextwin") return r.levels.slice(0, %d).includes("red");' % WX_H)
 
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'

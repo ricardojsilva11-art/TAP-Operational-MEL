@@ -301,11 +301,11 @@ th,td{padding-left:8px;padding-right:8px}.col-rs{display:none}#resetCols{display
 <div class="p-stats">
 <button type="button" class="p-stat nt" data-tf="new" title="Abrir o TAF só com os TAF novos ou emendados"><span class="n" id="pNew">—</span><span>TAF novos / AMD<small>com alerta · por ver</small></span></button>
 <button type="button" class="p-stat red" data-tf="now" title="Abrir o TAF só com os destinos em alerta agora"><span class="n" id="pNow">—</span><span>Em alerta agora<small>destinos</small></span></button>
-<button type="button" class="p-stat amb" data-tf="next10" title="Abrir o TAF só com os destinos em alerta nas próximas 10 h"><span class="n" id="pNext">—</span><span>Alerta nas próximas 10 h<small>destinos</small></span></button>
+<button type="button" class="p-stat amb" data-tf="nextwin" title="Abrir o TAF só com os destinos em alerta nas próximas 8 h"><span class="n" id="pNext">—</span><span>Alerta nas próximas <span class="pWin">8</span> h<small>destinos</small></span></button>
 </div>
 <p class="p-warn hidden" id="pTafErr"></p>
 <h4 class="p-h4row">TAF novos ou emendas com alerta <small>(por ver)</small><button type="button" class="p-link hidden" id="pSeenAll">Marcar todos como vistos</button></h4><div class="p-list" id="pNewList"><p class="muted">A carregar…</p></div>
-<h4 class="p-h4row">Meteorologia nos destinos – resumo <small>(agora e próximas 10 h)</small><button type="button" class="p-link p-wxall hidden" id="pWxAll" data-tf="next10"></button></h4><div class="p-wx" id="pAlertList"><p class="muted">A carregar…</p></div>
+<h4 class="p-h4row">Meteorologia nos destinos – resumo <small>(agora e próximas <span class="pWin">8</span> h)</small><button type="button" class="p-link p-wxall hidden" id="pWxAll" data-tf="nextwin"></button></h4><div class="p-wx" id="pAlertList"><p class="muted">A carregar…</p></div>
 </section>
 <section class="card p-card p-melcard" id="pMel" aria-labelledby="pMelH">
 <div class="p-head"><b id="pMelH"><svg class="i"><use href="#i-list"/></svg>MEL</b><small id="pMelTotal"></small><button class="btn sm" type="button" data-go="home">Abrir MEL<svg class="i"><use href="#i-right"/></svg></button></div>
@@ -697,7 +697,7 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=c8a09fb9e4';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=4def4452d6';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');markTafSeen(icao);try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
 /* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
@@ -726,7 +726,7 @@ function notifyNewTafs(){const nw=alertTafs(),away=$('tafView').classList.contai
 function tafToast(list){const box=$('liveToasts');while(box.children.length>=3)box.firstChild.remove();const t=document.createElement('div');t.className='live-toast taf-toast';t.setAttribute('role','status');const one=list.length===1?list[0]:null;if(one)t.dataset.icao=one.icao;
 t.innerHTML=one?`${one.amd?'TAF emendado (AMD)':'TAF novo'}: <b>${safe(one.icao)}</b> ${safe(one.name||'')}<small>${one.at?zTime(one.at)+' · ':''}carrega para abrir no TAF</small>`:`${list.length} TAF novos ou emendados: `+list.slice(0,6).map(x=>`<b>${safe(x.icao)}</b>${x.amd?' (AMD)':''}`).join(', ')+(list.length>6?' …':'')+'<small>carrega para ver no TAF</small>';
 t.onclick=()=>{t.remove();if(one)tafSelect(one.icao);else{goNav('taf');postTaf({type:'taf-filter',f:'new',list:''})}};box.append(t);setTimeout(()=>t.remove(),12000)}
-function renderPortalTaf(){const d=tafSum;if(!d)return;const seen0=tafSeenGet(),nw=alertTafs().filter(t=>!seen0.has(tafKey(t))),now=d.now||[],nx=d.next10||d.next6||[];$('pNew').textContent=nw.length;$('pSeenAll').classList.toggle('hidden',!nw.length);$('pNow').textContent=now.length;$('pNext').textContent=nx.length;
+function renderPortalTaf(){const d=tafSum;if(!d)return;const seen0=tafSeenGet(),nw=alertTafs().filter(t=>!seen0.has(tafKey(t))),now=d.now||[],nx=d.nextWin||[];if(d.win)document.querySelectorAll('.pWin').forEach(x=>x.textContent=d.win);$('pNew').textContent=nw.length;$('pSeenAll').classList.toggle('hidden',!nw.length);$('pNow').textContent=now.length;$('pNext').textContent=nx.length;
 $('pTafUpd').textContent=d.updatedAt?`${d.total} aeroportos · TAF carregados às ${zTime(d.updatedAt)}`:`${d.total||0} aeroportos`;
 $('pTafErr').textContent=d.error?'Não foi possível atualizar os TAF: '+d.error:'';$('pTafErr').classList.toggle('hidden',!d.error);
 const seenNow=tafSeenGet();$('pNewList').innerHTML=nw.length?nw.slice(0,8).map(t=>`<button type="button" class="p-item${seenNow.has(tafKey(t))?'':' unseen'}" data-icao="${safe(t.icao)}"${seenNow.has(tafKey(t))?'':' title="Ainda não visto"'}><span class="p-dot ${safe(t.level||'')}"></span><b>${safe(t.icao)}</b><span class="t">${safe(t.name||'')}</span><span class="p-tag${t.amd?' amd':''}">${t.amd?'AMD':'NOVO'}</span>${t.at?`<time>${zTime(t.at)}</time>`:''}</button>`).join('')+(nw.length>8?`<p class="muted">+ ${nw.length-8} no TAF Monitor</p>`:''):'<p class="muted">Nenhum TAF novo ou emendado com alerta por ver.</p>';
