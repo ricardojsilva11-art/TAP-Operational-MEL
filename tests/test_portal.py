@@ -378,8 +378,8 @@ def test_meteorologia_nos_destinos(browser, server, mock):
     assert rows[0].startswith('LPPT Agora–14Z LVO Wind / gust VIS400m FG BKN002 G35')  # todas as categorias e valores
     assert rows[1].startswith('LPPR 12Z–16Z Thunderstorm TSRA')
     f.evaluate("parent.postMessage(%s,location.origin)" % many)
-    page.wait_for_function("document.querySelectorAll('#pAlertList .p-wxrow').length===6")
-    assert 'Ver todos (8)' in page.inner_text('#pAlertList')
+    page.wait_for_function("document.querySelectorAll('#pAlertList .p-wxrow').length===8")  # todos os destinos em alerta
+    assert page.inner_text('#pWxAll') == 'Ver os 8 no TAF Monitor'
     page.click('.p-wxall')
     assert visible(page, '#tafView')
     page.wait_for_timeout(300)
