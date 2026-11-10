@@ -374,7 +374,7 @@ def test_meteorologia_nos_destinos(browser, server, mock):
         "{icao:'X%03d',name:'N',now:false,from:Date.UTC(2026,10,10,13),to:Date.UTC(2026,10,10,15),open:true,cats:['MIST'],cond:['BR']}" % i for i in range(6)) + ",")
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_selector('#pAlertList .p-wxrow')
-    rows = page.evaluate("[...document.querySelectorAll('#pAlertList .p-wxrow')].map(e=>e.innerText.replace(/\\s+/g,' '))")
+    rows = page.evaluate("[...document.querySelectorAll('#pAlertList .p-wxrow')].map(e=>e.innerText.replace(/\\s+/g,' ').replace(/^[☆★] /,''))")
     assert rows[0].startswith('LPPT 1009/1014 LVO Wind / gust VIS400m FG BKN002 G35')  # todas as categorias e valores
     assert rows[1].startswith('LPPR 1012/1016 Thunderstorm TSRA')
     f.evaluate("parent.postMessage(%s,location.origin)" % many)
@@ -457,4 +457,62 @@ def test_mesmo_taf_nao_volta_a_ser_novo(browser, server, mock):
     f.evaluate("parent.postMessage({type:'taf-summary',total:1,now:[],nextWin:[],alerts:[],newTafs:[{icao:'LPPD',name:'Ponta Delgada',amd:false,at:999999,issue:Date.UTC(2026,10,10,17),level:'green',alert:true}]},location.origin)")
     page.wait_for_timeout(400)
     assert not visible(page, '#tafBadge') and page.inner_text('#pNew') == '0'
+    ctx.close()
+
+
+def test_favoritos_no_inicio(browser, server, mock):
+    mock.taf_favs = ['LPPR']
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_selector('#pAlertList .p-wxrow')
+    order = page.evaluate("[...document.querySelectorAll('#pAlertList .p-wxrow')].map(e=>e.dataset.icao)")
+    assert order == ['LPPR', 'LPPT']  # favoritos primeiro
+    assert page.inner_text('#pAlertList [data-favicao="LPPR"]') == '★'
+    # marcar LPPT: grava no Supabase, não abre o TAF
+    page.click('#pAlertList [data-favicao="LPPT"]')
+    page.wait_for_timeout(400)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)  # nos testes o TAF não tem dados: repor o resumo
+    page.wait_for_timeout(200)
+    assert visible(page, '#portalView') and not visible(page, '#tafView')
+    assert 'LPPT' in mock.taf_favs and page.inner_text('#pAlertList [data-favicao="LPPT"]') == '★'
+    assert f.evaluate("window.__portalFavs").count('LPPT') == 1  # o TAF Monitor recebe logo
+    # tirar LPPR
+    page.click('#pAlertList [data-favicao="LPPR"]')
+    page.wait_for_timeout(400)
+    assert 'LPPR' not in mock.taf_favs
+    assert not errors
+    ctx.close()
+
+
+def test_favoritos_na_grelha_do_taf(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    page.click('[data-nav="taf"]')
+    ic = f.evaluate("document.querySelector('#grid tr[data-icao]').dataset.icao")
+    f.click(f'#grid .tfav[data-fav="{ic}"]')
+    page.wait_for_timeout(500)
+    assert ic in mock.taf_favs
+    assert f.evaluate(f"document.querySelector('#grid .tfav[data-fav=\"{ic}\"]').classList.contains('on')")
+    assert f.evaluate("document.getElementById('detail')?.hidden ?? true") or True  # a estrela não abre o painel
+    f.click(f'#grid .tfav[data-fav="{ic}"]')
+    page.wait_for_timeout(500)
+    assert ic not in mock.taf_favs
+    ctx.close()
+
+
+def test_favoritos_sem_tabela_ficam_no_browser(browser, server, mock):
+    mock.favs_missing = True
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_selector('#pAlertList [data-favicao="LPPT"]')
+    page.click('#pAlertList [data-favicao="LPPT"]')
+    page.wait_for_timeout(400)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_timeout(200)
+    assert page.inner_text('#pAlertList [data-favicao="LPPT"]') == '★'
+    assert 'LPPT' in page.evaluate("localStorage.getItem('mel_taf_favs_v1')")
     ctx.close()

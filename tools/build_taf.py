@@ -97,6 +97,15 @@ s = rep(s, '  ui.detailClosed = false; saveUI();\n  const t0 = Math.floor(Date.n
 # 3c) filtro só do portal: alerta nas próximas WX_H horas (o resumo do Início)
 s = rep(s, 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");', 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");\n    if (ui.filter === "nextwin") return r.levels.slice(0, %d).includes("red");' % WX_H)
 
+# 3d) aeroportos favoritos (de cada utilizador, guardados pelo portal): estrela na grelha
+s = rep(s, '<button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}"><span class="dot',
+        '<button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}">${favStar(r.icao)}<span class="dot')
+s = rep(s, 'function buildRows(slots){',
+        'const isFavAp = ic => (window.__portalFavs || []).includes(ic);\n'
+        'function favStar(ic){ const on = isFavAp(ic); return `<span class="tfav${on ? " on" : ""}" data-fav="${ic}" role="button" tabindex="0" title="${on ? "Retirar dos favoritos" : "Marcar como favorito"}" aria-label="${on ? "Retirar " + ic + " dos favoritos" : "Marcar " + ic + " como favorito"}">${on ? "★" : "☆"}</span>`; }\n'
+        'function buildRows(slots){')
+s = rep(s, 'th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}', '.tfav{font-size:14px;line-height:1;color:var(--muted,#8a99a8);cursor:pointer;margin-right:-2px;opacity:.55}.tfav:hover{opacity:1}.tfav.on{color:#e0a100;opacity:1}\nth.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}')
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
@@ -107,6 +116,8 @@ s = rep(s, main_end,
         '    let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);\n'
         '    if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }\n'
         '    if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }\n'
+        '  } else if (d.type === "taf-favs"){\n'
+        '    window.__portalFavs = d.list || []; render();\n'
         '  } else if (d.type === "taf-filter"){\n'
         '    ui.filter = d.f || "all"; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();\n'
         '    const g = document.querySelector("#grid"); if (g) g.scrollIntoView({block: "start"});\n'
@@ -124,6 +135,9 @@ s = rep(s, main_end,
         '    setTimeout(() => { const b = $("#banner"); b.innerHTML = "<b>As definições não foram guardadas.</b> <span>" + esc(d.error || "Erro desconhecido") + "</span>"; b.className = "banner err"; b.hidden = false; }, 300);\n'
         '  }\n'
         '});\n'
+        '/* estrela de favorito na grelha: não abre o painel, avisa o portal */\n'
+        '$("#grid").addEventListener("click", e => { const st = e.target.closest(".tfav"); if (!st) return; e.stopPropagation(); e.preventDefault(); const ic = st.dataset.fav; window.parent.postMessage({type: "taf-fav", icao: ic, on: !isFavAp(ic)}, location.origin); }, true);\n'
+        '$("#grid").addEventListener("keydown", e => { const st = e.target.closest && e.target.closest(".tfav"); if (st && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); e.stopPropagation(); st.click(); } }, true);\n'
         'load();\n</script>')
 
 # 5) o código do monitor só arranca depois de verificado o acesso
@@ -145,7 +159,7 @@ gate = r'''<script>
     var P = null;
     try { P = window.parent.__portal; } catch(e){}
     if (P && P.role && P.cfgReady){
-      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null;
+      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null; window.__portalFavs = P.favs || [];
       var x = document.createElement("script");
       x.textContent = document.getElementById("tafMain").textContent;
       document.documentElement.classList.remove("gate");

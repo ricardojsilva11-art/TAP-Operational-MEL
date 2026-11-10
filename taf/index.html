@@ -161,7 +161,8 @@ table.grid{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabu
 .grid th.ap button{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;height:34px}
 .grid th.ap .ic{font:600 13.5px/1 var(--f-mono);letter-spacing:.03em;color:var(--ink)}
 .grid th.ap .tag{font:600 9px/1 var(--f-ui);letter-spacing:.06em;padding:2px 4px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
-.grid th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}
+.grid .tfav{font-size:14px;line-height:1;color:var(--muted,#8a99a8);cursor:pointer;margin-right:-2px;opacity:.55}.tfav:hover{opacity:1}.tfav.on{color:#e0a100;opacity:1}
+th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}
 .grid th.ap .dot.red{background:var(--c-red)} .grid th.ap .dot.amber{background:var(--c-amb)} .grid th.ap .dot.ok{background:var(--c-ok-ink)}
 .grid tr.row:hover th.ap{background:var(--panel2)}
 .grid tr.row.sel th.ap{background:var(--accent-soft)}
@@ -1626,6 +1627,8 @@ async function load(){
 }
 
 /* ---------- render ---------- */
+const isFavAp = ic => (window.__portalFavs || []).includes(ic);
+function favStar(ic){ const on = isFavAp(ic); return `<span class="tfav${on ? " on" : ""}" data-fav="${ic}" role="button" tabindex="0" title="${on ? "Retirar dos favoritos" : "Marcar como favorito"}" aria-label="${on ? "Retirar " + ic + " dos favoritos" : "Marcar " + ic + " como favorito"}">${on ? "★" : "☆"}</span>`; }
 function buildRows(slots){
   const byIcao = {};
   for (const T of tafs) if (T.icao){
@@ -1772,7 +1775,7 @@ function render(){
       const det = x.level === "red" ? x.hard.map(z => z.txt).join(", ") : "";
       return `<td class="c ${x.level}${x.cat ? " k-" + x.cat : ""}${dstart.has(k) ? " dstart" : ""}${isEnd ? " wend" : ""}" data-k="${k}" title="${r.icao} ${pad(new Date(slots[k]).getUTCHours())}:00–${pad(new Date(slots[k]).getUTCHours())}:59Z — ${lab}${det ? ": " + esc(det) : ""}${win}">${g}</td>`;
     }).join("");
-    return `<tr class="row${r.icao === selected ? " sel" : ""}" data-icao="${r.icao}"><th class="ap" scope="row"><button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}"><span class="dot ${r.worst}${r.cat ? " k-" + r.cat : ""}"></span><span class="ic">${r.icao}</span>${iataOf(r.icao) ? `<span class="iata">${iataOf(r.icao)}</span>` : ""}${tag}</button></th>${cells}</tr>`;
+    return `<tr class="row${r.icao === selected ? " sel" : ""}" data-icao="${r.icao}"><th class="ap" scope="row"><button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}">${favStar(r.icao)}<span class="dot ${r.worst}${r.cat ? " k-" + r.cat : ""}"></span><span class="ic">${r.icao}</span>${iataOf(r.icao) ? `<span class="iata">${iataOf(r.icao)}</span>` : ""}${tag}</button></th>${cells}</tr>`;
   };
 
   if (!vis.length){
@@ -2620,6 +2623,8 @@ window.addEventListener("message", e => {
     let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);
     if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }
     if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }
+  } else if (d.type === "taf-favs"){
+    window.__portalFavs = d.list || []; render();
   } else if (d.type === "taf-filter"){
     ui.filter = d.f || "all"; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();
     const g = document.querySelector("#grid"); if (g) g.scrollIntoView({block: "start"});
@@ -2637,6 +2642,9 @@ window.addEventListener("message", e => {
     setTimeout(() => { const b = $("#banner"); b.innerHTML = "<b>As definições não foram guardadas.</b> <span>" + esc(d.error || "Erro desconhecido") + "</span>"; b.className = "banner err"; b.hidden = false; }, 300);
   }
 });
+/* estrela de favorito na grelha: não abre o painel, avisa o portal */
+$("#grid").addEventListener("click", e => { const st = e.target.closest(".tfav"); if (!st) return; e.stopPropagation(); e.preventDefault(); const ic = st.dataset.fav; window.parent.postMessage({type: "taf-fav", icao: ic, on: !isFavAp(ic)}, location.origin); }, true);
+$("#grid").addEventListener("keydown", e => { const st = e.target.closest && e.target.closest(".tfav"); if (st && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); e.stopPropagation(); st.click(); } }, true);
 load();
 </script>
 
@@ -2652,7 +2660,7 @@ load();
     var P = null;
     try { P = window.parent.__portal; } catch(e){}
     if (P && P.role && P.cfgReady){
-      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null;
+      window.__portalRole = P.role; window.__portalTafCfg = P.cfg || null; window.__portalTafMeta = P.meta || null; window.__portalFavs = P.favs || [];
       var x = document.createElement("script");
       x.textContent = document.getElementById("tafMain").textContent;
       document.documentElement.classList.remove("gate");

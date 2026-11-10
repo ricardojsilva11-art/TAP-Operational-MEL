@@ -18,6 +18,7 @@ Para criar a base de dados do zero, no Supabase (SQL Editor > New query), correr
 | 12 | `012_email_valido.sql` | Recusa emails com caracteres escondidos ou símbolos estranhos no registo | — |
 | 13 | `013_eliminar_utilizador.sql` | Eliminar contas (também aprovadas) na página Utilizadores, mantendo as MEL e o histórico | 002 |
 | 14 | `014_definicoes_taf.sql` | Definições do TAF partilhadas: o Administrador altera e valem para todos, em tempo real | 002, 008 |
+| 15 | `015_taf_favoritos.sql` | Aeroportos favoritos no TAF (estrela), de cada utilizador | 002 |
 
 Depois do `001`, importar os registos iniciais (`mel_seed.csv`) para a tabela `mel_records`, antes de continuar com os restantes.
 
