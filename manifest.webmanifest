@@ -1,6 +1,6 @@
 {
-  "name": "TAP Operational MEL",
-  "short_name": "MEL",
+  "name": "TAP Operational Control",
+  "short_name": "Op Control",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

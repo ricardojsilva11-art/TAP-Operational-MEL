@@ -1,7 +1,7 @@
-// Service worker da TAP Operational MEL: guarda a "casca" da app para abrir sem ligação.
+// Service worker do portal Operational Control (TAF · MEL): guarda a "casca" da app para abrir sem ligação.
 // Os dados das MEL NÃO passam por aqui: a app guarda a última cópia no próprio browser.
-const CACHE = 'mel-shell-v4';
-const SHELL = ['./', './index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
+const CACHE = 'mel-shell-v5';
+const SHELL = ['./', './index.html', './taf/', './taf/index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
                './img/a320.webp', './img/a330.webp', './img/e190.webp',
                './vendor/supabase-js-2.119.0.js'];
 const CDN = [
@@ -38,11 +38,12 @@ self.addEventListener('fetch', e => {
       try {
         const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
         const r = await fetch(req, { signal: ctl.signal }); clearTimeout(t);
-        if (r.ok) c.put(req.mode === 'navigate' ? './index.html' : req, r.clone());
+        const page = url.pathname.includes('/taf/') ? './taf/index.html' : './index.html';   // TAF tem a sua própria página
+        if (r.ok) c.put(req.mode === 'navigate' ? page : req, r.clone());
         return r;
       } catch (_) {
         return (await c.match(req, { ignoreSearch: true })) ||
-               (req.mode === 'navigate' ? await c.match('./index.html') : undefined) ||
+               (req.mode === 'navigate' ? await c.match(url.pathname.includes('/taf/') ? './taf/index.html' : './index.html') : undefined) ||
                Response.error();
       }
     })());

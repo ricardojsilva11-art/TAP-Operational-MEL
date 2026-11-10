@@ -184,13 +184,16 @@ class MockSupabase:
         return self._json(route, [])
 
 
-def open_app(browser, server, mock, local_storage=None, service_workers='block', wait=True):
-    """Abre a app com o Supabase falso e o localStorage indicado. Devolve (context, page, errors)."""
+def open_app(browser, server, mock, local_storage=None, service_workers='block', wait=True, view='mel'):
+    """Abre a app com o Supabase falso e o localStorage indicado. Devolve (context, page, errors).
+
+    view='mel' passa logo para o separador MEL (a maior parte dos testes); view='portal' fica no Início."""
     ctx = browser.new_context(service_workers=service_workers)
     xlsx_local = os.environ.get('XLSX_LOCAL')  # sem internet: usar uma cópia local do SheetJS
     if xlsx_local:
         ctx.route(XLSX_URL, lambda r: r.fulfill(path=xlsx_local, content_type='text/javascript'))
     ctx.route('**/*.supabase.co/**', mock.handle)
+    ctx.route('https://taf.ricardo-j-silva11.workers.dev/**', lambda r: r.abort())  # TAF: sem rede nos testes
     page = ctx.new_page()
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
@@ -203,6 +206,8 @@ def open_app(browser, server, mock, local_storage=None, service_workers='block',
                                "||document.getElementById('pwModal').classList.contains('show')"
                                "||performance.now()>4000", timeout=40000)
         page.wait_for_timeout(400)
+        if view == 'mel':
+            page.evaluate("()=>{if(!document.getElementById('appPanel').classList.contains('hidden'))document.querySelector('[data-nav=\"home\"]').click()}")
     return ctx, page, errors
 
 

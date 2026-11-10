@@ -1,8 +1,8 @@
-# TAP Operational MEL
+# TAP Operational Control (TAF · MEL)
 
-Aplicação web partilhada para consultar e manter a MEL operacional da TAP (A320, A330, E190/E195), a partir do ficheiro original `TAP MELs.xlsx`. Os dados ficam numa base de dados Supabase; a app é uma página estática publicada no GitHub Pages.
+Portal web partilhado com uma única entrada para duas ferramentas: o **TAF Monitor** (alertas dos TAF por aeroporto) e a **MEL operacional** da TAP (A320, A330, E190/E195, a partir do ficheiro original `TAP MELs.xlsx`). Os dados das MEL ficam numa base de dados Supabase; o portal é uma página estática publicada no GitHub Pages.
 
-**App:** https://ricardojsilva11-art.github.io/TAP-Operational-MEL/
+**Portal:** https://ricardojsilva11-art.github.io/TAP-Operational-MEL/ (o link antigo do TAF Monitor reencaminha para aqui, separador TAF)
 
 ## Antes de começar — segurança
 Estes dados são de contexto operacional de aviação. Não publicar nem carregar dados em serviços externos sem aprovação formal de IT/Segurança/owner dos dados da TAP. Esta aplicação é uma ferramenta de apoio: não é uma aprovação operacional nem uma certificação. Confirmar sempre a documentação MEL aprovada e os procedimentos em vigor.
@@ -11,6 +11,8 @@ Este repositório tem **apenas o código**. As MEL nunca são guardadas aqui: es
 
 ## Conteúdo do repositório
 - `index.html` — a aplicação: entrada e registo, pesquisa, filtros por frota, favoritas, criação/edição com formatação, histórico de MEL apagadas, gestão de utilizadores, exportação para Excel, atualização em tempo real e consulta offline.
+- `taf/index.html` — o TAF Monitor, aberto dentro do portal (separador **TAF**). É gerado a partir de `tools/taf-monitor-original.html` com `python3 tools/build_taf.py` (ver "TAF" abaixo). Não editar à mão.
+- `tools/` — fonte original do TAF Monitor e o script que o adapta ao portal.
 - `config.js` — URL e chave pública (publishable/anon) do projeto Supabase. Nunca colocar aqui a `service_role`/secret key.
 - `tests/` e `.github/workflows/` — testes automáticos (ver abaixo).
 - `sql/` — scripts da base de dados, numerados pela ordem em que se correm. Ver `sql/LEIAME.md`.
@@ -28,9 +30,11 @@ Este repositório tem **apenas o código**. As MEL nunca são guardadas aqui: es
 ### Tipos de acesso
 | Tipo | Pode |
 |------|------|
-| **Só consulta** (`reader`) | Ver, pesquisar, copiar, exportar e marcar favoritas. Não pode adicionar, alterar ou apagar MEL. |
+| **Só consulta** (`reader`) | Ver o TAF e as MEL, pesquisar, copiar, exportar e marcar favoritas. Não pode adicionar, alterar ou apagar MEL. |
 | **Supervisor** (`operator`) | O mesmo, mais adicionar, editar, apagar e reativar MEL. |
-| **Administrador** (`admin`) | O mesmo, mais aprovar/recusar/desativar contas, definir palavras-passe temporárias e apagar definitivamente MEL do Histórico. |
+| **Administrador** (`admin`) | O mesmo, mais alterar as **Definições do TAF**, aprovar/recusar/desativar contas, definir palavras-passe temporárias e apagar definitivamente MEL do Histórico. |
+
+Todas as contas aprovadas têm acesso ao TAF; não é preciso aprovar nada à parte.
 
 As permissões são aplicadas pela base de dados, não só pela app: uma conta pendente, desativada, só de consulta ou com palavra-passe temporária por mudar é recusada pelo servidor mesmo que tente aceder sem passar pela app.
 
@@ -72,6 +76,16 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 4. Testar registo e aprovação, entrada, leitura, criação, edição, exportação e sincronização em dois browsers/dispositivos.
 
 ## Funcionalidades
+
+### Início
+Resumo das duas ferramentas: TAF novos ou emendados (AMD) na última hora, aeroportos em alerta agora e nas próximas 6 h (clicar num aeroporto abre o painel lateral desse aeroporto no TAF), pesquisa rápida de MEL, contagem por frota com a revisão em vigor, últimas alterações e as minhas favoritas.
+
+### TAF
+- É o TAF Monitor tal como era, com a mesma grelha, filtros e painel lateral, agora dentro do portal e com a mesma entrada das MEL. Aberto diretamente (`/taf/`) reencaminha para o portal.
+- O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) na última hora; desaparece quando não há nenhum.
+- **Definições do TAF:** só Administradores do portal (deixou de haver PIN). As definições continuam guardadas no navegador de quem as altera.
+- Os TAF/METAR vêm do Worker `taf` (Cloudflare). Esse Worker tem de aceitar pedidos do endereço do portal (variável `ALLOWED_ORIGIN` = `https://ricardojsilva11-art.github.io`).
+- **Atualizar o TAF Monitor:** substituir `tools/taf-monitor-original.html` pela versão nova e correr `python3 tools/build_taf.py`; o script avisa se alguma parte que adapta deixou de existir.
 
 ### MEL
 - **MEL Item** tem de seguir o formato `M-00-00` ou `C-00`, com mais grupos se for preciso e até 2 letras no fim, juntas ou depois de hífen (ex.: `M-34-50`, `M-21-26-01-02`, `C-21-01`, `M-21-26-01A`, `M-21-51-00-A`). Comentários vão nas Notas, não no MEL Item. Fora disto não grava — a regra é aplicada também pela base de dados.

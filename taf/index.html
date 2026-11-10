@@ -1,0 +1,2644 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d141a">
+<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>html.gate body{visibility:hidden}</style>
+<script>document.documentElement.classList.add("gate")</script>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TAF Monitor">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+</head><body>
+
+<title>TAF Monitor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: control-room board — sticky ops bar with UTC clock, status strip, airport × hour grid, decoded TAF panel on the right (bottom sheet on phones) */
+:root{
+  --bg:#edf1f4; --panel:#ffffff; --panel2:#f6f8fa; --ink:#12202b; --muted:#566676; --line:#d3dbe2; --line2:#e5eaef;
+  --accent:#0a6a86; --accent-soft:#dcedf2; --accent-ink:#ffffff;
+  --c-red:#d0372f; --c-red-ink:#ffffff; --c-amb:#f0b13c; --c-amb-ink:#3b2500; --c-amb-hatch:rgba(255,255,255,.35);
+  --c-ok:#d2e9da; --c-ok-ink:#2d5a3d; --c-none:#dde3e8;
+  --t-red:#b1261f; --t-amb:#8a5200; --t-ok:#2a6a41; --bg-red:#fbe5e3; --bg-amb:#fdf0d6; --bg-ok:#e3f2e8;
+  --shadow:0 1px 2px rgba(18,32,43,.06),0 8px 24px rgba(18,32,43,.08);
+  --k-conv:#7a3db8; --k-conv-i:#ffffff; --k-vis:#c62828; --k-vis-i:#ffffff; --k-cig:#e0611c; --k-cig-i:#ffffff;
+  --k-cig4:#f2c232; --k-cig4-i:#2b2100; --k-ice:#2c68d0; --k-ice-i:#ffffff; --k-wind:#0f8487; --k-wind-i:#ffffff;
+  --k-obsc:#8b7355; --k-obsc-i:#ffffff; --k-int:#5d6b88; --k-int-i:#ffffff;
+  --k-lim:#e10600; --k-lim-i:#ffffff; --k-rvac:#3949ab; --k-rvac-i:#ffffff; --k-bmin:#7f0000; --k-bmin-i:#ffffff; --k-capt:#c2185b; --k-capt-i:#ffffff; --k-mar:#f7a35c; --k-mar-i:#3d1c00;
+  --f-ui:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d141a; --panel:#141d25; --panel2:#18232c; --ink:#e2e9ef; --muted:#8c9aa7; --line:#27333d; --line2:#1e2932;
+  --accent:#4cb2d0; --accent-soft:#16323d; --accent-ink:#06222b;
+  --c-red:#c63a33; --c-red-ink:#ffffff; --c-amb:#d69b2b; --c-amb-ink:#231500; --c-amb-hatch:rgba(0,0,0,.18);
+  --c-ok:#1d3a2a; --c-ok-ink:#8fd0a7; --c-none:#1b252e;
+  --t-red:#ff8a80; --t-amb:#f2c065; --t-ok:#86d3a2; --bg-red:#3a1a19; --bg-amb:#3a2c12; --bg-ok:#173023;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --k-conv:#9259d4; --k-conv-i:#ffffff; --k-vis:#cc3b3b; --k-vis-i:#ffffff; --k-cig:#d6661f; --k-cig-i:#ffffff;
+  --k-cig4:#d9ae2c; --k-cig4-i:#1f1600; --k-ice:#3d78db; --k-ice-i:#ffffff; --k-wind:#16918f; --k-wind-i:#ffffff;
+  --k-obsc:#8d7759; --k-obsc-i:#ffffff; --k-int:#68779a; --k-int-i:#ffffff;
+  --k-lim:#ff2d2d; --k-lim-i:#ffffff; --k-rvac:#6f7fe0; --k-rvac-i:#ffffff; --k-bmin:#b3261e; --k-bmin-i:#ffffff; --k-capt:#e0508f; --k-capt-i:#ffffff; --k-mar:#e0954f; --k-mar-i:#241000;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d141a; --panel:#141d25; --panel2:#18232c; --ink:#e2e9ef; --muted:#8c9aa7; --line:#27333d; --line2:#1e2932;
+  --accent:#4cb2d0; --accent-soft:#16323d; --accent-ink:#06222b;
+  --c-red:#c63a33; --c-red-ink:#ffffff; --c-amb:#d69b2b; --c-amb-ink:#231500; --c-amb-hatch:rgba(0,0,0,.18);
+  --c-ok:#1d3a2a; --c-ok-ink:#8fd0a7; --c-none:#1b252e;
+  --t-red:#ff8a80; --t-amb:#f2c065; --t-ok:#86d3a2; --bg-red:#3a1a19; --bg-amb:#3a2c12; --bg-ok:#173023;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --k-conv:#9259d4; --k-conv-i:#ffffff; --k-vis:#cc3b3b; --k-vis-i:#ffffff; --k-cig:#d6661f; --k-cig-i:#ffffff;
+  --k-cig4:#d9ae2c; --k-cig4-i:#1f1600; --k-ice:#3d78db; --k-ice-i:#ffffff; --k-wind:#16918f; --k-wind-i:#ffffff;
+  --k-obsc:#8d7759; --k-obsc-i:#ffffff; --k-int:#68779a; --k-int-i:#ffffff;
+  --k-lim:#ff2d2d; --k-lim-i:#ffffff; --k-rvac:#6f7fe0; --k-rvac-i:#ffffff; --k-bmin:#b3261e; --k-bmin-i:#ffffff; --k-capt:#e0508f; --k-capt-i:#ffffff; --k-mar:#e0954f; --k-mar-i:#241000;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-ui)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ops bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:26px;height:26px;border-radius:6px;background:var(--accent);display:grid;place-items:center;flex:none}
+.mark svg{width:16px;height:16px}
+h1{font-size:19px;font-weight:700;letter-spacing:.01em;margin:0}
+.theme-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);display:grid;place-items:center;cursor:pointer;flex:none}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+.theme-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.theme-btn .moon{fill:currentColor;stroke:none}
+.theme-btn .sun{display:none}
+.theme-btn.is-dark .moon{display:none}
+.theme-btn.is-dark .sun{display:block}
+.pill{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--bg-amb);color:var(--t-amb)}
+.pill.live{background:var(--bg-ok);color:var(--t-ok)}
+.clock{display:flex;align-items:baseline;gap:6px;margin-left:auto}
+.clock b{font:600 26px/1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.clock small{font-weight:600;color:var(--muted);letter-spacing:.08em}
+.clock span{color:var(--muted);font-size:13px}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.upd{font-size:13px;color:var(--muted)}
+.upd.stale{color:var(--t-amb);font-weight:600}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 14px;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn[disabled]{opacity:.55;cursor:progress}
+
+.wrap{display:flex;flex-direction:column;gap:14px;padding-block:14px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+.banner{border-radius:8px;padding:10px 14px;font-size:14px;background:var(--bg-amb);color:var(--ink);border:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.banner b{color:var(--t-amb)}
+.banner.err{background:var(--bg-red)}
+.banner.err b{color:var(--t-red)}
+
+/* status strip */
+.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+/* cartões Destinos / Alternativos (mesmo estilo dos contadores) */
+.lists{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ltab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;min-width:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit;width:100%}
+.ltab:hover{border-color:var(--accent)}
+.ltab[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.ltab .sw{width:6px;align-self:stretch;border-radius:3px;flex:none;background:var(--muted)}
+.ltab-DST .sw{background:var(--accent)} .ltab-ALT .sw{background:var(--k-ice)}
+.ltab .n{font:600 34px/1 var(--f-mono);font-variant-numeric:tabular-nums;min-width:2ch}
+.ltab-DST .n{color:var(--accent)} .ltab-ALT .n{color:var(--k-ice)}
+.ltab .l{display:flex;flex-direction:column;gap:2px;font-size:14.5px;color:var(--muted)}
+.ltab .l b{color:var(--ink);font-size:17px}
+@media (max-width:760px){.lists{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1500px){.summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.stat.mw .sw{background:var(--k-lim)} .stat.mw .n{color:var(--k-lim)}
+.stat.nt .sw{background:var(--accent)} .stat.nt .n{color:var(--accent)}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;min-width:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit;width:100%}
+.stat:hover{border-color:var(--accent)}
+.stat[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.stat .n{font:600 28px/1 var(--f-mono);font-variant-numeric:tabular-nums;min-width:2ch}
+.stat .l{font-size:13px;color:var(--muted);line-height:1.25}
+.stat .l b{display:block;color:var(--ink);font-size:14px}
+.stat.red .n{color:var(--t-red)} .stat.amb .n{color:var(--t-amb)} .stat.none .n{color:var(--muted)}
+.stat .sw{width:6px;align-self:stretch;border-radius:3px;flex:none}
+.stat.red .sw{background:var(--c-red)} .stat.amb .sw{background:var(--c-amb)} .stat.ok .sw{background:var(--c-ok-ink)} .stat.none .sw{background:var(--line)}
+.stat .icaos{font:400 12px/1.3 var(--f-mono);color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.search{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 10px;width:150px;font-family:var(--f-mono);text-transform:uppercase}
+.chk{display:inline-flex;gap:6px;align-items:center;font-size:14px;color:var(--muted);cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-left:auto}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:16px;height:14px;border-radius:3px;display:inline-grid;place-items:center;font:600 9px/1 var(--f-mono);font-style:normal}
+
+/* grid + detail */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+.gridwrap{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:calc(100vh - 230px);min-height:320px;min-width:0}
+table.grid{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums}
+.grid thead th{position:sticky;background:var(--panel);z-index:3;font-weight:500;color:var(--muted)}
+.grid thead tr.days th{top:0;height:22px;font-size:12px;text-align:left;padding:0 4px;white-space:nowrap;color:var(--ink);font-weight:600}
+.grid thead tr.days th.dstart{box-shadow:inset 2px 0 0 var(--line)}
+.grid thead tr.hrs th{top:24px;height:22px;font:500 11px/1 var(--f-mono);text-align:center;width:50px;min-width:50px}
+.grid thead tr.hrs th.now{color:var(--accent-ink);background:var(--accent);border-radius:3px}
+.grid thead th.corner{left:0;z-index:5;text-align:left;padding-left:8px;font-size:12px}
+.grid th.ap{position:sticky;left:0;z-index:2;background:var(--panel);text-align:left;padding:0 8px;min-width:96px;white-space:nowrap;cursor:pointer;border-radius:4px}
+.grid th.ap button{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;height:34px}
+.grid th.ap .ic{font:600 13.5px/1 var(--f-mono);letter-spacing:.03em;color:var(--ink)}
+.grid th.ap .tag{font:600 9px/1 var(--f-ui);letter-spacing:.06em;padding:2px 4px;border-radius:3px;background:var(--accent-soft);color:var(--accent)}
+.grid th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}
+.grid th.ap .dot.red{background:var(--c-red)} .grid th.ap .dot.amber{background:var(--c-amb)} .grid th.ap .dot.ok{background:var(--c-ok-ink)}
+.grid tr.row:hover th.ap{background:var(--panel2)}
+.grid tr.row.sel th.ap{background:var(--accent-soft)}
+.grid tr.row.sel td.c{box-shadow:inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+.grid td.c{width:50px;min-width:50px;max-width:50px;height:34px;padding:1px 2px;text-align:center;font:600 10px/1.15 var(--f-mono);border-radius:3px;cursor:pointer;overflow:hidden}
+.grid td.c span{display:block;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.02em}
+.grid td.c span+span{font-weight:400;opacity:.92}
+.grid td.c.ok{background:var(--c-ok)}
+.grid td.c.red{background:var(--c-red);color:var(--c-red-ink)}
+.grid td.c.amber{background:var(--c-amb);color:var(--c-amb-ink);background-image:repeating-linear-gradient(135deg,var(--c-amb-hatch) 0 2px,transparent 2px 6px)}
+.grid td.c.none{background:repeating-linear-gradient(135deg,var(--c-none) 0 3px,transparent 3px 6px)}
+.grid td.c.dstart{box-shadow:inset 2px 0 0 var(--panel)}
+.grid tr.reg th{position:sticky;left:0;text-align:left;padding:10px 8px 3px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);background:var(--panel)}
+.grid tr.reg th em{font-style:normal;font-weight:600;color:var(--t-red);letter-spacing:.04em;margin-left:6px;text-transform:none}
+.empty{padding:40px 20px;color:var(--muted);text-align:center}
+
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px);max-height:calc(100vh - 90px);overflow:auto;min-width:0}
+.d-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line2)}
+.d-head h2{margin:0;font:600 26px/1 var(--f-mono);letter-spacing:.04em}
+.d-head .sub{color:var(--muted);font-size:13px;margin-top:4px}
+.d-close{border:0;background:var(--panel2);border-radius:6px;width:40px;height:40px;cursor:pointer;font-size:24px;line-height:1;color:var(--muted);display:block;flex:none}
+.d-close:hover{background:var(--accent-soft);color:var(--accent)}
+.detail.closed{display:none}
+.layout.nodetail{grid-template-columns:minmax(0,1fr)}
+.d-sec{padding:12px 16px;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:8px}
+.d-sec:last-child{border-bottom:0}
+.d-sec.coll > h3{cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
+.d-sec.coll > h3::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:-3px 4px 0 1px;transition:transform .15s;flex:none}
+.d-sec.coll.is-closed > h3::before{transform:rotate(-45deg);margin-top:0}
+.d-sec.coll > h3:hover{color:var(--accent)}
+.d-sec.coll.is-closed > :not(h3){display:none!important}
+.d-sec.coll.is-closed{padding-bottom:10px}
+.d-sec h3{margin:0;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.nowst{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px}
+.rwys{display:flex;flex-wrap:wrap;gap:6px}
+.rose-wrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.rose{width:200px;height:200px;flex:none}
+.rose-list{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px;font-size:15px}
+.lim-txt{color:var(--k-lim)}
+.rwy-now{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:6px;background:var(--accent-soft)}
+.rwy-now b{font:600 17px/1.3 var(--f-mono);color:var(--ink)}
+.rwy-tag{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.rwy-comps{display:flex;flex-wrap:wrap;gap:4px 12px;font:13.5px/1.4 var(--f-mono);color:var(--muted)}
+.rwy-comps .tw{color:var(--t-amb)}
+.rwy-fc{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.rwy{font:500 14px/1 var(--f-mono);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:6px 8px;background:var(--panel2)}
+.rwy b{color:var(--ink);font-weight:600;font-size:15px}
+.mw-note{margin-top:6px;padding:7px 10px;border-radius:6px;border-left:4px solid var(--k-lim);background:color-mix(in srgb,var(--k-lim) 14%,var(--panel));font-size:15px}
+.newtaf{background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.newtaf summary{cursor:pointer;color:var(--accent);font-weight:600}
+.nowlist{display:flex;flex-direction:column;gap:3px;font:600 15px/1.35 var(--f-mono)}
+.badge{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:5px}
+.badge.red{background:var(--c-red);color:var(--c-red-ink)}
+.badge.amber{background:var(--c-amb);color:var(--c-amb-ink)}
+.badge.ok{background:var(--c-ok);color:var(--c-ok-ink)}
+.badge.none{background:var(--c-none);color:var(--muted)}
+.wins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.wins li{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:baseline;font-size:14px;padding:6px 8px;border-radius:6px}
+.wins li.red{background:var(--bg-red)} .wins li.amber{background:var(--bg-amb)}
+.wins .t{font:600 13px/1.2 var(--f-mono)}
+.wins li.red .t{color:var(--t-red)} .wins li.amber .t{color:var(--t-amb)}
+.raw{font:400 13.5px/1.75 var(--f-mono);background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:10px 12px;overflow-wrap:anywhere}
+.raw .kw{font-weight:600;color:var(--accent)}
+.raw .hit{background:var(--c-red);color:var(--c-red-ink);padding:1px 3px;border-radius:3px;font-weight:600}
+.raw .ign{text-decoration:underline dotted;text-underline-offset:3px;color:var(--muted)}
+.chip.mute{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.raw .gl{display:block;padding-left:1.5em;text-indent:-1.5em}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px}
+.meta dt{color:var(--muted)} .meta dd{margin:0;font-family:var(--f-mono);font-size:13px}
+.meta dd.warn{color:var(--t-amb);font-weight:600}
+.gtab{width:100%;border-collapse:collapse;font-size:13px}
+.gtab th{text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;border-bottom:1px solid var(--line)}
+.gtab td{padding:6px;border-bottom:1px solid var(--line2);vertical-align:top}
+.gtab td.m{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+.gtab .lbl{font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font:600 11px/1 var(--f-ui);padding:3px 6px;border-radius:4px;white-space:nowrap}
+.chip.red{background:var(--bg-red);color:var(--t-red)} .chip.amber{background:var(--bg-amb);color:var(--t-amb)} .chip.ok{background:var(--bg-ok);color:var(--t-ok)}
+.gtabwrap{overflow-x:auto}
+.d-empty{padding:30px 18px;color:var(--muted)}
+
+/* manual entry */
+.manual{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.manual label{font-weight:600}
+.manual textarea{width:100%;min-height:120px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--panel2);padding:10px;font:13px/1.5 var(--f-mono)}
+.manual .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--muted)}
+
+/* settings */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(8,14,20,.5);display:grid;place-items:center;padding:16px}
+.dlg{background:var(--panel);border-radius:10px;box-shadow:var(--shadow);width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto}
+.dlg form{display:flex;flex-direction:column}
+.dlg header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line2)}
+.dlg header h2{margin:0;font-size:18px}
+.dlg .body{padding:14px 18px;display:flex;flex-direction:column;gap:14px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld>span{font-weight:600;font-size:14px}
+.fld small{color:var(--muted);font-size:12.5px}
+.fld input[type=text],.fld input[type=url],.fld input[type=number],.fld select,.fld textarea{border:1px solid var(--line);border-radius:6px;background:var(--panel2);padding:7px 9px}
+.fld textarea{min-height:90px;font:12.5px/1.5 var(--f-mono);resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dlg footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line2)}
+.radios{display:flex;flex-wrap:wrap;gap:6px}
+.radios label{border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.radios label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.phen{display:flex;flex-wrap:wrap;gap:6px}
+.phen label{border:1px solid var(--line);border-radius:5px;padding:4px 8px;cursor:pointer;display:flex;gap:5px;align-items:center;font:500 12.5px/1.2 var(--f-mono)}
+.phen label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+
+/* cenários: cada categoria de alerta tem a sua cor */
+.k-conv{--kc:var(--k-conv);--ki:var(--k-conv-i)} .k-vis{--kc:var(--k-vis);--ki:var(--k-vis-i)} .k-cig{--kc:var(--k-cig);--ki:var(--k-cig-i)}
+.k-cig4{--kc:var(--k-cig4);--ki:var(--k-cig4-i)} .k-ice{--kc:var(--k-ice);--ki:var(--k-ice-i)} .k-wind{--kc:var(--k-wind);--ki:var(--k-wind-i)}
+.k-obsc{--kc:var(--k-obsc);--ki:var(--k-obsc-i)} .k-lim{--kc:var(--k-lim);--ki:var(--k-lim-i)} .k-rvac{--kc:var(--k-rvac);--ki:var(--k-rvac-i)} .k-bmin{--kc:var(--k-bmin);--ki:var(--k-bmin-i)} .k-capt{--kc:var(--k-capt);--ki:var(--k-capt-i)} .k-mar{--kc:var(--k-mar);--ki:var(--k-mar-i)} .k-int{--kc:var(--k-int);--ki:var(--k-int-i)}
+.grid td.c.red{background:var(--kc,var(--c-red));color:var(--ki,var(--c-red-ink))}
+/* fim de uma janela de alerta: linha vertical à direita do último quadrado */
+.grid td.c.red.wend{background-image:linear-gradient(to left,var(--ink) 0 3px,transparent 3px)}
+.grid th.ap .dot.red{background:var(--kc,var(--c-red))}
+.wins li.red{background:color-mix(in srgb,var(--kc,var(--c-red)) 15%,var(--panel))}
+.wins li.red .t{color:var(--ink)}
+.wins li .sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--kc);margin-right:6px;vertical-align:baseline}
+.raw .hit{background:var(--kc,var(--c-red));color:var(--ki,var(--c-red-ink))}
+.chip.red{background:var(--kc,var(--c-red));color:var(--ki,var(--c-red-ink))}
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.cat{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 9px 4px 5px;font-size:13px;cursor:pointer;color:var(--ink)}
+.cat i{width:14px;height:14px;border-radius:3px;background:var(--kc);flex:none}
+.cat b{font:600 12.5px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.cat[aria-pressed="true"]{border-color:var(--kc);box-shadow:inset 0 0 0 1px var(--kc);background:color-mix(in srgb,var(--kc) 12%,var(--panel))}
+.cat.zero{opacity:.55}
+
+/* relatório */
+.dlg.wide{width:min(820px,100%)}
+.rep-opts{display:flex;flex-wrap:wrap;gap:6px}
+.rep-opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:6px;padding:4px 9px 4px 6px;cursor:pointer;font-size:14px}
+.rep-opts label i{width:12px;height:12px;border-radius:3px;background:var(--kc);flex:none}
+.rep-opts label:has(input:checked){border-color:var(--kc);background:color-mix(in srgb,var(--kc) 10%,var(--panel))}
+.rep-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.rep-prev{min-height:46vh;max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel2);padding:10px 12px;color:var(--ink);font-size:14px}
+.rep-prev *{color:var(--ink)!important}
+.rep-prev th{background:var(--panel)!important}
+.rep-prev td[colspan]{background:var(--panel)!important;letter-spacing:.04em}
+.rep-prev th,.rep-prev td{border-color:var(--line)!important}
+.rep-hidden{position:absolute!important;left:-9999px;width:10px!important;height:10px!important;min-height:0!important;opacity:0}
+.rep-win{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.rep-win{flex-wrap:wrap}
+.rep-win input{font:inherit;font-family:var(--f-mono);width:3.2em;text-align:center;font-size:16px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--ink)}
+.rep-win input[aria-invalid="true"]{border-color:#c62828}
+.rep-text{width:100%;min-height:46vh;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--panel2);padding:10px 12px;font:15px/1.6 var(--f-mono);color:var(--ink);white-space:pre;overflow:auto}
+.rep-msg{font-size:14px;color:var(--t-ok);font-weight:600}
+
+/* letras maiores para leitura à distância */
+body{font-size:16.5px}
+h1{font-size:22px}
+.pill{font-size:12.5px}
+.clock b{font-size:30px}
+.clock small,.clock span{font-size:14.5px}
+.upd{font-size:14.5px}
+.btn{font-size:16px;padding:8px 16px}
+.banner{font-size:15.5px}
+.stat .n{font-size:34px}
+.stat .l{font-size:14.5px}
+.stat .l b{font-size:16px}
+.stat .icaos{font-size:13.5px}
+.seg button{font-size:15.5px;padding:7px 14px}
+.search{font-size:15.5px;width:170px}
+.chk{font-size:15.5px}
+.legend{font-size:14px}
+.cat{font-size:15px;padding:6px 11px 6px 7px}
+.cat b{font-size:14px}
+.layout{grid-template-columns:minmax(0,1fr) var(--detail-w,460px)}
+/* pega para arrastar a largura do painel */
+.d-resize{grid-row:1;grid-column:2;justify-self:start;align-self:start;position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px);height:min(70vh,600px);width:14px;margin-left:-14px;cursor:col-resize;z-index:6;display:flex;align-items:center;justify-content:center;touch-action:none}
+.detail{grid-row:1;grid-column:2}
+.gridwrap{grid-row:1;grid-column:1}
+.d-resize::before{content:"";width:4px;height:56px;border-radius:3px;background:var(--line);transition:background .15s}
+.d-resize:hover::before,.d-resize.drag::before{background:var(--accent)}
+.layout.nodetail .d-resize{display:none}
+@media (max-width:1100px){.d-resize{display:none}.detail,.gridwrap{grid-column:auto;grid-row:auto}}
+body.resizing{cursor:col-resize;user-select:none}
+.grid thead tr.days th{font-size:15px;height:26px}
+.grid thead tr.hrs th{top:28px;height:26px;font-size:14px;width:62px;min-width:62px}
+.grid thead th.corner{font-size:14px}
+.grid th.ap{min-width:118px}
+.grid th.ap .ic{font-size:17px}
+.grid th.ap .iata{font:500 14px/1 var(--f-mono);color:var(--muted);letter-spacing:.03em}
+.grid th.ap{min-width:150px}
+.grid th.ap .tag{font-size:10.5px}
+.grid th.ap .tag-new{background:var(--accent);color:var(--accent-ink)}
+.grid th.ap .tag-metar{background:var(--k-lim);color:#fff}
+@media (prefers-reduced-motion:no-preference){.grid th.ap .tag-new{animation:tagpulse 1.6s ease-in-out infinite}}
+@keyframes tagpulse{50%{opacity:.45}}
+.grid th.ap .dot{width:9px;height:9px}
+.grid th.ap button{height:44px}
+.grid td.c{width:62px;min-width:62px;max-width:62px;height:44px;font-size:12px}
+.grid tr.reg th{font-size:13.5px}
+.d-head h2{font-size:32px}
+.d-head .h-iata{color:var(--muted);font-weight:500}
+.d-head .apname{color:var(--ink);font-weight:600}
+.d-head .sub{font-size:15px}
+.d-sec h3{font-size:13px}
+.nowst{font-size:18px}
+.badge{font-size:13.5px}
+.wins li{font-size:16px;grid-template-columns:150px 1fr}
+.wins .t{font-size:15px}
+.raw{font-size:16px}
+.meta{font-size:15.5px} .meta dd{font-size:15px}
+.gtab{font-size:15px} .gtab th{font-size:12.5px} .gtab td.m{font-size:14px}
+.chip{font-size:12.5px;padding:4px 7px}
+.hint{font-size:14.5px}
+.fld>span{font-size:15.5px}
+
+/* sites de meteorologia */
+.lnk-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.lnk-group h3{margin:0 0 6px;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.lnk-group ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lnk-group a{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--ink);text-decoration:none}
+.lnk-group a:hover{border-color:var(--accent);background:var(--accent-soft)}
+.lnk-group a b{font-weight:600;font-size:15.5px}
+.lnk-group a small{font:12.5px/1.2 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.lnk-edit summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.lnk-edit textarea{width:100%;min-height:200px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);padding:10px;font:13px/1.5 var(--f-mono);color:var(--ink);resize:vertical}
+
+.pin-dlg{width:min(380px,100%)}
+#btnSettings .lock{width:15px;height:15px;vertical-align:-2px;margin-left:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.pin-dlg input{font:600 22px/1 var(--f-mono);letter-spacing:.3em;text-align:center}
+.pin-msg{color:var(--t-red);font-weight:600;min-height:1.2em}
+
+@media (max-width:1100px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .detail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;max-height:72vh;border-radius:14px 14px 0 0;box-shadow:var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+  .detail.closed{display:none}
+  .d-close{display:block}
+  .gridwrap{max-height:none}
+}
+@media (max-width:760px){
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .legend{margin-left:0}
+  .clock{margin-left:0}
+  .clock b{font-size:22px}
+  .two{grid-template-columns:1fr}
+}
+/* ---------- layout compacto: uma faixa de contadores, categorias só com alertas, legenda atrás de "?" ---------- */
+.wrap{gap:10px}
+.strip{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.strip .lists{display:flex;gap:8px;flex:none}
+.strip .summary{display:flex;gap:8px;flex:1 1 520px;min-width:0}
+.strip .ltab,.strip .stat{width:auto;padding:6px 12px 6px 8px;gap:9px;border-radius:7px}
+.strip .stat{flex:1 1 0;min-width:0}
+.strip .stat.mini{flex:0 0 auto}
+.strip .ltab .n,.strip .stat .n{font-size:21px;min-width:0}
+.strip .ltab .l b,.strip .stat .l b{font-size:13.5px;white-space:nowrap}
+.strip .stat .l{min-width:0;font-size:12px}
+.strip .stat .icaos{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.strip .ltab .sw,.strip .stat .sw{width:4px}
+.cat.zero:not([aria-pressed="true"]){display:none}
+.cats-none{font-size:13px;color:var(--muted);padding:4px 2px}
+.help-btn{min-width:34px;padding-inline:0;font-weight:700}
+.toolbar .legend{flex-basis:100%;margin-left:0}
+@media (max-width:1100px){.strip .summary{flex-basis:100%}}
+@media (max-width:760px){
+  .bar-in{gap:6px 10px}
+  .actions .btn{padding:6px 11px;font-size:14px}
+  .actions .upd{display:none}
+  .strip{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  .strip::-webkit-scrollbar{display:none}
+  .strip .summary{display:flex;flex:none}
+  .strip .stat{flex:none;max-width:200px}
+  .strip .stat .icaos{max-width:120px}
+  .cats,#areas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  .cats::-webkit-scrollbar,#areas::-webkit-scrollbar{display:none}
+  .cat,#areas button{flex:none;white-space:nowrap}
+  #areas{display:flex;max-width:none}
+}
+@media (prefers-reduced-motion:no-preference){
+  .grid td.c{transition:filter .12s}
+  .grid td.c:hover{filter:brightness(1.12)}
+}
+</style>
+
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2 10.5h9.5a2.5 2.5 0 0 0 0-5 3.5 3.5 0 0 0-6.7-1A3 3 0 0 0 2 10.5Z" stroke="var(--accent-ink)" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 13l-1 1.5M8.5 13l-1 1.5M12 13l-1 1.5" stroke="var(--accent-ink)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+      <h1>TAF Monitor</h1>
+      <span class="pill" id="modePill">Exemplo</span>
+      <button class="theme-btn" id="btnTheme" type="button" aria-label="Mudar para tema claro" title="Tema claro / escuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="moon" d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z"/><g class="sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg></button>
+    </div>
+    <div class="clock" aria-label="Hora UTC"><b id="utc">--:--</b><small>UTC</small><span id="utcDate"></span></div>
+    <div class="actions">
+      <span class="upd num" id="upd"></span>
+      <button class="btn" id="btnRefresh" type="button">Atualizar</button>
+      <button class="btn ghost" id="btnLinks" type="button">Sites</button>
+      <button class="btn ghost" id="btnReport" type="button">Relatório</button>
+      <button class="btn ghost" id="btnSettings" type="button">Definições</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="manual" id="manual" hidden>
+    <label for="manualText">Colar TAF</label>
+    <textarea id="manualText" spellcheck="false" placeholder="TAF LPPT 230500Z 2306/2412 33010KT 9999 FEW025 TEMPO 2312/2316 4000 TSRA BKN015CB="></textarea>
+    <div class="row">
+      <button class="btn" id="btnParse" type="button">Analisar</button>
+      <span class="hint">Um ou vários TAF e, se quiser, os METAR. Separe com «=» ou comece cada um com TAF, METAR ou com o ICAO.</span>
+    </div>
+  </section>
+
+  <div class="strip">
+    <section class="lists" id="lists" aria-label="Destinos e alternativos"></section>
+    <section class="summary" id="summary" aria-live="polite"></section>
+  </div>
+
+  <section class="toolbar">
+    <div class="seg" role="group" aria-label="Área de operação" id="areas">
+      <button type="button" data-area="">All</button>
+      <button type="button" data-area="EU">Europe</button>
+      <button type="button" data-area="NA">North America</button>
+      <button type="button" data-area="SA">South America</button>
+      <button type="button" data-area="AF">Africa</button>
+    </div>
+    <div class="seg" role="group" aria-label="Filtro">
+      <button type="button" data-f="all">Todos</button>
+      <button type="button" data-f="alert">Com alertas</button>
+      <button type="button" data-f="now">Alerta agora</button>
+    </div>
+    <input class="search" id="q" type="search" placeholder="ICAO / IATA" aria-label="Procurar ICAO ou IATA" maxlength="4">
+    <label class="chk"><input type="checkbox" id="sortAlert"> Alertas primeiro</label>
+    <button class="btn ghost help-btn" id="btnLegend" type="button" aria-expanded="false" aria-controls="legend" title="Legenda">?</button>
+    <div class="legend" id="legend" aria-label="Legenda" hidden>
+      <span><i style="background:var(--c-ok)"></i>Dentro dos mínimos</span>
+      <span><i style="background:repeating-linear-gradient(135deg,var(--c-none) 0 3px,transparent 3px 6px)"></i>Sem TAF</span>
+      <span class="mono" id="legendCodes"></span>
+    </div>
+  </section>
+
+  <section class="cats" id="cats" aria-label="Cenários"></section>
+
+  <div class="layout">
+    <!-- carregue num aeroporto para abrir o painel; × ou Esc fecha -->
+    <div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>
+    <div class="d-resize" id="dResize" role="separator" aria-orientation="vertical" aria-label="Arrastar para mudar a largura do painel" title="Arraste para mudar a largura · duplo clique repõe" tabindex="0"></div>
+    <aside class="detail" id="detail" aria-live="polite"></aside>
+  </div>
+</main>
+
+<div class="modal" id="links" hidden>
+  <div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="lnkTitle">
+    <header><h2 id="lnkTitle">Sites de meteorologia</h2><button class="d-close" style="display:block" type="button" id="lnkClose" aria-label="Fechar">×</button></header>
+    <div class="body">
+      <div id="lnkList" class="lnk-groups"></div>
+      <details class="lnk-edit" id="lnkEditBox">
+        <summary>Editar lista</summary>
+        <p class="hint" style="margin:6px 0">Uma linha por site: <span class="mono">Grupo | Nome | https://endereço</span>. A lista fica guardada neste navegador.</p>
+        <textarea id="lnkText" spellcheck="false"></textarea>
+        <div class="row rep-actions"><button class="btn" type="button" id="lnkSave">Guardar</button><button class="btn ghost" type="button" id="lnkReset">Repor lista inicial</button><span class="hint" id="lnkMsg"></span></div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="report" hidden>
+  <div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="repTitle">
+    <header><h2 id="repTitle">Relatório de alertas</h2><button class="d-close" style="display:block" type="button" id="repClose" aria-label="Fechar">×</button></header>
+    <div class="body">
+      <p class="hint" id="repInfo" style="margin:0"></p>
+      <div class="fld"><span>Cenários incluídos</span><div class="rep-opts" id="repCats"></div></div>
+      <div class="rep-row">
+        <div class="seg" role="group" aria-label="Turno" id="repBlk"></div>
+        <span class="rep-win" id="repWin" hidden></span>
+        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>
+      </div>
+      <div class="rep-prev" id="repPrev" aria-label="Relatório"></div>
+      <textarea class="rep-text rep-hidden" id="repText" tabindex="-1" aria-hidden="true" readonly spellcheck="false" aria-label="Texto do relatório"></textarea>
+    </div>
+    <footer>
+      <span class="rep-msg" id="repMsg" role="status"></span>
+      <button class="btn ghost" type="button" id="repWord">Descarregar .txt</button>
+      <button class="btn" type="button" id="repCopy">Copiar tabela</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="pinDlg" hidden>
+  <div class="dlg pin-dlg" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <form id="pinForm">
+      <header><h2 id="pinTitle">Definições bloqueadas</h2><button class="d-close" style="display:block" type="button" id="pinClose" aria-label="Fechar">×</button></header>
+      <div class="body">
+        <p class="hint" style="margin:0">Só o administrador pode alterar as definições. Introduza o PIN.</p>
+        <label class="fld"><span>PIN</span><input type="password" id="pinInput" inputmode="numeric" autocomplete="off" maxlength="12"></label>
+        <span class="pin-msg" id="pinMsg" role="status"></span>
+      </div>
+      <footer><button class="btn" type="submit">Desbloquear</button></footer>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="settings" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <form id="setForm">
+      <header><h2 id="setTitle">Definições</h2><button class="d-close" style="display:block" type="button" id="setClose" aria-label="Fechar">×</button></header>
+      <div class="body">
+        <div class="fld">
+          <span>Origem dos dados</span>
+          <div class="radios">
+            <label><input type="radio" name="mode" value="live" id="mLive"> Ao vivo (Worker)</label>
+            <label><input type="radio" name="mode" value="manual" id="mManual"> Colar TAF</label>
+            <label><input type="radio" name="mode" value="sample" id="mSample"> Exemplo</label>
+          </div>
+        </div>
+        <label class="fld"><span>Endereço do Worker Cloudflare</span>
+          <input type="url" id="fWorker" placeholder="https://taf.oseudominio.workers.dev">
+          <small>A página pede <span class="mono">?ids=LPPT,LPPR,…</span> e aceita JSON do aviationweather.gov ou texto simples.</small>
+        </label>
+        <label class="fld"><span>Aeroportos (ICAO)</span>
+          <textarea id="fIcao" spellcheck="false"></textarea>
+          <small>Separados por espaço, vírgula ou linha. A ordem define a ordem na grelha.</small>
+        </label>
+        <label class="fld"><span>Destinos (ICAO)</span>
+          <textarea id="fDestIcao" spellcheck="false"></textarea>
+          <small>O relatório inclui só estes aeroportos, por esta ordem.</small>
+        </label>
+        <label class="fld"><span>Alternativos (ICAO)</span>
+          <textarea id="fAltIcao" spellcheck="false"></textarea>
+          <small>Deixe vazio para considerar alternativos todos os aeroportos da grelha que não são destinos.</small>
+        </label>
+        <div class="two">
+          <label class="fld"><span>Alerta se visibilidade &lt; (m)</span><input type="number" id="fVis" min="0" step="50"></label>
+          <label class="fld"><span>Alerta se teto &lt; (ft)</span><input type="number" id="fCig" min="0" step="50"></label>
+        </div>
+        <label class="fld"><span>Teto baixo se teto ≤ (ft)</span><input type="number" id="fCig2" min="0" step="100"><small>400 ft corresponde a BKN004, OVC004 ou VV004. Use 0 para desligar.</small></label>
+        <label class="fld"><span>Alerta se vento ou rajada &gt; (kt)</span><input type="number" id="fWind" min="0" step="1"></label>
+        <div class="fld"><span>Fenómenos que geram alerta</span>
+          <div class="phen" id="fPhen"></div>
+          <label class="chk"><input type="checkbox" id="fInt"> Qualquer fenómeno com intensidade + ou −</label>
+          <small>Só a previsão principal conta (base, FM e BECMG depois de concluído). TEMPO e PROB aparecem no TAF mas não geram alerta.</small>
+        </div>
+        <div class="two">
+          <label class="fld"><span>Horas na grelha</span>
+            <select id="fHours"><option value="24">24 h</option><option value="30">30 h</option><option value="36">36 h</option></select>
+          </label>
+          <label class="fld"><span>Atualizar a cada (min)</span><input type="number" id="fRefresh" min="5" max="60" step="5"></label>
+        </div>
+      </div>
+      <footer>
+        <button class="btn ghost" type="button" id="setLock" title="Volta a bloquear as definições neste navegador">Bloquear</button>
+        <button class="btn ghost" type="button" id="setReset">Repor predefinições</button>
+        <button class="btn" type="submit">Guardar</button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<script type="text/plain" id="tafMain">
+/* ---------- configuração ---------- */
+const PRESET_WORKER = "https://taf.ricardo-j-silva11.workers.dev"; // ex.: "https://taf.oseudominio.workers.dev" — preenchido, a página arranca em modo ao vivo
+const DEFAULT_ICAO = `LPPT LPPR LPFR LPMA LPPD LPLA LPPS
+LEMD LEBL LEMG LEVC LEZL LEBB LEVX GCLP GCTS
+LFPG LFPO LFML LFMN LFLL LFBO LFBD
+LIRF LIMC LIPZ LIRN LIPE
+LSZH LSGG
+EIDW EGLL EGKK EGCC EGPH
+EBBR ELLX EHAM
+EDDF EDDM EDDB EDDH EDDL EDDS
+LOWW LKPR EPWA LHBP LROP LBSF LDZA LJLJ
+EKCH ENGM ESSA EFHK
+LCLK LGAV LLBG
+DAAG GMFO GMMN GMMX GMAD GMML DAAT DAUG
+DRRN DFFD DNKN GUCY GVAC GVNP GVSV GOBD GBYD GGOV
+FPST FOOL FGSL FKKD DGAA DXXX DIAP DNMM
+SBFZ SBSG SBCT SBSV SBRF SBBE SBBR SBCF SBKP SBGR SBGL SBPA SBMO
+SVMI SVMC SVMG
+MMUN MUHA MDPC MDSD MYNN MMCZ MMMD TNCC TNCA TJSJ TFFF TAPA TXKF
+BIKF EINN
+KEWR KJFK KMIA KORD KBOS KIAD KSFO KPHL KPSM KOAK KSJC KSMF KSLC KLAS KCPR KFAR KMSP KBGR
+CYYZ CYUL CYYT CYQX CYYR CYHZ CYOW
+FNLU FCPP FZAA FCBB FQMA FAOR FALE FABL FLKK FTTJ FZQA
+KLAX SVVA TFFR
+LPAZ GCXO LIRQ GVBA
+CYHM KDTW
+FNBJ KMCO SBSL
+SBFL`;
+/* aeroportos acrescentados na versão 3 da lista */
+const ADDED_V3 = ["KLAX", "SVVA", "TFFR"];
+const ADDED_V4 = ["LPAZ", "GCXO", "LIRQ", "GVBA"];
+const REMOVED_V5 = ["LPHR", "CYJT"];
+const ADDED_V6 = ["CYHM", "KDTW"];
+const ADDED_V7 = ["FNBJ", "KMCO", "SBSL"];
+const ADDED_V8 = ["SBFL"];
+/* código IATA e nome dos aeroportos */
+const AIRPORTS = {"LPPT":["LIS","Lisboa Humberto Delgado"],"LPPR":["OPO","Porto Francisco Sá Carneiro"],"LPFR":["FAO","Faro"],"LPMA":["FNC","Madeira Cristiano Ronaldo"],"LPPD":["PDL","Ponta Delgada João Paulo II"],"LPLA":["TER","Lajes (Terceira)"],"LPHR":["HOR","Horta"],"LPPS":["PXO","Porto Santo"],"LPAZ":["SMA","Santa Maria (Açores)"],"LEMD":["MAD","Madrid-Barajas Adolfo Suárez"],"LEBL":["BCN","Barcelona-El Prat"],"LEMG":["AGP","Málaga-Costa del Sol"],"LEVC":["VLC","Valencia"],"LEZL":["SVQ","Sevilla"],"LEBB":["BIO","Bilbao"],"LEVX":["VGO","Vigo"],"GCLP":["LPA","Gran Canaria"],"GCTS":["TFS","Tenerife Sur"],"GCXO":["TFN","Tenerife Norte"],"LFPG":["CDG","Paris-Charles de Gaulle"],"LFPO":["ORY","Paris-Orly"],"LFML":["MRS","Marseille Provence"],"LFMN":["NCE","Nice Côte d'Azur"],"LFLL":["LYS","Lyon-Saint Exupéry"],"LFBO":["TLS","Toulouse-Blagnac"],"LFBD":["BOD","Bordeaux-Mérignac"],"LIRF":["FCO","Roma Fiumicino"],"LIMC":["MXP","Milano Malpensa"],"LIPZ":["VCE","Venezia Marco Polo"],"LIRN":["NAP","Napoli Capodichino"],"LIPE":["BLQ","Bologna"],"LIRQ":["FLR","Firenze Peretola"],"LSZH":["ZRH","Zürich"],"LSGG":["GVA","Genève"],"EIDW":["DUB","Dublin"],"EINN":["SNN","Shannon"],"EGLL":["LHR","London Heathrow"],"EGKK":["LGW","London Gatwick"],"EGCC":["MAN","Manchester"],"EGPH":["EDI","Edinburgh"],"EBBR":["BRU","Brussels"],"ELLX":["LUX","Luxembourg"],"EHAM":["AMS","Amsterdam Schiphol"],"EDDF":["FRA","Frankfurt"],"EDDM":["MUC","München"],"EDDB":["BER","Berlin Brandenburg"],"EDDH":["HAM","Hamburg"],"EDDL":["DUS","Düsseldorf"],"EDDS":["STR","Stuttgart"],"LOWW":["VIE","Wien-Schwechat"],"LKPR":["PRG","Praha Václav Havel"],"EPWA":["WAW","Warszawa Chopin"],"LHBP":["BUD","Budapest Liszt Ferenc"],"LROP":["OTP","București Henri Coandă"],"LBSF":["SOF","Sofia"],"LDZA":["ZAG","Zagreb"],"LJLJ":["LJU","Ljubljana"],"EKCH":["CPH","København Kastrup"],"ENGM":["OSL","Oslo Gardermoen"],"ESSA":["ARN","Stockholm Arlanda"],"EFHK":["HEL","Helsinki-Vantaa"],"BIKF":["KEF","Keflavík"],"LCLK":["LCA","Larnaca"],"LGAV":["ATH","Athens Eleftherios Venizelos"],"LLBG":["TLV","Tel Aviv Ben Gurion"],"DAAG":["ALG","Alger Houari Boumediene"],"DAAT":["TMR","Tamanrasset"],"DAUG":["GHA","Ghardaïa"],"GMFO":["OUD","Oujda Angads"],"GMMN":["CMN","Casablanca Mohammed V"],"GMMX":["RAK","Marrakech Menara"],"GMAD":["AGA","Agadir Al Massira"],"GMML":["EUN","Laâyoune Hassan I"],"DRRN":["NIM","Niamey"],"DFFD":["OUA","Ouagadougou"],"DNKN":["KAN","Kano"],"DNMM":["LOS","Lagos Murtala Muhammed"],"GUCY":["CKY","Conakry"],"GVAC":["SID","Sal Amílcar Cabral"],"GVNP":["RAI","Praia Nelson Mandela"],"GVSV":["VXE","São Vicente Cesária Évora"],"GVBA":["BVC","Boa Vista Aristides Pereira"],"GOBD":["DSS","Dakar Blaise Diagne"],"GBYD":["BJL","Banjul"],"GGOV":["OXB","Bissau Osvaldo Vieira"],"FPST":["TMS","São Tomé"],"FOOL":["LBV","Libreville"],"FGSL":["SSG","Malabo"],"FKKD":["DLA","Douala"],"DGAA":["ACC","Accra Kotoka"],"DXXX":["LFW","Lomé"],"DIAP":["ABJ","Abidjan"],"FNLU":["LAD","Luanda 4 de Fevereiro"],"FCPP":["PNR","Pointe-Noire"],"FCBB":["BZV","Brazzaville Maya-Maya"],"FZAA":["FIH","Kinshasa N'Djili"],"FZQA":["FBM","Lubumbashi"],"FQMA":["MPM","Maputo"],"FAOR":["JNB","Johannesburg O. R. Tambo"],"FALE":["DUR","Durban King Shaka"],"FABL":["BFN","Bloemfontein"],"FLKK":["LUN","Lusaka Kenneth Kaunda"],"FTTJ":["NDJ","N'Djamena"],"SBFZ":["FOR","Fortaleza"],"SBSG":["NAT","Natal"],"SBCT":["CWB","Curitiba"],"SBSV":["SSA","Salvador"],"SBRF":["REC","Recife"],"SBBE":["BEL","Belém"],"SBBR":["BSB","Brasília"],"SBCF":["CNF","Belo Horizonte Confins"],"SBKP":["VCP","Campinas Viracopos"],"SBGR":["GRU","São Paulo Guarulhos"],"SBGL":["GIG","Rio de Janeiro Galeão"],"SBPA":["POA","Porto Alegre"],"SBMO":["MCZ","Maceió"],"SVMI":["CCS","Caracas Maiquetía"],"SVMC":["MAR","Maracaibo"],"SVMG":["PMV","Porlamar (Margarita)"],"SVVA":["VLN","Valencia (Venezuela)"],"MMUN":["CUN","Cancún"],"MMCZ":["CZM","Cozumel"],"MMMD":["MID","Mérida"],"MUHA":["HAV","La Habana José Martí"],"MDPC":["PUJ","Punta Cana"],"MDSD":["SDQ","Santo Domingo Las Américas"],"MYNN":["NAS","Nassau"],"TNCC":["CUR","Curaçao"],"TNCA":["AUA","Aruba"],"TJSJ":["SJU","San Juan"],"TFFF":["FDF","Martinique"],"TFFR":["PTP","Pointe-à-Pitre (Guadeloupe)"],"TAPA":["ANU","Antigua"],"TXKF":["BDA","Bermuda"],"KEWR":["EWR","Newark"],"KJFK":["JFK","New York JFK"],"KMIA":["MIA","Miami"],"KORD":["ORD","Chicago O'Hare"],"KBOS":["BOS","Boston Logan"],"KIAD":["IAD","Washington Dulles"],"KSFO":["SFO","San Francisco"],"KLAX":["LAX","Los Angeles"],"KPHL":["PHL","Philadelphia"],"KPSM":["PSM","Portsmouth (Pease)"],"KOAK":["OAK","Oakland"],"KSJC":["SJC","San José (Califórnia)"],"KSMF":["SMF","Sacramento"],"KSLC":["SLC","Salt Lake City"],"KLAS":["LAS","Las Vegas"],"KCPR":["CPR","Casper"],"KFAR":["FAR","Fargo"],"KMSP":["MSP","Minneapolis–St Paul"],"KBGR":["BGR","Bangor"],"CYYZ":["YYZ","Toronto Pearson"],"CYUL":["YUL","Montréal Trudeau"],"CYOW":["YOW","Ottawa"],"CYHZ":["YHZ","Halifax"],"CYYT":["YYT","St. John's"],"CYQX":["YQX","Gander"],"CYYR":["YYR","Goose Bay"],"CYJT":["YJT","Stephenville"],"CYHM":["YHM","Hamilton John C. Munro"],"KDTW":["DTW","Detroit Metropolitan"],"FNBJ":["NBJ","Luanda Dr. António Agostinho Neto"],"KMCO":["MCO","Orlando"],"SBSL":["SLZ","São Luís Marechal Cunha Machado"],"SBFL":["FLN","Florianópolis Hercílio Luz"]};
+/* pistas abertas (fonte: OurAirports, 24/10/2026): [designação, comprimento m, rumo verdadeiro] */
+const RUNWAYS = {"BIKF":[["10/28",3065,104],["01/19",3054,14]],"CYHZ":[["05/23",3200,35],["14/32",2347,126]],"CYJT":[["09/27",3051,72]],"CYOW":[["14/32",3048,126],["07/25",2438,57],["04/22",1006,26]],"CYQX":[["03/21",3109,11],["13/31",2713,107]],"CYUL":[["06L/24R",3353,43],["06R/24L",2926,41]],"CYYR":[["08/26",3367,55],["15/33",2920,133]],"CYYT":[["10/28",2591,86],["16/34",2135,142]],"CYYZ":[["05/23",3389,47],["15L/33R",3368,137],["06L/24R",2956,47],["15R/33L",2770,137],["06R/24L",2743,47]],"DAAG":[["05/23",3500,53],["09/27",3500,92]],"DAAT":[["02/20",3600,22],["08/26",3100,82]],"DAUG":[["12/30",3100,122],["18/36",2400,183]],"DFFD":[["04/22",3000,33]],"DGAA":[["03/21",3403,22]],"DIAP":[["03/21",3000,23]],"DNKN":[["06/24",3301,61],["05/23",2451,44]],"DNMM":[["18R/36L",3900,180],["18L/36R",2742,180]],"DRRN":[["09L/27R",3200,87],["09R/27L",3000,87]],"DXXX":[["04/22",3001,39]],"EBBR":[["07L/25R",3638,65],["07R/25L",3211,70],["01/19",2987,14]],"EDDB":[["06R/24L",4000,69],["06L/24R",3600,69]],"EDDF":[["07C/25C",4000,70],["07R/25L",4000,70],["18/36",4000,180],["07L/25R",2800,70]],"EDDH":[["15/33",3666,153],["05/23",3250,50]],"EDDL":[["05R/23L",3000,53],["05L/23R",2700,53]],"EDDM":[["08L/26R",4000,83],["08R/26L",4000,83]],"EDDS":[["07/25",3345,72]],"EFHK":[["04R/22L",3500,48],["04L/22R",3060,48],["15/33",2901,154]],"EGCC":[["05R/23L",3050,51],["05L/23R",3048,51]],"EGKK":[["08R/26L",3317,78],["08L/26R",2561,78]],"EGLL":[["09L/27R",3901,90],["09R/27L",3658,90]],"EGPH":[["06/24",2558,59]],"EHAM":[["18R/36L",3800,183],["09/27",3453,87],["06/24",3439,58],["18L/36R",3400,183],["18C/36C",3300,183],["04/22",2020,41]],"EIDW":[["10L/28R",3110,97],["10R/28L",2637,95],["16/34",2072,157]],"EINN":[["06/24",3199,52]],"EKCH":[["04L/22R",3600,41],["04R/22L",3300,41],["12/30",2800,123]],"ELLX":[["06/24",4000,57]],"ENGM":[["01L/19R",3600,16],["01R/19L",2950,16]],"EPWA":[["15/33",3690,152],["11/29",2800,115]],"ESSA":[["01L/19R",3301,10],["01R/19L",2500,10],["08/26",2500,76]],"FABL":[["02/20",2559,360],["12/30",2195,102]],"FALE":[["06/24",3700,61]],"FAOR":[["03L/21R",4418,14],["03R/21L",3400,14]],"FCBB":[["05/23",3300,50]],"FCPP":[["17/35",2600,166]],"FGSL":[["04/22",2940,42]],"FKKD":[["12/30",2850,117]],"FNLU":[["05/23",3716,47],["07/25",2600,68]],"FOOL":[["16/34",3000,154]],"FPST":[["11/29",2220,103]],"FQMA":[["05/23",3660,29],["10/28",1700,86]],"FTTJ":[["04/22",2800,46]],"FZAA":[["06/24",4000,58]],"FZQA":[["07/25",3238,66]],"GBYD":[["14/32",3600,131]],"GCLP":[["03L/21R",3100,22],["03R/21L",3100,22]],"GCTS":[["07/25",3200,69]],"GCXO":[["12/30",3171,111]],"GGOV":[["03/21",3200,19]],"GMAD":[["09/27",3200,91]],"GMFO":[["06/24",3000,58],["13/31",3000,132]],"GMML":[["02/20",2701,16],["04/22",2500,32]],"GMMN":[["17L/35R",3720,164],["17R/35L",3720,164]],"GMMX":[["10/28",3100,96]],"GOBD":[["01/19",3500,359]],"GUCY":[["06/24",3300,49]],"GVAC":[["01/19",3280,358]],"GVBA":[["03/21",2100,16]],"GVNP":[["03/21",2100,22]],"GVSV":[["07/25",2000,54]],"KBGR":[["15/33",3487,134]],"KBOS":[["15R/33L",3073,135],["04R/22L",3050,20],["04L/22R",2397,20],["09/27",2134,77],["14/32",1524,125]],"KCPR":[["03/21",3098,44],["17/35",2346,179]],"KEWR":[["04L/22R",3353,26],["04R/22L",3048,26],["11/29",2050,95]],"KFAR":[["18/36",2744,180],["09/27",1921,90],["13/31",1159,137]],"KIAD":[["01C/19C",3505,1],["01R/19L",3505,1],["12/30",3201,111],["01L/19R",2865,1]],"KJFK":[["13R/31L",4423,121],["04L/22R",3682,31],["13L/31R",3048,121],["04R/22L",2560,31]],"KLAS":[["08L/26R",4522,90],["08R/26L",3208,90],["01L/19R",2978,25],["01R/19L",2978,25]],"KLAX":[["07L/25R",3930,83],["07R/25L",3382,83],["06R/24L",3310,83],["06L/24R",2721,83]],"KMIA":[["09/27",3967,87],["08R/26L",3202,87],["12/30",2853,119],["08L/26R",2621,87]],"KMSP":[["04/22",3355,45],["12R/30L",3048,121],["12L/30R",2499,121],["17/35",2438,170]],"KOAK":[["12/30",3206,130],["10R/28L",1894,112],["10L/28R",1663,112],["15/33",1029,165]],"KORD":[["10L/28R",3962,90],["09R/27L",3432,90],["09C/27C",3427,90],["10C/28C",3292,90],["04R/22L",2461,42],["04L/22R",2286,39],["09L/27R",2286,90],["10R/28L",2286,90]],"KPHL":[["09R/27L",3658,76],["09L/27R",2896,76],["17/35",1981,159],["08/26",1524,76]],"KPSM":[["16/34",3451,149]],"KSFO":[["10L/28R",3618,118],["10R/28L",3469,118],["01R/19L",2640,28],["01L/19R",2332,28]],"KSJC":[["12L/30R",3353,139],["12R/30L",3353,139]],"KSLC":[["16L/34R",3658,175],["16R/34L",3658,175],["17/35",2925,180]],"KSMF":[["17L/35R",2623,181],["17R/35L",2621,181]],"LBSF":[["09/27",3600,95]],"LCLK":[["04/22",2994,45]],"LDZA":[["04/22",3252,47]],"LEBB":[["12/30",2600,117],["10/28",1910,97]],"LEBL":[["06L/24R",3353,66],["06R/24L",2660,66],["02/20",2530,19]],"LEMD":[["18R/36L",4350,181],["14R/32L",3988,144],["14L/32R",3500,144],["18L/36R",3500,181]],"LEMG":[["13/31",3200,133],["12/30",2750,119]],"LEVC":[["12/30",2700,116]],"LEVX":[["01/19",2400,11]],"LEZL":[["09/27",3362,90]],"LFBD":[["05/23",3100,46],["11/29",2415,107]],"LFBO":[["14R/32L",3500,143],["14L/32R",3000,143]],"LFLL":[["17R/35L",4000,175],["17L/35R",2670,175]],"LFML":[["13L/31R",3500,134],["13R/31L",2370,134]],"LFMN":[["04R/22L",2963,45],["04L/22R",2628,45]],"LFPG":[["08L/26R",4215,85],["09R/27L",4200,86],["08R/26L",2700,85],["09L/27R",2700,85]],"LFPO":[["06/24",3650,62],["07/25",3320,74],["02/20",2400,18]],"LGAV":[["03R/21L",4000,37],["03L/21R",3800,37]],"LHBP":[["13L/31R",3707,132],["13R/31L",3010,132]],"LIMC":[["17L/35R",3920,170],["17R/35L",3920,170]],"LIPE":[["12/30",2803,117]],"LIPZ":[["04R/22L",3300,42],["04L/22R",2780,42]],"LIRF":[["16L/34R",3902,163],["16R/34L",3902,163],["07/25",3300,70]],"LIRN":[["06/24",2628,58]],"LIRQ":[["05/23",1560,48]],"LJLJ":[["12/30",3300,126]],"LKPR":[["06/24",3715,65],["12/30",3250,127]],"LLBG":[["08/26",4062,80],["12/30",3112,121],["03/21",2772,29]],"LOWW":[["16/34",3600,164],["11/29",3500,116]],"LPAZ":[["18/36",3048,171]],"LPFR":[["10/28",2490,100]],"LPHR":[["10/28",1595,90]],"LPLA":[["15/33",3313,141]],"LPMA":[["05/23",2777,45]],"LPPD":[["12/30",2497,112]],"LPPR":[["17/35",3480,173]],"LPPS":[["18/36",3006,178]],"LPPT":[["02/20",3810,22]],"LROP":[["08L/26R",3500,84],["08R/26L",3500,84]],"LSGG":[["04/22",3900,46]],"LSZH":[["16/34",3700,155],["14/32",3300,137],["10/28",2500,96]],"MDPC":[["08/26",3100,74],["09/27",3100,83]],"MDSD":[["17/35",3353,161],["18/36",2991,173]],"MMCZ":[["12/30",2700,116]],"MMMD":[["10/28",3200,105],["18/36",2300,181]],"MMUN":[["12R/30L",3500,124],["12L/30R",2800,124]],"MUHA":[["06/24",4000,54]],"MYNN":[["14/32",3460,135],["10/28",2522,90]],"SBBE":[["07/25",2800,46],["03/21",1830,5]],"SBBR":[["11R/29L",3300,86],["11L/29R",3200,86]],"SBCF":[["16/34",3600,139]],"SBCT":[["15/33",2218,136],["11/29",1798,null]],"SBFZ":[["13/31",2755,105]],"SBGL":[["10/28",4000,74],["15/33",3180,125]],"SBGR":[["10L/28R",3700,74],["10R/28L",3000,74]],"SBKP":[["15/33",3240,128]],"SBMO":[["12/30",2602,100]],"SBPA":[["11/29",3200,91]],"SBRF":[["18/36",3007,162]],"SBSG":[["12/30",3000,99]],"SBSV":[["10/28",3005,78],["17/35",1520,143]],"SVMC":[["03L/21R",3000,31],["03R/21L",2500,31]],"SVMG":[["09/27",3180,78],["09L/27R",2935,78]],"SVMI":[["10/28",3500,88],["09/27",3027,76]],"SVVA":[["10/28",3000,93]],"TAPA":[["07/25",2744,58]],"TFFF":[["10/28",3000,80]],"TFFR":[["12/30",3505,101]],"TJSJ":[["08/26",3049,67],["10/28",2443,90]],"TNCA":[["11/29",2743,104]],"TNCC":[["11/29",3410,102]],"TXKF":[["12/30",2958,117]],"FLKK":[["10/28",3962,95]],"CYHM":[["12/30",3050,107],["06/24",1832,49]],"KDTW":[["04R/22L",3659,29],["03R/21L",3048,29],["04L/22R",3048,29],["09L/27R",2654,89],["03L/21R",2591,29],["09R/27L",2591,89]],"FNBJ":[["06R/24L",4000,56],["06L/24R",3800,56]],"KMCO":[["18L/36R",3659,179],["18R/36L",3659,179],["17R/35L",3048,179],["17L/35R",2744,180]],"SBSL":[["06/24",2386,39],["09/27",1464,70]],"SBFL":[["14/32",2400,121],["03/21",1320,12]]};
+/* ---------- pista em uso (estimativa pelo vento) ----------
+   O vento do TAF e do METAR é em graus verdadeiros, tal como o rumo das pistas. */
+const CALM_KT = 4; // abaixo disto (ou VRB) não se escolhe pista pelo vento
+function rwyEnds(icao){
+  const out = [];
+  for (const [id, m, hdg] of RUNWAYS[icao] || []){
+    if (hdg == null) continue;
+    const [a, b] = id.split("/");
+    out.push({id: a, hdg: hdg % 360, len: m || 0});
+    if (b) out.push({id: b, hdg: (hdg + 180) % 360, len: m || 0});
+  }
+  return out;
+}
+function windParts(w){
+  if (!w || !w.tok) return null;
+  const m = /^(\d{3}|VRB)/.exec(w.tok);
+  return {dir: m && m[1] !== "VRB" ? +m[1] : null, spd: w.spd, gust: w.gust};
+}
+/* componentes de vento para uma cabeceira: + frente / − cauda; cruzado sempre positivo */
+function comps(end, W){
+  const a = (W.dir - end.hdg) * Math.PI / 180;
+  const f = v => v == null ? null : {head: Math.round(v * Math.cos(a)), cross: Math.round(Math.abs(v * Math.sin(a)))};
+  return {mean: f(W.spd), gust: f(W.gust)};
+}
+/* cabeceira(s) com mais vento de frente; pistas paralelas com o mesmo rumo ficam juntas (ex.: 27L/27R) */
+function rwyInUse(icao, wind){
+  const ends = rwyEnds(icao); if (!ends.length) return null;
+  const W = windParts(wind); if (!W) return null;
+  if (W.dir == null || W.spd < CALM_KT) return {calm: true, W};
+  const scored = ends.map(e => Object.assign({}, e, comps(e, W)));
+  const best = scored.reduce((a, b) => b.mean.head > a.mean.head || (b.mean.head === a.mean.head && b.len > a.len) ? b : a);
+  const same = scored.filter(e => Math.abs(((e.hdg - best.hdg + 540) % 360) - 180) <= 5);
+  return {calm: false, W, best, ids: [...new Set(same.map(e => e.id))].sort().join("/"), all: scored};
+}
+const kt = v => v == null ? "" : String(v);
+function rwyLine(u){
+  if (!u) return "";
+  if (u.calm) return u.W.dir == null ? "Vento variável · pista preferencial" : "Vento calmo (< " + CALM_KT + " kt) · pista preferencial";
+  const m = u.best.mean, g = u.best.gust;
+  const hw = m.head >= 0 ? "HW " + m.head : "TW " + (-m.head);
+  return `RWY ${u.ids} · ${hw} kt · CW ${m.cross}${g ? "/" + g.cross : ""} kt`;
+}
+/* sequência prevista a partir da previsão principal do TAF (base, FM, BECMG concluído) */
+function rwyForecast(r, slots){
+  const runs = [];
+  r.res.forEach((x, k) => {
+    if (!x.state) return;
+    let u = rwyInUse(r.icao, x.state.wind), key;
+    if (u && u.calm && x.state.lastDir){ const u2 = rwyInUse(r.icao, x.state.lastDir); key = u2 && !u2.calm ? u2.ids + " (VRB)" : "CALM"; }
+    else key = !u ? "?" : u.calm ? "CALM" : u.ids;
+    const last = runs[runs.length - 1];
+    if (last && last.key === key && last.end === slots[k]){ last.end = slots[k] + HOUR; last.us.push(u); }
+    else runs.push({key, start: slots[k], end: slots[k] + HOUR, us: [u]});
+  });
+  return runs;
+}
+const iataOf = ic => (AIRPORTS[ic] || [])[0] || "";
+const nameOf = ic => (AIRPORTS[ic] || [])[1] || "";
+const icIata = ic => iataOf(ic) ? ic + "/" + iataOf(ic) : ic;
+/* aeroportos do relatório (por esta ordem) */
+const DEFAULT_REP_ICAO = `LPPT LPFR LPPR LPMA LPPS LPLA LPPD LPAZ LEVC LEBL LEMD LEZL LEMG GCLP GCTS GCXO LFBO LFLL LFML LFMN LFPO LIMC LIPZ LIPE LIRF LIRQ LIRN LSGG LSZH EIDW EGCC EGLL EGKK EBBR EHAM ELLX EDDH EDDB EDDL EDDF EDDM LKPR EPWA LOWW EKCH ESSA LLBG LGAV ENGM GMMN GMMX GVAC GVNP GVSV GVBA GOBD GGOV DGAA SBFZ SBSG SBCT SBSV SBRF SBBE SBBR SBCF SBGR SBGL SBPA SVMI SVVA TFFR KEWR KJFK KMIA KORD KBOS KIAD KSFO KLAX CYYZ CYUL FNLU FQMA`;
+/* aeroportos acrescentados na versão 2 da lista: juntam-se às listas já guardadas */
+const ADDED_V2 = `DAAG GMFO GMMN GMMX GMAD GMML DAAT DAUG
+DRRN DFFD DNKN GUCY GVAC GVNP GVSV GOBD GBYD GGOV
+FPST FOOL FGSL FKKD DGAA DXXX DIAP DNMM
+SBFZ SBSG SBCT SBSV SBRF SBBE SBBR SBCF SBKP SBGR SBGL SBPA SBMO
+SVMI SVMC SVMG
+MMUN MUHA MDPC MDSD MYNN MMCZ MMMD TNCC TNCA TJSJ TFFF TAPA TXKF
+BIKF EINN
+KEWR KJFK KMIA KORD KBOS KIAD KSFO KPHL KPSM KOAK KSJC KSMF KSLC KLAS KCPR KFAR KMSP KBGR
+CYYZ CYUL CYYT CYQX CYYR CYHZ CYJT CYOW
+FNLU FCPP FZAA FCBB FQMA FAOR FALE FABL FLKK FTTJ FZQA`.split(/\s+/);
+const REGIONS = [
+  ["Portugal", /^LP/], ["Espanha e Canárias", /^(LE|GC)/], ["França", /^LF/], ["Itália", /^LI/], ["Suíça", /^LS/],
+  ["Irlanda e Reino Unido", /^(EI|EG)/], ["Benelux", /^(EB|EH|EL)/], ["Alemanha", /^(ED|ET)/],
+  ["Europa Central e Leste", /^(LO|LK|LZ|LH|EP|LJ|LD|LR|LB|LQ|LY|LW|LU|UK|UM|LA|BK)/],
+  ["Nórdicos e Bálticos", /^(EK|EN|ES|EF|BI|EE|EV|EY)/], ["Chipre", /^LC/], ["Grécia", /^LG/], ["Israel", /^LL/],
+  ["Norte de África", /^(DA|GM|DT|HL|HE)/],
+  ["África Ocidental", /^(DR|DF|DN|GU|GV|GO|GB|GG|GA|GL|GF|DG|DX|DB|DI|GQ)/],
+  ["África Central e Austral", /^(FP|FO|FG|FK|FE|FT|FZ|FC|FN|FQ|FA|FL|FB|FV|FW|FY|FX|FD|FM|FH)/],
+  ["Brasil", /^SB/], ["América do Sul", /^(SV|SK|SE|SP|SC|SA|SU|SG|SL|SM|SO|SY)/],
+  ["América Central e Caraíbas", /^(MM|MU|MD|MY|MK|MT|MW|MB|MG|MH|MN|MR|MP|MS|MZ|TN|TJ|TF|TA|TX|TB|TD|TG|TI|TK|TL|TQ|TR|TT|TU|TV)/],
+  ["EUA e Canadá", /^(K|C[YZ]|PA|PH)/]
+];
+const HOUR = 3600e3;
+const DOW = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+/* fenómenos que geram alerta: k = código interno, codes = códigos METAR/TAF que o disparam */
+const PHEN = [
+  {k: "TS", label: "TS", codes: ["TS"]},
+  {k: "CB", label: "CB · TCU", cloud: true, off: true},
+  {k: "FG", label: "FG", codes: ["FG"]},
+  {k: "BR", label: "BR", codes: ["BR"]},
+  {k: "HZ", label: "HZ", codes: ["HZ"]},
+  {k: "FU", label: "FU", codes: ["FU"]},
+  {k: "DU", label: "DU · BLDU · DRDU", codes: ["DU"]},
+  {k: "SA", label: "SA · BLSA · DRSA", codes: ["SA"]},
+  {k: "VA", label: "VA", codes: ["VA"]},
+  {k: "SQ", label: "SQ", codes: ["SQ"]},
+  {k: "SN", label: "SN · BLSN · DRSN · SHSN · TSSN · RASN", codes: ["SN"]},
+  {k: "SG", label: "SG", codes: ["SG"]},
+  {k: "GS", label: "GS", codes: ["GS"]},
+  {k: "GR", label: "GR", codes: ["GR"]},
+  {k: "PL", label: "PL", codes: ["PL"]},
+  {k: "FZ", label: "FZRA · FZDZ · FZSN", codes: ["FZ"]},
+  {k: "DS", label: "DS", codes: ["DS"], off: true},
+  {k: "SS", label: "SS", codes: ["SS"], off: true},
+  {k: "FC", label: "FC", codes: ["FC"], off: true},
+  {k: "PO", label: "PO", codes: ["PO"], off: true}
+];
+/* destinos; os alternativos são os da lista própria ou, se estiver vazia, os restantes da grelha */
+const DEFAULT_DEST_ICAO = `LPPT LPFR LPPR LPMA LPPS LPLA LPPD LPAZ LEVC LEBL LEMD LEZL LEMG GCLP GCTS GCXO LFBO LFLL LFML LFMN LFPO LIMC LIPZ LIPE LIRF LIRQ LIRN LSGG LSZH EIDW EGCC EGLL EGKK EBBR EHAM ELLX EDDH EDDB EDDL EDDF EDDM LKPR EPWA LOWW EKCH ESSA ENGM LLBG LGAV GMMN GMMX GVAC GVNP GVSV GVBA GOBD GGOV FPST DGAA SBFZ SBSG SBCT SBSV SBRF SBBE SBBR SBCF SBGR SBGL SBPA SBMO SVMI SVVA TFFR KEWR KJFK KMIA KORD KBOS KIAD KSFO KLAX CYYZ CYUL FNLU FQMA FNBJ KMCO SBSL SBFL`;
+const DEFAULTS = {destV: 3, listV: 8, repIcao: DEFAULT_REP_ICAO, destIcao: DEFAULT_DEST_ICAO, altIcao: "", phenV: 2, mode: PRESET_WORKER ? "live" : "sample", worker: PRESET_WORKER, icao: DEFAULT_ICAO, vis: 850, cig: 250, cig2: 400, wind: 30, windV: 2, phen: PHEN.filter(p => !p.off).map(p => p.k), intensity: true, hours: 30, refresh: 5};
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const savedCfg = store.get("tafmon.cfg", null);
+let cfg = Object.assign({}, DEFAULTS, savedCfg || {});
+// listas guardadas antes da versão 2: acrescentar os aeroportos novos sem apagar alterações do utilizador
+// versão 2 dos fenómenos: CB e TCU deixam de gerar alerta (TS continua)
+if (savedCfg && (savedCfg.phenV || 1) < 2){
+  cfg.phen = (cfg.phen || []).filter(k => k !== "CB");
+  cfg.phenV = 2;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (savedCfg.listV || 1) < 2){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V2.filter(x => x && !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 2;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 3){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V3.filter(x => !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 3;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 4){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V4.filter(x => !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 4;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 5){
+  cfg.icao = String(cfg.icao || "").split(/\n/).map(l => l.split(/([^A-Z0-9]+)/i).filter(x => !REMOVED_V5.includes(x.toUpperCase())).join("").replace(/\s{2,}/g, " ").trim()).filter(Boolean).join("\n");
+  cfg.listV = 5;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 6){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V6.filter(x => !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 6;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 7){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V7.filter(x => !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 7;
+  store.set("tafmon.cfg", cfg);
+}
+if (savedCfg && (cfg.listV || 1) < 8){
+  const have = new Set(String(cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/));
+  const add = ADDED_V8.filter(x => !have.has(x));
+  if (add.length) cfg.icao = String(cfg.icao || "").trim() + "\n" + add.join(" ");
+  cfg.listV = 8;
+  store.set("tafmon.cfg", cfg);
+}
+function icSetRaw(t){ return new Set(String(t || "").toUpperCase().split(/[^A-Z0-9]+/).filter(x => /^[A-Z]{4}$/.test(x))); }
+if (cfg.destIcao == null){ cfg.destIcao = DEFAULT_DEST_ICAO; if (savedCfg) store.set("tafmon.cfg", cfg); }
+if (cfg.altIcao == null) cfg.altIcao = "";
+// versão 2 dos destinos: FNBJ, KMCO e SBSL juntam-se aos destinos já guardados
+if (savedCfg && (savedCfg.destV || 1) < 2){
+  const have = icSetRaw(cfg.destIcao);
+  const add = ["FNBJ", "KMCO", "SBSL"].filter(x => !have.has(x));
+  if (add.length) cfg.destIcao = String(cfg.destIcao || "").trim() + " " + add.join(" ");
+  cfg.destV = 2; store.set("tafmon.cfg", cfg);
+}
+// vento: limite passa de 25 para 30 kt (Açores e Madeira continuam em 25 kt, no código)
+if (savedCfg && (cfg.windV || 1) < 2){
+  if (!cfg.wind || +cfg.wind === 25) cfg.wind = 30;
+  cfg.windV = 2; store.set("tafmon.cfg", cfg);
+}
+// versão 3 dos destinos: SBFL
+if (savedCfg && (cfg.destV || 1) < 3){
+  const have = icSetRaw(cfg.destIcao);
+  if (!have.has("SBFL")) cfg.destIcao = String(cfg.destIcao || "").trim() + " SBFL";
+  cfg.destV = 3; store.set("tafmon.cfg", cfg);
+}
+const icSet = t => new Set(String(t || "").toUpperCase().split(/[^A-Z0-9]+/).filter(x => /^[A-Z]{4}$/.test(x)));
+function inList(ic, which){
+  const D = icSet(cfg.destIcao), A = icSet(cfg.altIcao);
+  if (which === "DST") return D.has(ic);
+  if (which === "ALT") return A.size ? A.has(ic) : !D.has(ic);
+  return true;
+}
+if (!cfg.repIcao){ cfg.repIcao = DEFAULT_REP_ICAO; if (savedCfg) store.set("tafmon.cfg", cfg); }
+/* ---------- definições bloqueadas por PIN ----------
+   Com o bloqueio, quem não tem o PIN usa sempre as definições publicadas (DEFAULTS).
+   O PIN não está escrito no código: só a sua versão cifrada (SHA-256 de "taf-monitor:" + PIN). */
+const SETTINGS_LOCKED = true;
+const ADMIN_HASH = "1aeee01204238406b44a9d14559e3be047e70ed08a637d106cb452069545b99a";
+const ADMIN_HASH_FNV = "c03d6ca4"; // alternativa para navegadores sem crypto.subtle
+let isAdmin = window.__portalRole === "admin"; // portal: Definições só para Administradores
+if (SETTINGS_LOCKED && !isAdmin) cfg = Object.assign({}, DEFAULTS);
+async function pinHash(pin){
+  const txt = "taf-monitor:" + pin;
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch(e){
+    let h = 0x811c9dc5;
+    for (const ch of new TextEncoder().encode(txt)){ h ^= ch; h = Math.imul(h, 0x01000193) >>> 0; }
+    return h.toString(16).padStart(8, "0");
+  }
+}
+/* o relatório usa só os aeroportos de destino, pela ordem da lista de destinos */
+const repIcaoList = () => String(cfg.destIcao || "").toUpperCase().split(/[^A-Z0-9]+/).filter(x => /^[A-Z]{4}$/.test(x));
+let ui = Object.assign({filter: "all", sortAlert: true, q: "", cat: "", area: "", list: ""}, store.get("tafmon.ui", {}));
+let manualText = store.get("tafmon.manual", "");
+let tafs = [];          // TAF analisados
+let metars = {};        // ICAO -> {raw, obs}
+/* TAF já vistos e TAF que mudaram (novo ou AMD) — guardados neste navegador */
+const NEW_MIN = 60;     // durante quanto tempo um TAF novo fica destacado (minutos)
+let tafSeen = store.get("tafmon.seen", {});       // ICAO -> {raw}
+let tafChanged = store.get("tafmon.changed", {}); // ICAO -> {at, prevRaw}
+const isNewTaf = ic => !!tafChanged[ic] && Date.now() - tafChanged[ic].at < NEW_MIN * 60000;
+function trackTafs(list){
+  const now = Date.now();
+  for (const T of list){
+    if (!T.icao || T.error) continue;
+    const prev = tafSeen[T.icao];
+    if (prev && prev.raw !== T.raw) tafChanged[T.icao] = {at: now, prevRaw: prev.raw};
+    tafSeen[T.icao] = {raw: T.raw};
+  }
+  for (const ic of Object.keys(tafChanged)) if (now - tafChanged[ic].at > 24 * 3600e3) delete tafChanged[ic];
+  store.set("tafmon.seen", tafSeen); store.set("tafmon.changed", tafChanged);
+}
+/* METAR com alertas que o TAF não prevê para a hora atual (METAR com mais de 90 min não conta) */
+function metarWorse(icao, res0){
+  const M = metars[icao]; if (!M || Date.now() - M.obs > 90 * 60000) return [];
+  let mr = evalMetar(icao, M.raw);
+  if (mr.some(z => z.code === "LIM")) mr = mr.filter(z => z.code !== "MRG");
+  const tc = new Set(res0 && res0.level === "red" ? res0.hard.map(z => z.code) : []);
+  return mr.filter(z => !tc.has(z.code));
+}
+/* rótulos de alerta de um TAF ao longo da grelha (para comparar o TAF novo com o anterior) */
+function tafAlertLabels(T, icao, slots){
+  const set = new Set();
+  for (const t of slots){ const x = slotEval(T, t); if (x.level === "red") for (const z of x.hard) set.add(alertText(z)); }
+  return set;
+}
+let metarStatus = "";   // "" | "ok" | "old-worker" | "error" | "sample"
+let lastFetch = null;   // ms
+let fetchError = null;
+let selected = null;    // ICAO
+let rowsCache = [];
+let lastHour = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const icaoList = () => (cfg.icao || "").toUpperCase().split(/[^A-Z0-9]+/).filter(x => /^[A-Z]{4}$/.test(x)).filter((x,i,a) => a.indexOf(x) === i);
+const regionOf = ic => { for (const [n, re] of REGIONS) if (re.test(ic)) return n; return "Outros"; };
+/* áreas de operação (agrupam as regiões da grelha) */
+const AREA_OF_REGION = {
+  "Portugal": "EU", "Espanha e Canárias": "EU", "França": "EU", "Itália": "EU", "Suíça": "EU", "Irlanda e Reino Unido": "EU",
+  "Benelux": "EU", "Alemanha": "EU", "Europa Central e Leste": "EU", "Nórdicos e Bálticos": "EU", "Chipre": "EU", "Grécia": "EU", "Israel": "EU",
+  "Norte de África": "AF", "África Ocidental": "AF", "África Central e Austral": "AF",
+  "Brasil": "SA", "América do Sul": "SA",
+  "América Central e Caraíbas": "NA", "EUA e Canadá": "NA"
+};
+const areaOf = ic => AREA_OF_REGION[regionOf(ic)] || "";
+
+/* ---------- tempo ---------- */
+function resolveTime(dd, hh, mm, ref){
+  const r = new Date(ref); let best = null;
+  for (const dm of [-1, 0, 1]){
+    const chk = new Date(Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + dm, dd));
+    if (chk.getUTCDate() !== dd) continue;
+    const t = Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + dm, dd, hh, mm || 0);
+    if (best === null || Math.abs(t - ref) < Math.abs(best - ref)) best = t;
+  }
+  return best;
+}
+function period(tok, ref){
+  const m = /^(\d{2})(\d{2})\/(\d{2})(\d{2})$/.exec(tok);
+  const a = resolveTime(+m[1], +m[2], 0, ref);
+  const b = resolveTime(+m[3], +m[4], 0, (a ?? ref) + 15 * HOUR);
+  return [a, b];
+}
+const fmtHZ = t => pad(new Date(t).getUTCHours()) + "Z";
+const fmtDHZ = t => { const d = new Date(t); return pad(d.getUTCDate()) + "/" + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + "Z"; };
+const fmtDH = t => { const d = new Date(t); return pad(d.getUTCDate()) + pad(d.getUTCHours()); };
+
+/* ---------- parser TAF ---------- */
+const WX_RE = /^(\+|-|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)*)$/;
+function isWx(t){ if (t === "NSW") return false; const m = WX_RE.exec(t); return !!m && !!(m[2] || m[3]); }
+
+function parseEl(tokens){
+  const e = {wind: null, vis: null, wx: null, clouds: null, cavok: false};
+  let whole = 0;
+  for (const t of tokens){
+    let m;
+    if (t === "CAVOK"){ e.cavok = true; continue; }
+    if ((m = /^(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)$/.exec(t))){
+      const f = m[4] === "MPS" ? 1.944 : 1;
+      e.wind = {tok: t, spd: Math.round(+m[2] * f), gust: m[3] ? Math.round(+m[3] * f) : null};
+      continue;
+    }
+    if (/^\d{4}$/.test(t)){ e.vis = t === "9999" ? 10000 : +t; continue; }
+    if (/^\d$/.test(t)){ whole = +t; continue; }
+    if ((m = /^(P|M)?(\d+)(?:\/(\d+))?SM$/.exec(t))){
+      let mi = m[3] ? +m[2] / +m[3] : +m[2];
+      if (m[3] && whole) mi += whole;
+      whole = 0;
+      e.vis = m[1] === "P" ? 10000 : Math.min(10000, Math.round(mi * 1609 / 10) * 10 - (m[1] === "M" ? 1 : 0));
+      continue;
+    }
+    if (t === "NSW"){ e.wx = []; continue; }
+    if (t === "NSC" || t === "SKC" || t === "NCD"){ e.clouds = e.clouds || []; continue; }
+    if ((m = /^(FEW|SCT|BKN|OVC)(\d{3})(CB|TCU)?$/.exec(t))){ (e.clouds = e.clouds || []).push({amt: m[1], h: +m[2] * 100, type: m[3] || "", tok: t}); continue; }
+    if ((m = /^VV(\d{3}|\/\/\/)$/.exec(t))){ (e.clouds = e.clouds || []).push({amt: "VV", h: m[1] === "///" ? 0 : +m[1] * 100, type: "", tok: t}); continue; }
+    if (isWx(t)){ (e.wx = e.wx || []).push(t); continue; }
+  }
+  return e;
+}
+
+function parseTAF(raw, now){
+  const text = raw.replace(/\s+/g, " ").trim().replace(/=+$/, "").trim();
+  const toks = text.split(" ").filter(Boolean);
+  const T = {raw: text, toks: [], icao: null, issue: null, from: null, to: null, groups: [], amd: false, cor: false, nil: false, cnl: false, error: null};
+  const push = (t, role, g) => T.toks.push({t, role, g});
+  let i = 0;
+  while (i < toks.length){
+    const t = toks[i];
+    if (t === "TAF"){ push(t, "hdr"); i++; continue; }
+    if (t === "AMD" || t === "COR" || t === "RTD"){ if (t === "AMD") T.amd = true; if (t === "COR") T.cor = true; push(t, "kw"); i++; continue; }
+    if (!T.icao && /^[A-Z]{4}$/.test(t)){ T.icao = t; push(t, "icao"); i++; continue; }
+    if (!T.issue && /^\d{6}Z$/.test(t)){ T.issue = resolveTime(+t.slice(0,2), +t.slice(2,4), +t.slice(4,6), now); push(t, "hdr"); i++; continue; }
+    break;
+  }
+  const ref = T.issue || now;
+  let g = {type: "BASE", label: "Base", from: null, to: null, tokens: []};
+  T.groups.push(g);
+  let needPeriod = true;
+  for (; i < toks.length; i++){
+    const t = toks[i]; let m;
+    if (t === "NIL"){ T.nil = true; push(t, "kw"); continue; }
+    if (t === "CNL"){ T.cnl = true; push(t, "kw"); continue; }
+    if (t === "RMK"){ for (; i < toks.length; i++) push(toks[i], "misc", g); break; }
+    if (/^\d{4}\/\d{4}$/.test(t)){
+      if (needPeriod){
+        const p = period(t, ref); g.from = p[0]; g.to = p[1];
+        if (g.type === "BASE"){ T.from = p[0]; T.to = p[1]; }
+        needPeriod = false;
+      }
+      push(t, "time", g); continue;
+    }
+    if ((m = /^FM(\d{2})(\d{2})(\d{2})$/.exec(t))){
+      g = {type: "FM", label: "FM", from: resolveTime(+m[1], +m[2], +m[3], ref), to: null, tokens: []};
+      T.groups.push(g); needPeriod = false; push(t, "kw", g); continue;
+    }
+    if (t === "BECMG"){ g = {type: "BECMG", label: "BECMG", from: null, to: null, tokens: []}; T.groups.push(g); needPeriod = true; push(t, "kw", g); continue; }
+    if ((m = /^PROB(\d{2})$/.exec(t))){ g = {type: "PROB", label: t, from: null, to: null, tokens: []}; T.groups.push(g); needPeriod = true; push(t, "kw", g); continue; }
+    if (t === "TEMPO"){
+      if (g.type === "PROB" && g.from == null && !g.tokens.length){ g.label += " TEMPO"; push(t, "kw2", g); continue; }
+      g = {type: "TEMPO", label: "TEMPO", from: null, to: null, tokens: []}; T.groups.push(g); needPeriod = true; push(t, "kw", g); continue;
+    }
+    if (/^T[XN]M?\d{2}\/\d{4}Z$/.test(t)){ push(t, "misc", g); continue; }
+    g.tokens.push(t); push(t, "el", g);
+  }
+  for (const gr of T.groups) gr.el = parseEl(gr.tokens);
+  const fms = T.groups.filter(x => x.type === "FM");
+  fms.forEach((f, k) => { f.to = (fms[k+1] && fms[k+1].from) || T.to; });
+  if (!T.icao) T.error = "Sem indicativo ICAO";
+  else if (T.from == null && !T.nil && !T.cnl) T.error = "Período de validade não encontrado";
+  return T;
+}
+
+/* ---------- avaliação ---------- */
+const EMPTY = {vis: null, wx: [], clouds: [], wind: null, lastDir: null};
+function apply(s, e){
+  const n = {vis: s.vis, wx: s.wx.slice(), clouds: s.clouds.slice(), wind: s.wind, lastDir: s.lastDir || null};
+  if (e.wind){
+    n.wind = e.wind;
+    // último vento com direção (≥ 4 kt): serve para manter a pista quando o vento passa a calmo/VRB
+    if (/^\d{3}/.test(e.wind.tok) && e.wind.spd >= 4) n.lastDir = e.wind;
+  }
+  if (e.cavok){ n.vis = 10000; n.wx = []; n.clouds = []; return n; }
+  if (e.vis != null) n.vis = e.vis;
+  if (e.wx) n.wx = e.wx.slice();
+  if (e.clouds) n.clouds = e.clouds.slice();
+  return n;
+}
+function ceilingOf(clouds){
+  let c = null;
+  for (const k of clouds) if (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") if (c === null || k.h < c) c = k.h;
+  return c;
+}
+/* divide um grupo de tempo em códigos de 2 letras: "-SHSN" -> ["SH","SN"] */
+function wxCodes(w){ return (w.replace(/^(\+|-|VC)/, "").match(/[A-Z]{2}/g) || []); }
+function wxPhen(w){
+  const codes = wxCodes(w); const on = cfg.phen || [];
+  return PHEN.filter(p => !p.cloud && on.includes(p.k) && p.codes.some(c => codes.includes(c))).map(p => p.k);
+}
+/* limites de vento de aterragem por setor (direção do vento, graus). Limites de rajada: null = só vento médio.
+   LPMA: carta "LDG Wind limitations". Em setor 200–230 o limite de 25 kt aplica-se ao vento ou à rajada. */
+const LDG_LIMITS = {
+  LPMA: {margin: 5, sectors: [
+    {from: 300, to: 10,  spd: 15, gust: 25},
+    {from: 20,  to: 40,  spd: 20, gust: 30},
+    {from: 120, to: 190, spd: 20, gust: 30},
+    {from: 200, to: 230, spd: 25, gust: 25}
+  ]},
+  /* LPLA: setor 195–255, vento (médio ou rajada) acima de 35 kt → LDG NOT ALLOWED (Note 3) */
+  /* LPPD: setor 015–055, vento (médio ou rajada) acima de 30 kt → LDG NOT ALLOWED (Note 3);
+     todos os setores: vento cruzado acima de 15 kt, com rajada → Capt TKOF/LDG mandatory (Note 2) */
+  LPPD: {margin: null, outShort: ["LDG NOT", "ALLOWED"], outLabel: "LDG NOT ALLOWED", sectors: [
+    {from: 15, to: 55, spd: 30, gust: 30}
+  ]},
+  LPLA: {margin: null, outShort: ["LDG NOT", "ALLOWED"], outLabel: "LDG NOT ALLOWED", sectors: [
+    {from: 195, to: 255, spd: 35, gust: 35}
+  ]}
+};
+const inArc = (d, a, b) => a <= b ? d >= a && d <= b : d >= a || d <= b;
+/* limite aplicável a uma direção; fora dos setores definidos não há limite */
+function ldgLimit(icao, dir){
+  const L = LDG_LIMITS[icao]; if (!L) return null;
+  const S = L.sectors;
+  if (dir == null){ // VRB: setor mais restritivo
+    return {spd: Math.min(...S.map(x => x.spd)), gust: Math.min(...S.map(x => x.gust)), label: "VRB · limite mais restritivo"};
+  }
+  const hit = S.find(x => inArc(dir, x.from, x.to));
+  return hit ? {spd: hit.spd, gust: hit.gust, label: pad3(hit.from) + "–" + pad3(hit.to)} : null;
+}
+/* rosa dos ventos com os setores de limitação de vento e o vento do METAR (painel do aeroporto) */
+/* pior vento do TAF: o maior vento médio ou rajada em qualquer grupo (com o período) */
+function worstTafWind(T){
+  if (!T || !T.groups) return null;
+  let best = null;
+  for (const g of T.groups){
+    const w = g.el && g.el.wind; if (!w) continue;
+    const mag = Math.max(w.spd, w.gust || 0);
+    if (!best || mag > best.mag){
+      const from = g.type === "BASE" ? T.from : g.from, to = g.type === "FM" ? (g.to ?? T.to) : g.type === "BASE" ? T.to : (g.to ?? T.to);
+      best = {wind: w, mag, src: (g.type === "BASE" ? "Base" : g.label) + (from != null && to != null ? " " + winLabel(from, to + HOUR) : "")};
+    }
+  }
+  return best;
+}
+function limitsRoseHtml(icao, row){
+  const L = LDG_LIMITS[icao]; if (!L) return "";
+  const C = 90, R = 74, rad = d => (d - 90) * Math.PI / 180;
+  const pt = (d, r) => [C + r * Math.cos(rad(d)), C + r * Math.sin(rad(d))];
+  const arc = (a, b) => { const span = ((b - a) % 360 + 360) % 360; const [x1, y1] = pt(a, R), [x2, y2] = pt(b, R);
+    return `M${C},${C} L${x1.toFixed(1)},${y1.toFixed(1)} A${R},${R} 0 ${span > 180 ? 1 : 0} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z`; };
+  let svg = `<svg class="rose" viewBox="-14 -14 208 208" role="img" aria-label="Setores de limitação de vento de ${icao}">`;
+  svg += `<circle cx="${C}" cy="${C}" r="${R}" fill="var(--panel2)" stroke="var(--line)"/>`;
+  for (const z of L.sectors) svg += `<path d="${arc(z.from, z.to)}" fill="var(--k-lim)" fill-opacity=".18" stroke="var(--k-lim)" stroke-opacity=".6" stroke-dasharray="3 2"/>`;
+  const labs = L.sectors.map(z => { const span = ((z.to - z.from) % 360 + 360) % 360; const mid = (z.from + span / 2) % 360; const [x, y] = pt(mid, R + 13);
+    return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="var(--k-lim)" font-size="11" font-weight="700">${z.spd === z.gust ? z.spd : z.spd + "/" + z.gust}</text>`; }).join("");
+  for (let d = 0; d < 360; d += 10){ const [a, b] = [pt(d, R), pt(d, R - (d % 30 ? 4 : 8))]; svg += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="var(--muted)" stroke-width="${d % 90 ? 1 : 1.6}"/>`; }
+  for (const [d, t] of [[0, "N"], [90, "E"], [180, "S"], [270, "W"]]){ const [x, y] = pt(d, R - 16); svg += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">${t}</text>`; }
+  for (const [id, , hdg] of RUNWAYS[icao] || []){ if (hdg == null) continue;
+    const [a, b] = [pt(hdg, R - 26), pt(hdg + 180, R - 26)];
+    svg += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="var(--muted)" stroke-width="9" stroke-linecap="butt" opacity=".7"/>`;
+    const [e1, e2] = id.split("/"); const [ta, tb] = [pt(hdg + 180, R - 40), pt(hdg, R - 40)];
+    svg += `<text x="${ta[0].toFixed(1)}" y="${(ta[1] + 4).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="700">${esc(e1)}</text><text x="${tb[0].toFixed(1)}" y="${(tb[1] + 4).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="700">${esc(e2 || "")}</text>`; }
+  // pior vento de todo o TAF (base, FM, BECMG, TEMPO e PROB): seta de onde vem o vento
+  let wTxt = "", wSrc = "";
+  const ww = worstTafWind(row && row.T);
+  { const w = ww && ww.wind; if (ww) wSrc = ww.src;
+    if (w){ wTxt = w.tok; const m = /^(\d{3})/.exec(w.tok);
+      if (m){ const d = +m[1]; const [x1, y1] = pt(d, R + 2), [x2, y2] = pt(d, 22); const hit = ldgCheck(icao, w);
+        const col = hit && hit.code === "LIM" ? "var(--k-lim)" : hit && hit.code === "MRG" ? "var(--k-mar)" : "var(--accent)";
+        svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col}" stroke-width="3.5" marker-end="url(#ah-${icao})"/>`;
+        svg += `<defs><marker id="ah-${icao}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="${col}"/></marker></defs>`; } } }
+  svg += labs + `</svg>`;
+  const rows = L.sectors.map(z => `<li><b class="mono">${pad3(z.from)}°–${pad3(z.to)}°</b> vento ou rajada &gt; ${z.spd === z.gust ? z.spd : z.spd + "/" + z.gust} kt → <b class="lim-txt">${esc(L.outLabel || "OUT OF LIM")}</b></li>`).join("");
+  return `<div class="d-sec"><h3>Limitações de vento (aterragem)</h3><div class="rose-wrap">${svg}<div><ul class="rose-list">${rows}</ul>${wTxt ? `<p class="hint" style="margin:6px 0 0">Seta: pior vento do TAF <span class="mono">${esc(wTxt)}</span>${wSrc ? " · " + esc(wSrc) : ""}${/^VRB/.test(wTxt) ? " (variável, sem seta)" : ""}</p>` : ""}${L.margin != null ? `<p class="hint" style="margin:6px 0 0">A ${L.margin} kt ou menos do limite → <b style="color:var(--k-mar)">WND -5KT</b>. Fora destes setores não há limite.</p>` : ""}<p class="hint" style="margin:6px 0 0">Números no gráfico: limite vento/rajada (kt). Graus verdadeiros (TAF/METAR). Alerta a partir de 1 kt acima do limite.</p></div></div></div>`;
+}
+function ldgCheck(icao, w){
+  const L = LDG_LIMITS[icao]; if (!L || !w) return null;
+  const m = /^(\d{3}|VRB)/.exec(w.tok); const dir = m && m[1] !== "VRB" ? +m[1] % 360 : null;
+  const lim = ldgLimit(icao, dir);
+  if (!lim) return null;
+  const out = w.spd > lim.spd || (w.gust != null && w.gust > lim.gust) || (lim.spd === lim.gust && w.gust != null && w.gust > lim.spd);
+  const near = !out && L.margin != null && (w.spd >= lim.spd - L.margin || (w.gust != null && w.gust >= lim.gust - L.margin));
+  if (!out && !near) return null;
+  const val = w.gust != null ? "G" + w.gust : "W" + w.spd;
+  const os = L.outShort || ["OUT OF", "LIM"];
+  const short = out ? os[0] : "WND -5KT";
+  return {code: out ? "LIM" : "MRG", short, short2: out ? os[1] : null, outLabel: L.outLabel || "OUT OF LIM", txt: `${w.tok} · limite ${lim.spd}/${lim.gust} kt (${lim.label})`};
+}
+/* ---------- RVAC: mínimos de teto e visibilidade por pista ----------
+   [teto mínimo ft, visibilidade mínima m]. RVAC quando a meteorologia está nestes valores ou abaixo. */
+const RWY_MINIMA = {
+  LPPT: {"02": [400, 1750], "20": [400, 1550]},
+  LPPR: {"17": [400, 1550], "35": [510, 1700]},
+  LPFR: {"10": [400, 1750], "28": [400, 1750]},
+  LPMA: {"05": [1000, 6000], "23": [1400, 8000]},
+  LPPD: {"30": [450, 2000], "12": [720, 3100]},
+  LPLA: {"15": [450, 1800], "33": [580, 2000]}
+};
+/* pista usada para os mínimos: a estimada pelo vento; com vento calmo/VRB ou sem vento, a de mínimos mais baixos */
+function minimaRwy(icao, wind, lastDir){
+  const M = RWY_MINIMA[icao]; if (!M) return null;
+  let u = rwyInUse(icao, wind), kept = false;
+  // vento calmo/VRB: mantém a pista do último vento com direção
+  if ((!u || u.calm) && lastDir){ const u2 = rwyInUse(icao, lastDir); if (u2 && !u2.calm){ u = u2; kept = true; } }
+  let rw = u && !u.calm ? u.ids.split("/").find(x => M[x]) : null;
+  const est = !!rw && !kept;
+  if (kept && rw) return {rw, cmin: M[rw][0], vmin: M[rw][1], est: false, kept: true};
+  if (!rw) rw = Object.keys(M).sort((a, b) => M[a][0] - M[b][0] || M[a][1] - M[b][1])[0];
+  return {rw, cmin: M[rw][0], vmin: M[rw][1], est};
+}
+/* mínimos de aproximação por pista [teto ft, vis m]: abaixo destes → BELOW MIN (mais grave que RVAC) */
+const RWY_BELOW = {
+  LPMA: {"23": [1200, 7000], "05": [800, 5000]}
+};
+function rvacCheck(icao, st){
+  if (!RWY_MINIMA[icao] || !st) return null;
+  const R = minimaRwy(icao, st.wind, st.lastDir);
+  const c = ceilingOf(st.clouds || []);
+  const v = st.vis;
+  const B = (RWY_BELOW[icao] || {})[R.rw];
+  if (B){
+    const cB = c != null && c < B[0], vB = v != null && v < B[1];
+    if (cB || vB){
+      const lowB = cB ? (st.clouds || []).find(k => (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") && k.h === c) : null;
+      const whatB = [cB ? (lowB && lowB.tok ? lowB.tok : c + "FT") : "", vB ? String(v).padStart(4, "0") + "M" : ""].filter(Boolean).join(" ");
+      return {code: "BMIN", short: "BELOW MIN", short2: "RWY" + R.rw, rw: R.rw, what: whatB,
+        txt: `BELOW MIN RWY ${R.rw}${R.est ? "" : R.kept ? " (VRB/calmo, mantém pista)" : " (vento calmo)"} · mín ${B[0]} ft / ${B[1]} m · ${whatB}`};
+    }
+  }
+  const cHit = c != null && c <= R.cmin, vHit = v != null && v <= R.vmin;
+  if (!cHit && !vHit) return null;
+  const low = cHit ? (st.clouds || []).find(k => (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") && k.h === c) : null;
+  const what = [cHit ? (low && low.tok ? low.tok : c + "FT") : "", vHit ? String(v).padStart(4, "0") + "M" : ""].filter(Boolean).join(" ");
+  return {code: "RVAC", short: "RVAC", short2: "RWY" + R.rw, rw: R.rw, what,
+    txt: `RVAC RWY ${R.rw}${R.est ? "" : R.kept ? " (VRB/calmo, mantém pista)" : " (vento calmo)"} · mín ${R.cmin} ft / ${R.vmin} m · ${what}`};
+}
+/* vento cruzado acima do limite (com rajada) na pista mais favorável → comandante obrigatório */
+function captCheck(icao, w){
+  const L = LDG_LIMITS[icao]; if (!L || !L.cwCapt || !w) return null;
+  const u = rwyInUse(icao, w); if (!u) return null;
+  let cw;
+  if (u.calm) cw = u.W.dir == null ? Math.max(w.spd, w.gust || 0) : 0; // VRB: pior caso, vento todo de través
+  else cw = Math.max(u.best.mean.cross, u.best.gust ? u.best.gust.cross : 0);
+  if (!(cw > L.cwCapt)) return null;
+  return {code: "CAPT", short: "CAPT", short2: "CW" + cw, cw, txt: `${w.tok} · CW ${cw} kt${u.calm ? "" : " RWY " + u.ids} (limite ${L.cwCapt} kt)`};
+}
+/* vento e rajada: alerta a partir de cfg.wind (30 kt); Açores e Madeira (PDL, TER, FNC) mantêm acima de 25 kt */
+const WIND_ISLANDS = new Set(["LPPD", "LPLA", "LPMA"]), ISL_WIND = 25;
+/* vento variável forte: VRB com 15 kt ou mais, ou rajada a partir do limite de vento (conta sempre, também em TEMPO/PROB/BECMG) */
+const VRB_SPD = 15;
+function vrbHit(w, icao){
+  if (!w || !/^VRB/.test(w.tok)) return null;
+  const gLim = WIND_ISLANDS.has(icao) ? ISL_WIND : cfg.wind;
+  if (!(w.spd >= VRB_SPD || (w.gust != null && w.gust >= gLim))) return null;
+  return {code: "VRB", txt: "Vento " + w.tok, short: "VRB" + (w.gust != null ? "G" + w.gust : w.spd)};
+}
+function windHit(w, icao){
+  if (!w) return false;
+  if (WIND_ISLANDS.has(icao)) return w.spd > ISL_WIND || (w.gust != null && w.gust > ISL_WIND);
+  return w.spd >= cfg.wind || (w.gust != null && w.gust >= cfg.wind);
+}
+function evaluate(s, icao){
+  const r = [];
+  const lc = icao ? ldgCheck(icao, s.wind) : null;
+  if (lc) r.push(lc);
+  const cp = icao ? captCheck(icao, s.wind) : null;
+  if (cp) r.push(cp);
+  const rv = icao ? rvacCheck(icao, s) : null;
+  if (rv) r.push(rv);
+  const seen = new Set();
+  // BR (neblina) só conta com visibilidade até 1000 m e/ou teto BKN/OVC/VV até 500 ft
+  const brOk = (s.vis != null && s.vis <= BR_VIS) || ((c0 => c0 != null && c0 <= BR_CIG)(ceilingOf(s.clouds)));
+  // nevoeiro (FG, FZFG, BCFG, PRFG, MIFG, VCFG) só conta com visibilidade abaixo de 850 m (LVO)
+  const fgOk = w => s.vis != null && s.vis < cfg.vis;
+  for (const w of s.wx) for (const k of wxPhen(w)) if (!seen.has(k)){
+    if (k === "BR" && !brOk) continue;
+    const toks = s.wx.filter(x => wxPhen(x).includes(k) && (k !== "FG" || fgOk(x)));
+    if (!toks.length) continue;
+    seen.add(k); r.push({code: k, txt: toks.join(" ")});
+  }
+  if ((cfg.phen || []).includes("CB")){
+    const cb = s.clouds.filter(c => c.type);
+    if (cb.length) r.push({code: "CB", txt: cb.map(c => c.amt + pad3(c.h / 100) + c.type).join(" ")});
+  }
+  if (s.vis != null && s.vis < cfg.vis) r.push({code: "VIS", txt: "Vis " + s.vis + " m"});
+  const c = ceilingOf(s.clouds);
+  if (c != null && c < cfg.cig){
+    const low = s.clouds.find(k => (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") && k.h === c);
+    r.push({code: "CIG", txt: low && low.tok ? low.tok : "Teto " + c + " ft"});
+  } else if (c != null && cfg.cig2 && c <= cfg.cig2){
+    const low = s.clouds.find(k => (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") && k.h === c);
+    r.push({code: "CIG4", txt: low && low.tok ? low.tok : "Teto " + c + " ft"});
+  }
+  const vr = vrbHit(s.wind, icao); if (vr) r.push(vr);
+  if (windHit(s.wind, icao) && !lc) r.push({code: "WIND", txt: "Vento " + s.wind.tok}); // em LPMA o vento já está avaliado pelos limites do setor
+  const it = s.wx.filter(w => /^[+-]/.test(w) && !LIGHT_RAIN.has(w));
+  if (cfg.intensity && it.length) r.push({code: "INT", txt: it.join(" ")});
+  return lvoOnly(r);
+}
+const BR_VIS = 1000, BR_CIG = 500;
+/* com teto BKN/OVC/VV abaixo de 250 ft (LVO) conta só o LVO: o RVAC deixa de aparecer */
+const PFG_VIS = 850;
+const isPartialFG = w => /FG/.test(w) && (/^VC/.test(w) || /^[+-]?(MI|BC|PR)/.test(w));
+const lvoOnly = r => {
+  if (r.some(z => z.code === "BMIN")) r = r.filter(z => z.code !== "RVAC");
+  return r.some(z => z.code === "CIG" || z.code === "VIS" || z.code === "FG") ? r.filter(z => z.code !== "RVAC") : r;
+};
+/* chuva fraca não gera alerta de intensidade */
+const LIGHT_RAIN = new Set(["-RA", "-SHRA", "RA", "-DZ", "-RADZ", "RADZ", "-DZRA", "DZRA"]);
+const pad3 = n => String(n).padStart(3, "0");
+/* letra/código mostrado na célula, por ordem de gravidade */
+const PRIO = ["LIM", "BMIN", "CIG", "VIS", "FG", "RVAC", "CAPT", "TS", "GR", "SQ", "FC", "CB", "VA", "FZ", "PL", "SN", "GS", "SG", "WIND", "VRB", "MRG", "CIG4", "DS", "SS", "DU", "SA", "FU", "BR", "HZ", "PO", "INT"];
+/* cenários (categorias com cor própria), por ordem de gravidade */
+const CATS = [
+  {k: "lim",  label: "LPMA/LPLA/LPPD OUT OF LIM", hint: "limites de vento de aterragem por setor (LPLA: LDG NOT ALLOWED)", codes: ["LIM"]},
+  {k: "cig",  label: "LVO", hint: "teto BKN/OVC/VV abaixo de 250 ft ou visibilidade abaixo de 850 m (com ou sem FG)", codes: ["CIG", "VIS", "FG"]},
+  {k: "bmin", label: "BELOW MIN", hint: "teto ou visibilidade abaixo dos mínimos de aproximação da pista em uso", codes: ["BMIN"]},
+  {k: "rvac", label: "RVAC (mínimos de pista)", hint: "teto ou visibilidade nos mínimos da pista em uso ou abaixo", codes: ["RVAC"]},
+  {k: "conv", label: "Thunderstorm", hint: "TS · SQ · GR · FC", codes: ["TS", "CB", "SQ", "GR", "FC"]},
+  {k: "vis",  label: "Volcanic ash", hint: "VA", codes: ["VA"]},
+  {k: "ice",  label: "Snow / ice", hint: "SN · FZRA/FZDZ · PL · GS · SG", codes: ["FZ", "PL", "SN", "GS", "SG"]},
+  {k: "wind", label: "Wind / gust", hint: "acima do limite", codes: ["WIND", "VRB"]},
+  {k: "mar",  label: "LPMA wind near the limits", hint: "dentro do limite, a 5 kt ou menos", codes: ["MRG"]},
+  {k: "cig4", label: "Low ceiling", hint: "BKN004 / OVC004", codes: ["CIG4"]},
+  {k: "obsc", label: "MIST", hint: "BR · HZ · FU · DU · SA · DS · SS · PO", codes: ["BR", "HZ", "FU", "DU", "SA", "DS", "SS", "PO"]},
+  {k: "int",  label: "Intensidade + / −", hint: "outros fenómenos com + ou −", codes: ["INT"]}
+];
+const catOfCode = c => (CATS.find(x => x.codes.includes(c)) || CATS[CATS.length - 1]).k;
+const catRank = k => CATS.findIndex(x => x.k === k);
+/* categoria principal de um conjunto de alertas */
+function catOf(reasons){
+  let best = null;
+  for (const r of reasons){ const k = catOfCode(r.code); if (best === null || catRank(k) < catRank(best)) best = k; }
+  return best;
+}
+/* textos curtos para dentro da célula, por ordem de gravidade, sem repetir */
+function cellLabels(reasons){
+  if (reasons.some(r => r.code === "LIM")) reasons = reasons.filter(r => r.code !== "MRG");
+  const sorted = reasons.slice().sort((a, b) => PRIO.indexOf(a.code) - PRIO.indexOf(b.code));
+  const out = [];
+  for (const r of sorted){
+    let s;
+    if (r.code === "FG"){ if (!out.includes("LVO")) out.push("LVO"); s = r.txt.split(" ")[0]; }
+    else if (r.code === "VIS"){ if (!out.includes("LVO")) out.push("LVO"); s = "VIS" + (+((/(\d+)/.exec(r.txt) || [, "0"])[1])) + "m"; }
+    else if (r.code === "CIG"){ const tok = r.short || (r.txt.startsWith("Teto") ? "C" + r.txt.replace(/\D/g, "") : r.txt.split(" ")[0]); if (!out.includes("LVO")) out.push("LVO"); s = tok; }
+    else if (r.code === "CIG4" && r.short) s = r.short;
+    else if (r.code === "CIG" || r.code === "CIG4") s = r.txt.startsWith("Teto") ? "C" + r.txt.replace(/\D/g, "") : r.txt;
+    else if (r.code === "WIND"){ const m = /(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)/.exec(r.txt); s = m ? (m[2] ? "G" + m[2] : "W" + m[1]) + (m[3] === "MPS" ? "M" : "") : "W"; }
+    else if (r.code === "CB"){ const m = /(\d{3})(CB|TCU)/.exec(r.txt); s = m ? m[2] + m[1] : "CB"; }
+    else if (r.short){ s = r.short; if (r.short2 && !out.includes(s)){ out.push(s); s = r.short2; } }
+    else s = r.txt.split(" ")[0];
+    if (!out.includes(s)) out.push(s);
+  }
+  return out;
+}
+function glyph(reasons){
+  const codes = reasons.map(r => r.code);
+  for (const p of PRIO) if (codes.includes(p)){
+    if (p === "VIS") return "V";
+    if (p === "CIG") return "C";
+    if (p === "WIND") return "W";
+    if (p === "INT"){ const r = reasons.find(x => x.code === "INT"); return r.txt.trim().startsWith("+") ? "+" : "−"; }
+    return p;
+  }
+  return "";
+}
+
+function slotEval(T, t){
+  if (!T || T.error || T.nil || T.cnl) return {level: "none", hard: [], cond: []};
+  // a hora final da validade conta por inteiro: 3012/3112 cobre até 12:59
+  if (t + HOUR <= T.from || t > T.to) return {level: "none", hard: [], cond: []};
+  let s = EMPTY;
+  for (const g of T.groups){
+    if (g.type === "BASE") s = apply(EMPTY, g.el);
+    else if (g.type === "FM" && g.from <= t){ const keep = s.lastDir; s = apply(EMPTY, g.el); if (!s.lastDir) s.lastDir = keep; }
+    else if (g.type === "BECMG" && g.to != null && g.to <= t) s = apply(s, g.el);
+  }
+  // só a previsão principal conta: base, FM e BECMG depois de concluído. TEMPO e PROB não geram alerta.
+  const hard = evaluate(s, T.icao).map(r => Object.assign({via: "Previsão"}, r));
+  const res = {level: hard.length ? "red" : "ok", hard, cond: [], state: s};
+  for (const g of T.groups){
+    if (g.type !== "FM" || !(g.from > t && g.from < t + HOUR)) continue;
+    const r = evaluate(apply(EMPTY, g.el), T.icao);
+    for (const x of r) if (!res.hard.some(h => h.code === x.code)) res.hard.push(Object.assign({via: "FM"}, x));
+    if (r.length) res.level = "red";
+  }
+  // trovoada e vento variável forte contam sempre, mesmo em TEMPO, PROB e BECMG em curso
+  for (const g of T.groups){
+    if (!(g.type === "TEMPO" || g.type === "PROB" || g.type === "BECMG") || g.from == null) continue;
+    const end = g.to ?? T.to;
+    // a hora de fim conta por inteiro: 2403/2412 cobre as colunas 03 a 12 (até 12:59)
+    if (!(g.from < t + HOUR && end >= t)) continue;
+    for (const x of condAlways(g, T.icao, s)){
+      if (x.code === "RVAC" && res.hard.some(h => h.code === "BMIN")) continue;
+      if (x.code === "BMIN"){ const j = res.hard.findIndex(h => h.code === "RVAC"); if (j >= 0) res.hard.splice(j, 1); }
+      const i = res.hard.findIndex(h => h.code === x.code);
+      if (i >= 0){
+        // vento variável: fica o mais forte dos grupos em vigor
+        const mag = z => { const m = /(\d{2,3})(?:G(\d{2,3}))?KT/.exec(z.txt); return m ? Math.max(+m[1], +(m[2] || 0)) : 0; };
+        if ((x.code === "VRB" || x.code === "WIND") && mag(x) > mag(res.hard[i])) res.hard[i] = x;
+        if ((x.code === "RVAC" || x.code === "BMIN") && x.what && !String(res.hard[i].what || "").includes(x.what)){
+          const y = Object.assign({}, res.hard[i]);
+          y.what = [y.what, x.what].filter(Boolean).join(" / ");
+          y.txt = y.txt + " || " + x.txt; res.hard[i] = y;
+        }
+        continue;
+      }
+      res.hard.push(x); res.level = "red";
+    }
+  }
+  res.hard = lvoOnly(res.hard);
+  return res;
+}
+/* teto baixo em grupos condicionais: LVO abaixo de cfg.cig, teto baixo até cfg.cig2 (400 ft) */
+function ceilAlways(clouds){
+  if (!clouds) return null;
+  const c = ceilingOf(clouds);
+  const lim = Math.max(cfg.cig2 || 0, cfg.cig);
+  if (c == null || c > lim) return null;
+  const low = clouds.find(k => (k.amt === "BKN" || k.amt === "OVC" || k.amt === "VV") && k.h === c);
+  return {code: c < cfg.cig ? "CIG" : "CIG4", tok: low && low.tok ? low.tok : "Teto " + c + " ft"};
+}
+/* alertas que contam mesmo em TEMPO / PROB / BECMG em curso */
+function condAlways(g, icao, prev){
+  const out = [];
+  // RVAC: condições do grupo (sobre a previsão principal) contra os mínimos da pista
+  if (icao && prev && RWY_MINIMA[icao]){
+    const rv = rvacCheck(icao, apply(prev, g.el));
+    if (rv) out.push(Object.assign(rv, {txt: rv.txt + " (" + g.label + ")", via: g.label}));
+  }
+  // limites de vento de aterragem (LPMA): contam também em TEMPO, PROB e BECMG em curso
+  const lc = icao ? ldgCheck(icao, g.el.wind) : null;
+  if (lc) out.push(Object.assign(lc, {txt: lc.txt + " (" + g.label + ")", via: g.label}));
+  const cp = icao ? captCheck(icao, g.el.wind) : null;
+  if (cp) out.push(Object.assign(cp, {txt: cp.txt + " (" + g.label + ")", via: g.label}));
+  const ts = (cfg.phen || []).includes("TS") ? (g.el.wx || []).filter(isTsTok) : [];
+  if (ts.length) out.push({code: "TS", txt: ts.join(" ") + " (" + g.label + ")", via: g.label, short: ts[0]});
+  // visibilidade abaixo do limite: conta também em TEMPO, PROB e BECMG
+  if (!g.el.cavok && g.el.vis != null && g.el.vis < cfg.vis) out.push({code: "VIS", txt: "Vis " + g.el.vis + " m (" + g.label + ")", via: g.label});
+  // teto BKN/OVC/VV a 400 ft ou menos (BKN004 e abaixo): conta também em TEMPO, PROB e BECMG
+  const cg = ceilAlways(g.el.clouds);
+  if (cg) out.push(Object.assign(cg, {txt: cg.tok + " (" + g.label + ")", via: g.label, short: cg.tok}));
+  const vr = vrbHit(g.el.wind, icao);
+  if (vr) out.push(Object.assign(vr, {txt: vr.txt + " (" + g.label + ")", via: g.label}));
+  // fenómenos com intensidade + ou − (ex.: +SHRA), exceto chuva/chuvisco fracos: contam também em TEMPO, PROB e BECMG
+  const itC = cfg.intensity ? (g.el.wx || []).filter(w => /^[+-]/.test(w) && !LIGHT_RAIN.has(w) && !isTsTok(w)) : [];
+  if (itC.length) out.push({code: "INT", txt: itC.join(" ") + " (" + g.label + ")", via: g.label, short: itC[0]});
+  // vento ou rajada a partir do limite geral (30 kt; PDL/TER/FNC acima de 25 kt): conta também em TEMPO, PROB e BECMG
+  if (!vr && !lc && g.el.wind && windHit(g.el.wind, icao)) out.push({code: "WIND", txt: "Vento " + g.el.wind.tok + " (" + g.label + ")", via: g.label});
+  return out;
+}
+/* trovoada no aeródromo: TS, TSRA, -TSRA, +TS, +TSRA, TSGR… (VCTS não) */
+const isTsTok = w => /^[+-]?TS/.test(w);
+const shortGroup = l => l.replace(/^PROB(\d{2}) TEMPO$/, "P$1 TMP").replace(/^PROB(\d{2})$/, "PROB$1");
+
+/* ---------- dados ---------- */
+function splitTAFs(text){
+  return text.replace(/\r/g, "")
+    .split(/=|\n\s*\n|\n(?=\s*TAF\b)|\n(?=\s*[A-Z]{4}\s+\d{6}Z)/)
+    .map(s => s.trim())
+    .map(s => s.replace(/\b(?:METAR|SPECI)\b[^\n]*/g, "").trim())
+    .filter(s => /\b[A-Z]{4}\b/.test(s) && /\d{4}\/\d{4}/.test(s));
+}
+
+function sampleTAFs(now){
+  const h0 = Math.floor(now / HOUR) * HOUR;
+  const iss = fmtDH(h0 - HOUR) + "00Z";
+  const P = (a, b) => fmtDH(h0 + a * HOUR) + "/" + fmtDH(h0 + b * HOUR);
+  const FM = a => "FM" + fmtDH(h0 + a * HOUR) + "00";
+  const sp = {
+    LPPT: `33012KT 9999 FEW025 TEMPO ${P(5,9)} 4000 TSRA BKN015CB BECMG ${P(14,16)} 01008KT`,
+    LPPR: `VRB03KT 8000 SCT012 BECMG ${P(7,9)} 0300 FG VV001 BECMG ${P(15,17)} 5000 BR SCT006 TEMPO ${P(17,22)} 3000 BR BKN004`,
+    LPMA: `35012KT 9999 FEW020 BECMG ${P(5,7)} 35018G30KT BECMG ${P(14,16)} 21015KT`,
+    LEMD: `VRB02KT CAVOK`,
+    EGLL: `AMD 22015G25KT 6000 -RA BKN012 BECMG ${P(4,6)} 25012KT 9999 NSW SCT025 PROB30 TEMPO ${P(20,26)} 3000 -SHRA BKN010`,
+    EDDF: `06006KT 9999 SCT030 ${FM(12)} 05005KT 2500 BR BKN002 BECMG ${P(18,20)} 6000 NSW BKN008`,
+    LFPG: `20008KT 9999 BKN030 PROB30 ${P(18,22)} 0700 BR BKN003`,
+    LSZH: `VRB02KT 9999 FEW040 PROB40 TEMPO ${P(19,24)} 0200 FG VV001`,
+    EHAM: `24018G30KT 9999 SCT025 TEMPO ${P(2,8)} 25025G40KT 3000 +SHRA BKN010CB`,
+    LIRF: `20010KT 9999 FEW030 TEMPO ${P(10,14)} 22015KT 4000 TSRA SCT020CB`,
+    EIDW: `27014KT 7000 -DZ BKN004 BECMG ${P(9,11)} 9999 NSW BKN012`,
+    ESSA: `35012KT 4000 -SN BKN008 BECMG ${P(6,8)} 9999 NSW SCT015`,
+    EFHK: `02012KT 9999 BKN015 TEMPO ${P(3,12)} 1200 SN BKN006`,
+    LCLK: `13008KT 9999 FEW030 PROB30 TEMPO ${P(14,19)} TSRA SCT025CB`,
+    LLBG: `29010KT CAVOK`,
+    EDDM: `24006KT 6000 OVC004 BECMG ${P(6,8)} 9999 BKN012`,
+    LKPR: `VRB02KT 8000 BKN004 ${FM(9)} 27008KT 9999 SCT020`,
+    LOWW: `31010KT 9999 BKN015 ${FM(14)} 33012KT 6000 -FZDZ BKN008`,
+    LGAV: `02008KT 9999 FEW030 ${FM(15)} 21015KT 9999 TS SCT035CB`,
+    LPPS: null
+  };
+  const winds = ["24008KT","31012KT","VRB03KT","03010KT","27015G25KT","18006KT","35008KT","09005KT"];
+  const cl = ["FEW030","SCT025","BKN035","FEW020 SCT040","SCT030 BKN060","NSC"];
+  return icaoList().map((ic, k) => {
+    if (ic in sp){
+      if (sp[ic] === null) return null;
+      const body = sp[ic].startsWith("AMD ") ? sp[ic].slice(4) : sp[ic];
+      return `TAF ${sp[ic].startsWith("AMD ") ? "AMD " : ""}${ic} ${iss} ${P(0,30)} ${body}`;
+    }
+    let s = `TAF ${ic} ${iss} ${P(0,30)} ${winds[k%8]} 9999 ${cl[k%6]}`;
+    if (k % 5 === 0) s += ` BECMG ${P(8,10)} ${winds[(k+3)%8]}`;
+    if (k % 7 === 3) s += ` TEMPO ${P(12,16)} 5000 SHRA BKN014`;
+    return s;
+  }).filter(Boolean);
+}
+
+async function fetchLive(){
+  const ids = icaoList();
+  const url = cfg.worker.replace(/\/+$/, "") + (cfg.worker.includes("?") ? "&" : "?") + "ids=" + ids.join(",");
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = await fetch(url, {signal: ctl.signal, headers: {Accept: "application/json, text/plain"}});
+    if (!r.ok) throw new Error("O Worker respondeu " + r.status + ".");
+    const body = await r.text();
+    let raws = [];
+    try {
+      const j = JSON.parse(body);
+      const arr = Array.isArray(j) ? j : (j.data || j.tafs || []);
+      raws = arr.map(x => typeof x === "string" ? x : (x.rawTAF || x.raw_text || x.raw || "")).filter(Boolean);
+      if (!Array.isArray(arr)) throw 0;
+    } catch(e){ raws = splitTAFs(body); }
+    return raws;
+  } finally { clearTimeout(to); }
+}
+
+/* METAR: o mesmo Worker com &type=metar. Uma falha aqui não impede os TAF. */
+async function fetchMetars(){
+  const ids = icaoList();
+  const url = cfg.worker.replace(/\/+$/, "") + (cfg.worker.includes("?") ? "&" : "?") + "type=metar&ids=" + ids.join(",");
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = await fetch(url, {signal: ctl.signal, headers: {Accept: "application/json"}});
+    if (!r.ok) throw new Error(String(r.status));
+    const arr = await r.json();
+    if (!Array.isArray(arr)) throw new Error("formato");
+    if (arr.length && !arr.some(x => x.rawOb)){ metarStatus = "old-worker"; return {}; }
+    const out = {};
+    for (const x of arr) if (x.icaoId && x.rawOb){
+      const obs = x.obsTime ? x.obsTime * 1000 : Date.parse(x.reportTime || "");
+      if (!out[x.icaoId] || obs > out[x.icaoId].obs) out[x.icaoId] = {raw: x.rawOb, obs};
+    }
+    metarStatus = "ok";
+    return out;
+  } catch(e){ metarStatus = "error"; return metars; }
+  finally { clearTimeout(to); }
+}
+/* METAR colados no modo manual: linhas começadas por METAR ou SPECI */
+function metarsFromText(text, now){
+  const out = {};
+  const re = /\b(?:METAR|SPECI)\s+(?:COR\s+)?([A-Z]{4})\s+(\d{2})(\d{2})(\d{2})Z[^=\n]*/g;
+  let m;
+  while ((m = re.exec(text))){
+    const obs = resolveTime(+m[2], +m[3], +m[4], now);
+    if (!out[m[1]] || obs > out[m[1]].obs) out[m[1]] = {raw: m[0].trim(), obs};
+  }
+  return out;
+}
+/* METAR de exemplo, coerentes com os TAF de exemplo */
+function sampleMetars(now){
+  const h = Math.floor(now / (30 * 60e3)) * 30 * 60e3;
+  const d = new Date(h); const t = pad(d.getUTCDate()) + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + "Z";
+  const sp = {LPPT: "33012KT 9999 FEW025 14/08 Q1024", LPPR: "VRB02KT 0300 FG VV001 11/11 Q1025", LPMA: "35012KT 9999 FEW020 21/15 Q1027", EGLL: "22016G27KT 5000 -RA BKN011 12/10 Q1009", LEMD: "VRB02KT CAVOK 09/03 Q1028"};
+  const out = {};
+  for (const ic of icaoList()) out[ic] = {raw: `METAR ${ic} ${t} ${sp[ic] || "24006KT 9999 FEW030 12/06 Q1020"}`, obs: h};
+  return out;
+}
+/* avaliar o METAR com os mesmos critérios (sem a tendência TEMPO/BECMG/NOSIG) */
+function evalMetar(icao, raw){
+  const toks = raw.split(/\s+/);
+  let i = 0;
+  while (i < toks.length && !/^\d{6}Z$/.test(toks[i])) i++;
+  const body = [];
+  for (let k = i + 1; k < toks.length; k++){ if (/^(TEMPO|BECMG|NOSIG|RMK)$/.test(toks[k])) break; body.push(toks[k]); }
+  return evaluate(apply(EMPTY, parseEl(body)), icao);
+}
+/* texto de um alerta com a descrição em inglês (igual ao relatório) */
+function alertText(z){
+  const t = repTok(z);
+  const label = (z.code === "LIM" || z.code === "MRG" || z.code === "CAPT") ? t.lab + (t.wind ? " " + t.wind : "") : t.lab;
+  return describeItem({code: z.code, label});
+}
+/* "Agora": usa o METAR quando existe; sem METAR usa o TAF */
+function nowHtml(r, now0, slots){
+  const M = metars[r.icao];
+  const lab = {red: "Alerta", ok: "Dentro dos mínimos", none: "Sem dados", amber: "Possível"};
+  let level, reasons, src;
+  if (M){
+    let rr = evalMetar(r.icao, M.raw);
+    if (rr.some(z => z.code === "LIM")) rr = rr.filter(z => z.code !== "MRG");
+    level = rr.length ? "red" : "ok"; reasons = rr;
+    src = "METAR " + pad(new Date(M.obs).getUTCHours()) + pad(new Date(M.obs).getUTCMinutes()) + "Z";
+  } else {
+    level = now0.level; reasons = now0.level === "red" ? now0.hard : [];
+    if (reasons.some(z => z.code === "LIM")) reasons = reasons.filter(z => z.code !== "MRG");
+    src = "TAF · sem METAR";
+  }
+  const cat = level === "red" ? catOf(reasons) : null;
+  const badge = `<span class="badge ${level}">${lab[level]}</span>`;
+  const items = reasons.map(z => `<div>${esc(alertText(z))}</div>`).join("");
+  const worse = "";
+  return `<div class="d-sec"><h3>Agora · ${src}</h3><div class="nowst">${badge}</div>${items ? `<div class="nowlist">${items}</div>` : ""}${worse}</div>`;
+}
+function metarHtml(icao){
+  const M = metars[icao];
+  if (!M){
+    const why = metarStatus === "old-worker" ? "Atualize o código do Worker para receber METAR." : metarStatus === "error" ? "Não foi possível obter METAR." : cfg.mode === "manual" ? "Cole também o METAR (linha começada por METAR) para o ver aqui." : "Sem METAR para este aeroporto.";
+    return `<div class="d-sec"><h3>METAR</h3><p class="hint" style="margin:0">${why}</p></div>`;
+  }
+  const age = Math.round((Date.now() - M.obs) / 60000);
+  const rr = evalMetar(icao, M.raw);
+  let trend = false;
+  const raw = M.raw.split(/\s+/).map(t => {
+    if (/^(TEMPO|BECMG|NOSIG|RMK)$/.test(t)){ trend = true; return `<span class="kw">${esc(t)}</span>`; }
+    if (/^(METAR|SPECI|COR|AUTO)$/.test(t)) return `<span class="kw">${esc(t)}</span>`;
+    const kc = tokenCat(t, icao);
+    if (kc) return `<span class="${trend ? "ign" : "hit k-" + kc}">${esc(t)}</span>`;
+    return esc(t);
+  }).join(" ");
+  const badge = rr.length
+    ? `<span class="badge red k-${catOf(rr)}" style="background:var(--kc);color:var(--ki)">Alerta</span><span>${esc(cellLabels(rr).join(" · "))}</span>`
+    : `<span class="badge ok">Dentro dos mínimos</span>`;
+  return `<div class="d-sec"><h3>METAR · ${fmtDHZ(M.obs)} · há ${age < 60 ? age + " min" : (age / 60).toFixed(1).replace(".", ",") + " h"}${age > 70 ? ` <span style="color:var(--t-amb)">desatualizado</span>` : ""}</h3>
+    <div class="raw">${raw}</div></div>`;
+}
+
+async function load(){
+  const btn = $("#btnRefresh"); btn.disabled = true;
+  const now = Date.now(); fetchError = null;
+  try {
+    if (cfg.mode === "sample"){
+      tafs = sampleTAFs(now).map(r => parseTAF(r, now)); lastFetch = now;
+      metars = sampleMetars(now); metarStatus = "sample";
+    } else if (cfg.mode === "manual"){
+      tafs = splitTAFs(manualText).map(r => parseTAF(r, now)); lastFetch = manualText.trim() ? now : null;
+      metars = metarsFromText(manualText, now); metarStatus = "ok";
+    } else {
+      if (!cfg.worker){ fetchError = "noworker"; tafs = []; }
+      else {
+        try {
+          const [raws, ms] = await Promise.all([fetchLive(), fetchMetars()]);
+          tafs = raws.map(r => parseTAF(r, Date.now())); metars = ms; lastFetch = Date.now();
+          trackTafs(tafs);
+        }
+        catch(e){ fetchError = e && e.name === "AbortError" ? "O Worker não respondeu em 20 s." : (e && e.message && !/Failed to fetch|NetworkError|Load failed/i.test(e.message) ? e.message : "net"); }
+      }
+    }
+  } finally { btn.disabled = false; }
+  render();
+}
+
+/* ---------- render ---------- */
+function buildRows(slots){
+  const byIcao = {};
+  for (const T of tafs) if (T.icao){
+    const prev = byIcao[T.icao];
+    if (!prev || (T.issue || 0) >= (prev.issue || 0)) byIcao[T.icao] = T;
+  }
+  const order = cfg.mode === "manual" ? Object.keys(byIcao) : icaoList();
+  return order.map((ic, idx) => {
+    const T = byIcao[ic] || null;
+    const res = slots.map(t => slotEval(T, t));
+    const levels = res.map(r => r.level);
+    const firstRed = levels.indexOf("red"), firstAmb = levels.indexOf("amber");
+    let score = 0;
+    if (levels[0] === "red") score = 1000;
+    else if (firstRed >= 0) score = 800 - firstRed;
+    else if (firstAmb >= 0) score = 400 - firstAmb;
+    else if (!T) score = -1;
+    const worst = firstRed >= 0 ? "red" : firstAmb >= 0 ? "amber" : T && levels.includes("ok") ? "ok" : "none";
+    res.forEach(x => { x.cat = x.level === "red" ? catOf(x.hard) : null; });
+    const cats = [...new Set(res.map(x => x.cat).filter(Boolean))].sort((a, b) => catRank(a) - catRank(b));
+    // todas as categorias presentes em cada hora (para filtrar por cenário)
+    const allCats = new Set(res.flatMap(x => x.level === "red" ? x.hard.map(z => catOfCode(z.code)) : []));
+    const mWorse = []; // aviso "METAR pior que o TAF" retirado
+    return {icao: ic, T, res, levels, score, worst, cat: cats[0] || null, allCats, idx, region: regionOf(ic), mWorse, isNew: isNewTaf(ic)};
+  });
+}
+
+function render(){
+  const now = Date.now();
+  const t0 = Math.floor(now / HOUR) * HOUR;
+  lastHour = t0;
+  const n = +cfg.hours || 30;
+  const slots = Array.from({length: n}, (_, k) => t0 + k * HOUR);
+  const allRows = buildRows(slots);
+  rowsCache = allRows;
+  // área de operação: contadores, cenários e grelha mostram só essa área
+  const byList = ui.list ? allRows.filter(r => inList(r.icao, ui.list)) : allRows;
+  const rows = ui.area ? byList.filter(r => areaOf(r.icao) === ui.area) : byList;
+  // cartões Todos / Destinos / Alternativos: nº de aeroportos e quantos estão em alerta agora e nas próximas 6 h
+  const lc = [["", "Todos", "Todos os aeroportos"], ["DST", "Destinos", "Aeroportos de destino"], ["ALT", "Alternativos", "Aeroportos alternativos"]].map(([k, name, tip]) => {
+    const rr = (k ? allRows.filter(r => inList(r.icao, k)) : allRows).filter(r => !ui.area || areaOf(r.icao) === ui.area);
+    const now = rr.filter(r => r.levels[0] === "red").length, n6 = rr.filter(r => r.levels.slice(0, 6).includes("red")).length;
+    return `<button type="button" class="ltab ltab-${k || "all"}" data-list="${k}" aria-pressed="${(ui.list || "") === k}" title="${tip}: ${now} em alerta agora · ${n6} nas próximas 6 h"><span class="sw"></span><span class="n">${rr.length}</span><div class="l"><b>${name}</b></div></button>`;
+  }).join("");
+  $("#lists").innerHTML = lc;
+  document.querySelectorAll("#areas [data-area]").forEach(b => {
+    const n = b.dataset.area ? allRows.filter(r => areaOf(r.icao) === b.dataset.area).length : allRows.length;
+    b.setAttribute("aria-pressed", String(b.dataset.area === (ui.area || "")));
+    b.title = n + " aeroportos";
+  });
+
+  // modo / banner
+  const pill = $("#modePill");
+  pill.className = "pill" + (cfg.mode === "live" ? (fetchError ? " warn" : " live") : cfg.mode === "sample" ? " warn" : "");
+  pill.textContent = cfg.mode === "live" ? "Ao vivo" : cfg.mode === "manual" ? "Manual" : "Exemplo";
+  $("#manual").hidden = cfg.mode !== "manual";
+  const ban = $("#banner");
+  let bh = "";
+  if (cfg.mode === "sample") bh = `<b>Dados de exemplo.</b> <span>TAF fictícios gerados para a hora atual, para demonstração. Não usar para decisão operacional. Em Definições, ligue o seu Worker para receber TAF reais ou cole TAF manualmente.</span>`;
+  else if (fetchError === "noworker") bh = `<b>Falta o endereço do Worker.</b> <span>Indique-o em Definições para carregar TAF ao vivo.</span>`;
+  else if (fetchError === "net") bh = `<b>Sem ligação ao Worker.</b> <span>Confirme o endereço e o CORS do Worker. Dentro do claude.ai as ligações externas estão bloqueadas: o modo ao vivo funciona com a página alojada no seu site.</span>`;
+  else if (fetchError) bh = `<b>Erro ao carregar.</b> <span>${esc(fetchError)}</span>`;
+  ban.innerHTML = bh; ban.hidden = !bh;
+  ban.className = "banner" + (fetchError ? " err" : "");
+
+  // atualização
+  const upd = $("#upd");
+  if (lastFetch){
+    const age = Math.round((now - lastFetch) / 60000);
+    upd.textContent = "TAF " + (cfg.mode === "manual" ? "analisados" : "carregados") + " " + pad(new Date(lastFetch).getUTCHours()) + ":" + pad(new Date(lastFetch).getUTCMinutes()) + "Z" + (age >= 1 ? " · há " + age + " min" : "");
+    upd.className = "upd num" + (cfg.mode === "live" && age > cfg.refresh * 2 ? " stale" : "");
+  } else upd.textContent = "";
+
+  // resumo
+  const withTaf = rows.filter(r => r.T);
+  const redNow = rows.filter(r => r.levels[0] === "red");
+  const next6 = rows.filter(r => r.levels.slice(0, 6).includes("red"));
+  const anyRed = rows.filter(r => r.levels.includes("red"));
+  const noTaf = rows.filter(r => !r.T || r.T.error);
+  const mW = rows.filter(r => r.mWorse.length);
+  const nT = rows.filter(r => r.isNew);
+  const list = a => a.length ? `<div class="icaos">${a.slice(0, 8).map(r => r.icao).join(" ")}${a.length > 8 ? " …" : ""}</div>` : "";
+  $("#summary").innerHTML = `
+    <button type="button" class="stat red" data-f="now" aria-pressed="${ui.filter === "now"}" title="Mostrar só estes aeroportos"><span class="sw"></span><span class="n">${redNow.length}</span><div class="l"><b>Em alerta agora</b>${list(redNow) || "Nenhum aeroporto"}</div></button>
+    <button type="button" class="stat amb" data-f="next6" aria-pressed="${ui.filter === "next6"}" title="Mostrar só estes aeroportos"><span class="sw"></span><span class="n">${next6.length}</span><div class="l"><b>Alerta nas próximas 6 h</b>${list(next6) || "Nenhum aeroporto"}</div></button>
+    <button type="button" class="stat nt" data-f="new" aria-pressed="${ui.filter === "new"}" title="TAF novo ou emendado na última hora"><span class="sw"></span><span class="n">${nT.length}</span><div class="l"><b>TAF novo / AMD (${NEW_MIN} min)</b>${list(nT) || "Nenhum aeroporto"}</div></button>
+    <button type="button" class="stat none mini" data-f="notaf" aria-pressed="${ui.filter === "notaf"}" title="Mostrar só estes aeroportos"><span class="sw"></span><span class="n">${noTaf.length}</span><div class="l"><b>Sem TAF</b></div></button>`;
+
+  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,
+    now: allRows.filter(r => r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),
+    next6: allRows.filter(r => r.levels.slice(0, 6).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),
+    noTaf: allRows.filter(r => !r.T || r.T.error).length,
+    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0]})).sort((a, b) => (b.at || 0) - (a.at || 0)),
+    error: fetchError || null}, location.origin); } catch(e){}
+  $("#legendCodes").textContent = `Cor = cenário mais grave na hora · VIS300m visibilidade · BKN002 teto · W30 vento kt · G35 rajada kt · CB020 nuvem CB/TCU · fenómeno tal como no TAF (TSRA, BR, -FZDZ…) · + mais alertas · carregue num aeroporto para ver o TAF`;
+  document.querySelectorAll(".seg button[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === ui.filter)));
+  $("#sortAlert").checked = !!ui.sortAlert;
+  $("#q").value = ui.q;
+
+  // filtrar
+  // botões de cenário com contagem de aeroportos afetados no período
+  const catBox = $("#cats");
+  catBox.innerHTML = CATS.map(c => {
+    const nC = rows.filter(r => r.allCats.has(c.k)).length;
+    return `<button type="button" class="cat k-${c.k}${nC ? "" : " zero"}" data-cat="${c.k}" aria-pressed="${ui.cat === c.k}" title="${esc(c.hint)}"><i></i>${esc(c.label)}${c.k === "cig4" ? ` (≤${cfg.cig2} ft)` : c.k === "cig" ? ` (&lt;${cfg.cig} ft / &lt;${cfg.vis} m)` : c.k === "wind" ? ` (≥${cfg.wind} kt)` : ""}<b>${nC}</b></button>`;
+  }).join("");
+  if (!catBox.querySelector(".cat:not(.zero)")) catBox.insertAdjacentHTML("beforeend", `<span class="cats-none">Nenhum cenário com alertas no período</span>`);
+  let vis = rows.filter(r => {
+    if (ui.q && !r.icao.startsWith(ui.q) && !iataOf(r.icao).startsWith(ui.q)) return false;
+    if (ui.cat && !r.allCats.has(ui.cat)) return false;
+    if (ui.filter === "alert") return r.worst === "red";
+    if (ui.filter === "now") return r.levels[0] === "red";
+    if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");
+    if (ui.filter === "notaf") return !r.T || !!r.T.error;
+    if (ui.filter === "metar") return r.mWorse.length > 0;
+    if (ui.filter === "new") return r.isNew;
+    return true;
+  });
+
+  // cabeçalho
+  let days = [], cur = null;
+  slots.forEach((t, k) => { const d = new Date(t); const key = d.getUTCDate(); if (!cur || cur.key !== key){ cur = {key, label: DOW[d.getUTCDay()] + " " + pad(key), span: 0, k}; days.push(cur); } cur.span++; });
+  const dstart = new Set(days.slice(1).map(d => d.k));
+  let h = `<thead><tr class="days"><th class="corner" rowspan="2">Aeroporto</th>${days.map((d, i) => `<th colspan="${d.span}" class="${i ? "dstart" : ""}">${d.span >= 3 ? d.label : ""}</th>`).join("")}</tr>`;
+  h += `<tr class="hrs">${slots.map((t, k) => `<th class="${k === 0 ? "now" : ""}" title="${fmtDHZ(t)}">${pad(new Date(t).getUTCHours())}</th>`).join("")}</tr></thead><tbody>`;
+
+  const rowHtml = r => {
+    const tag = (r.isNew ? `<span class="tag tag-new" title="TAF ${r.T && r.T.amd ? "emendado" : "novo"} às ${pad(new Date(tafChanged[r.icao].at).getUTCHours())}${pad(new Date(tafChanged[r.icao].at).getUTCMinutes())}Z">${r.T && r.T.amd ? "AMD" : "NOVO"}</span>` : r.T && r.T.amd ? `<span class="tag">AMD</span>` : r.T && r.T.cor ? `<span class="tag">COR</span>` : "")
+      ;
+    // janelas de alerta: horas seguidas com o mesmo alerta; marca-se o fim de cada uma
+    const keyOf = x => x.level === "red" ? cellLabels(x.hard).join("|") : "";
+    const keys = r.res.map(keyOf);
+    const winStart = [], winEnd = [];
+    keys.forEach((kk, k) => { winStart[k] = kk && keys[k - 1] === kk ? winStart[k - 1] : k; });
+    for (let k = keys.length - 1; k >= 0; k--) winEnd[k] = keys[k] && keys[k + 1] === keys[k] ? winEnd[k + 1] : k;
+    const cells = r.res.map((x, k) => {
+      const labs = x.level === "red" ? cellLabels(x.hard) : [];
+      const isEnd = !!keys[k] && winEnd[k] === k && k < keys.length - 1;
+      const win = keys[k] ? ` · janela ${fmtHZ(slots[winStart[k]])}–${fmtHZ(slots[winEnd[k]])} (até ${pad(new Date(slots[winEnd[k]]).getUTCHours())}:59Z)` : "";
+      const g = labs.length ? `<span>${esc(labs[0])}</span>` + (labs[1] ? `<span>${esc(labs[1])}${labs.length > 2 ? "+" : ""}</span>` : "") : "";
+      const lab = x.level === "red" ? "Alerta" : x.level === "ok" ? "OK" : "Sem TAF";
+      const det = x.level === "red" ? x.hard.map(z => z.txt).join(", ") : "";
+      return `<td class="c ${x.level}${x.cat ? " k-" + x.cat : ""}${dstart.has(k) ? " dstart" : ""}${isEnd ? " wend" : ""}" data-k="${k}" title="${r.icao} ${pad(new Date(slots[k]).getUTCHours())}:00–${pad(new Date(slots[k]).getUTCHours())}:59Z — ${lab}${det ? ": " + esc(det) : ""}${win}">${g}</td>`;
+    }).join("");
+    return `<tr class="row${r.icao === selected ? " sel" : ""}" data-icao="${r.icao}"><th class="ap" scope="row"><button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}"><span class="dot ${r.worst}${r.cat ? " k-" + r.cat : ""}"></span><span class="ic">${r.icao}</span>${iataOf(r.icao) ? `<span class="iata">${iataOf(r.icao)}</span>` : ""}${tag}</button></th>${cells}</tr>`;
+  };
+
+  if (!vis.length){
+    h += `<tr><td colspan="${n + 1}"><div class="empty">${rows.length ? "Nenhum aeroporto corresponde ao filtro." : cfg.mode === "manual" ? "Cole um ou mais TAF acima e carregue em Analisar." : "Sem aeroportos. Defina a lista ICAO em Definições."}</div></td></tr>`;
+  } else if (ui.sortAlert){
+    vis = vis.slice().sort((a, b) => b.score - a.score || a.idx - b.idx);
+    h += vis.map(rowHtml).join("");
+  } else {
+    const groups = {};
+    vis.forEach(r => (groups[r.region] = groups[r.region] || []).push(r));
+    const order = REGIONS.map(x => x[0]).concat("Outros");
+    for (const name of order){
+      const g = groups[name]; if (!g) continue;
+      const nAl = g.filter(r => r.worst === "red").length;
+      h += `<tr class="reg"><th colspan="${n + 1}">${name}${nAl ? `<em>${nAl} em alerta</em>` : ""}</th></tr>` + g.map(rowHtml).join("");
+    }
+  }
+  $("#grid").innerHTML = h + "</tbody>";
+
+  if (selected && !rows.find(r => r.icao === selected)) selected = null;
+  if (!selected && !ui.detailClosed){
+    const first = rows.slice().sort((a, b) => b.score - a.score || a.idx - b.idx)[0];
+    if (first && first.T) selected = first.icao;
+    if (selected) { const tr = document.querySelector(`tr[data-icao="${selected}"]`); if (tr) tr.classList.add("sel"); }
+  }
+  renderDetail(slots);
+  const rep = document.getElementById("report");
+  if (rep && !rep.hidden) renderReport();
+}
+
+/* "12Z–22Z" no dia de hoje; com outro dia: "31/12Z–31/23Z"; o fim é a última hora com alerta (até HH:59) */
+function winLabel(a, b){
+  const today = new Date().getUTCDate(), A = new Date(a), B = new Date(b - HOUR);
+  // fim às 00Z do dia seguinte escreve-se 24Z (ex.: 3112/3124 → 31/12Z–31/24Z)
+  const to24 = B.getUTCHours() === 0 && b - HOUR > a && new Date(b - 2 * HOUR).getUTCDate() !== B.getUTCDate();
+  const Bd = to24 ? new Date(b - 2 * HOUR) : B;
+  const same = A.getUTCDate() === today && Bd.getUTCDate() === today;
+  const f = (d, h) => (same ? "" : pad(d.getUTCDate()) + "/") + h + "Z";
+  return f(A, pad(A.getUTCHours())) + "–" + f(Bd, to24 ? "24" : pad(B.getUTCHours()));
+}
+function windowsOf(r, slots){
+  const out = []; let cur = null;
+  // as janelas vão até ao fim da validade do TAF, mesmo além da grelha
+  let res = r.res;
+  if (r.T && r.T.to != null && slots.length && r.T.to >= slots[slots.length - 1] + HOUR){
+    slots = slots.slice(); res = res.slice();
+    for (let t = slots[slots.length - 1] + HOUR; t <= r.T.to; t += HOUR){ slots.push(t); const x = slotEval(r.T, t); x.cat = x.level === "red" ? catOf(x.hard) : null; res.push(x); }
+  }
+  res.forEach((x, k) => {
+    const lvl = x.level;
+    if (lvl !== "red" && lvl !== "amber"){ cur = null; return; }
+    const reasons = lvl === "red" ? x.hard : x.cond.flatMap(c => c.reasons);
+    const codes = [...new Set(reasons.map(z => z.code))].sort().join(",");
+    const srcs = lvl === "red" ? [...new Set(x.hard.map(z => z.via))] : [...new Set(x.cond.map(c => c.g.label))];
+    const key = lvl + "|" + codes + "|" + srcs.join(",");
+    if (cur && cur.key === key){ cur.end = slots[k] + HOUR; reasons.forEach(z => cur.txt.add(z.txt)); }
+    else { cur = {key, lvl, cat: x.cat, start: slots[k], end: slots[k] + HOUR, txt: new Set(reasons.map(z => z.txt)), srcs}; out.push(cur); }
+  });
+  return out;
+}
+
+/* um token de visibilidade/teto de um grupo fica nos mínimos RVAC da pista em uso no início do grupo? */
+function rvacTok(T, g, tok){
+  const e = parseEl([tok]); if (e.vis == null && !e.clouds) return false;
+  const st = g.from != null ? slotEval(T, Math.floor(g.from / HOUR) * HOUR).state : null;
+  const R = minimaRwy(T.icao, st && st.wind, st && st.lastDir); if (!R) return false;
+  const c = e.clouds ? ceilingOf(e.clouds) : null;
+  const B = (RWY_BELOW[T.icao] || {})[R.rw];
+  if (B && ((e.vis != null && e.vis < B[1]) || (c != null && c < B[0]))) return "bmin";
+  if (e.vis != null && e.vis <= R.vmin) return "rvac";
+  return c != null && c <= R.cmin ? "rvac" : false;
+}
+function tokenCat(t, icao){
+  const r = evaluate(apply(EMPTY, parseEl([t])), icao);
+  return r.length ? catOf(r) : null;
+}
+function tokenHit(t, cond){
+  if (/^\d{4}$/.test(t) && t !== "9999" && +t < cfg.vis) return true;
+  let m;
+  if ((m = /^(BKN|OVC)(\d{3})/.exec(t)) && +m[2] * 100 < cfg.cig) return true;
+  if ((m = /^VV(\d{3}|\/\/\/)$/.exec(t)) && (m[1] === "///" || +m[1] * 100 < cfg.cig)) return true;
+  if ((m = /^(FEW|SCT|BKN|OVC)\d{3}(CB|TCU)$/.exec(t)) && (cfg.phen || []).includes("CB")) return true;
+  if ((m = /^(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)$/.exec(t))){
+    const f = m[4] === "MPS" ? 1.944 : 1;
+    return windHit({spd: Math.round(+m[2] * f), gust: m[3] ? Math.round(+m[3] * f) : null});
+  }
+  if (isWx(t)){
+    if (wxPhen(t).length) return true;
+    if (cfg.intensity && /^[+-]/.test(t)) return true;
+  }
+  return false;
+}
+
+function renderDetail(slots){
+  const el = $("#detail");
+  const r = rowsCache.find(x => x.icao === selected);
+  if (!r){ el.innerHTML = ""; el.classList.add("closed"); $(".layout").classList.add("nodetail"); return; }
+  const T = r.T;
+  const now0 = r.res[0];
+  const lab = {red: "Alerta", amber: "Possível", ok: "Dentro dos mínimos", none: "Sem TAF"};
+  let h = `<div class="d-head"><div><h2>${r.icao}${iataOf(r.icao) ? `<span class="h-iata"> / ${iataOf(r.icao)}</span>` : ""}</h2><div class="sub">${nameOf(r.icao) ? `<b class="apname">${esc(nameOf(r.icao))}</b> · ` : ""}${esc(r.region)}</div></div><button class="d-close" type="button" id="dClose" aria-label="Fechar painel" title="Fechar painel (Esc)">×</button></div>`;
+  if (r.isNew && tafChanged[r.icao]){
+    const C = tafChanged[r.icao], at = new Date(C.at);
+    const prevT = parseTAF(C.prevRaw, C.at);
+    const before = tafAlertLabels(prevT, r.icao, slots), after = tafAlertLabels(r.T, r.icao, slots);
+    const add = [...after].filter(x => !before.has(x)), gone = [...before].filter(x => !after.has(x));
+    h += `<div class="d-sec newtaf"><h3>TAF ${r.T && r.T.amd ? "emendado (AMD)" : "novo"} · recebido ${pad(at.getUTCHours())}${pad(at.getUTCMinutes())}Z</h3>
+      ${add.length ? `<div><b>Alertas novos:</b> ${esc(add.join(" · "))}</div>` : ""}
+      ${gone.length ? `<div><b>Deixaram de estar:</b> ${esc(gone.join(" · "))}</div>` : ""}
+      ${!add.length && !gone.length ? `<div class="hint">Os alertas no período da grelha não mudaram.</div>` : ""}
+      <details><summary>TAF anterior</summary><div class="raw">${esc(C.prevRaw)}</div></details></div>`;
+  }
+  if (LDG_LIMITS[r.icao]) h += limitsRoseHtml(r.icao, r);
+  const RW = RUNWAYS[r.icao];
+  if (RW && RW.length){
+    h += `<div class="d-sec"><h3>Pistas</h3><div class="rwys">${RW.map(x => `<span class="rwy"><b>${esc(x[0])}</b>${x[1] ? ` ${x[1]} m` : ""}</span>`).join("")}</div>`;
+    // pista em uso estimada: agora pelo METAR (ou TAF) e sequência prevista pelo TAF
+    const M = metars[r.icao];
+    let nowWind = null, nowSrc = "";
+    if (M){ const toks = M.raw.split(/\s+/); const i = toks.findIndex(t => /^\d{6}Z$/.test(t)); nowWind = parseEl(toks.slice(i + 1, i + 3)).wind; nowSrc = "METAR"; }
+    if (!nowWind && r.res[0] && r.res[0].state){ nowWind = r.res[0].state.wind; nowSrc = "TAF"; }
+    const uNow = rwyInUse(r.icao, nowWind);
+    if (uNow){
+      h += `<div class="rwy-now"><span class="rwy-tag">Em uso (estimada · ${nowSrc})</span><b>${esc(rwyLine(uNow))}</b></div>`;
+      if (!uNow.calm){
+        const tw = uNow.all.filter(e => e.mean.head < 0 && e.hdg !== uNow.best.hdg);
+        h += `<div class="rwy-comps">${uNow.all.sort((a, b) => b.mean.head - a.mean.head).map(e => `<span class="${e.mean.head < 0 ? "tw" : ""}">${esc(e.id)} ${e.mean.head >= 0 ? "HW" : "TW"} ${Math.abs(e.mean.head)} · CW ${e.mean.cross}${e.gust ? " (G " + (e.gust.head >= 0 ? "HW" : "TW") + " " + Math.abs(e.gust.head) + "/CW " + e.gust.cross + ")" : ""}</span>`).join("")}</div>`;
+      }
+    }
+    const fc = r.T ? rwyForecast(r, slots).filter(x => x.key !== "?") : [];
+    if (fc.length) h += `<div class="rwy-fc"><span class="rwy-tag">Previsão (TAF)</span>${fc.map(x => `<span><b class="mono">${fmtHZ(x.start)}–${fmtHZ(x.end - HOUR)}</b> ${x.key === "CALM" ? "calmo / VRB" : "RWY " + esc(x.key)}</span>`).join("")}</div>`;
+    h += `<p class="hint" style="margin:0">Estimativa pelo vento (mais vento de frente). A pista em uso real depende do ATC, de pistas preferenciais e de ruído.</p></div>`;
+  }
+  h += nowHtml(r, now0, slots);
+  h += metarHtml(r.icao);
+
+  if (!T){
+    h += `<div class="d-sec"><p class="hint" style="margin:0">Não chegou TAF para este aeroporto. Pode não estar a ser emitido nesta altura (aeroporto fechado de noite) ou a fonte não o devolveu.</p></div>`;
+  } else if (T.error){
+    h += `<div class="d-sec"><p class="hint" style="margin:0">Não foi possível analisar: ${esc(T.error)}.</p><div class="raw">${esc(T.raw)}</div></div>`;
+  } else {
+    const wins = windowsOf(r, slots);
+    h += `<div class="d-sec"><h3>Janelas de alerta (até ao fim do TAF)</h3>`;
+    h += wins.length ? `<ul class="wins">${wins.map(w => `<li class="${w.lvl}${w.cat ? " k-" + w.cat : ""}"><span class="t"><span class="sw"></span>${winLabel(w.start, w.end)}</span><span>${esc([...w.txt].join(" · "))} <span class="hint">· ${esc(w.srcs.join(", "))}</span></span></li>`).join("")}</ul>` : `<p class="hint" style="margin:0">Sem alertas no período mostrado.</p>`;
+    h += `</div>`;
+
+    // TAF com destaque
+    let raw = "", open = false;
+    T.toks.forEach((tk, i) => {
+      const startsGroup = tk.role === "kw" && tk.g && (tk.g.type !== "BASE") && (tk.t.startsWith("FM") || tk.t === "BECMG" || tk.t.startsWith("PROB") || tk.t === "TEMPO");
+      if (startsGroup){ if (open) raw += "</span>"; raw += `<span class="gl">`; open = true; }
+      else if (i === 0){ raw += `<span class="gl">`; open = true; }
+      let cls = "";
+      if (tk.role === "kw" || tk.role === "kw2") cls = "kw";
+      else if (tk.role === "el"){
+        const ignored = tk.g && (tk.g.type === "TEMPO" || tk.g.type === "PROB");
+        const kc = tokenCat(tk.t, T.icao);
+        if (ignored && isTsTok(tk.t) && (cfg.phen || []).includes("TS")) cls = "hit k-conv";
+        else if (ignored && vrbHit(parseEl([tk.t]).wind, T.icao)) cls = "hit k-wind";
+        else if (ignored && cfg.intensity && isWx(tk.t) && /^[+-]/.test(tk.t) && !LIGHT_RAIN.has(tk.t)) cls = "hit k-" + (tokenCat(tk.t, T.icao) || "int");
+        else if (ignored && parseEl([tk.t]).wind && windHit(parseEl([tk.t]).wind, T.icao) && !ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-wind";
+        else if (ignored && /^\d{4}$/.test(tk.t) && +tk.t < cfg.vis) cls = "hit k-cig";
+        else if (tk.g && tk.g.type !== "BASE" && RWY_MINIMA[T.icao] && rvacTok(T, tk.g, tk.t)) cls = "hit k-" + rvacTok(T, tk.g, tk.t);
+        else if (ignored && /SM$/.test(tk.t) && (parseEl([tk.t]).vis ?? 99999) < cfg.vis) cls = "hit k-vis";
+        else if (ignored && ceilAlways(parseEl([tk.t]).clouds)) cls = "hit k-" + catOfCode(ceilAlways(parseEl([tk.t]).clouds).code);
+        else if (ignored && LDG_LIMITS[T.icao] && parseEl([tk.t]).wind && ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-" + catOfCode(ldgCheck(T.icao, parseEl([tk.t]).wind).code);
+        else if (kc) cls = ignored ? "ign" : "hit k-" + kc;
+      }
+      raw += (cls ? `<span class="${cls}">${esc(tk.t)}</span>` : esc(tk.t)) + " ";
+    });
+    if (open) raw += "</span>";
+    h += `<div class="d-sec"><h3>TAF</h3><div class="raw">${raw}</div></div>`;
+
+    const ageH = T.issue ? (Date.now() - T.issue) / HOUR : null;
+    h += `<div class="d-sec"><dl class="meta">
+      <dt>Emitido</dt><dd class="${ageH != null && ageH > 7 ? "warn" : ""}">${T.issue ? fmtDHZ(T.issue) + (ageH != null ? " · há " + (ageH < 1 ? Math.round(ageH * 60) + " min" : ageH.toFixed(1).replace(".", ",") + " h") : "") : "—"}</dd>
+      <dt>Validade</dt><dd>${fmtDHZ(T.from)} – ${fmtDHZ(T.to)}</dd>
+      ${T.amd || T.cor ? `<dt>Tipo</dt><dd>${T.amd ? "Emenda (AMD)" : "Correção (COR)"}</dd>` : ""}
+    </dl></div>`;
+
+    // grupos
+    const rowsG = T.groups.map(g => {
+      const e = g.el;
+      const vis = e.cavok ? "CAVOK" : e.vis != null ? (e.vis >= 10000 ? "≥10 km" : e.vis + " m") : "—";
+      const c = e.clouds ? ceilingOf(e.clouds) : null;
+      const cig = e.cavok ? "—" : e.clouds ? (c != null ? c + " ft" : "sem teto") : "—";
+      const wx = e.wx ? (e.wx.length ? e.wx.join(" ") : "NSW") : "—";
+      const st = g.type === "BASE" || g.type === "FM" ? apply(EMPTY, e) : {vis: e.cavok ? 10000 : e.vis, wx: e.wx || [], clouds: e.clouds || [], wind: e.wind || null};
+      const rr = evaluate(st, T.icao);
+      const ignored = g.type === "TEMPO" || g.type === "PROB";
+      const always = ignored ? condAlways(g, T.icao) : [];
+      const chips = ignored
+        ? always.map(z => `<span class="chip red k-${catOfCode(z.code)}">${esc(z.short || z.txt)}</span>`).join("") + `<span class="chip mute">${always.length ? "Resto não avaliado" : "Não avaliado"}</span>` + rr.filter(z => !always.some(a => a.code === z.code)).map(z => `<span class="chip mute">${esc(z.txt)}</span>`).join("")
+        : rr.length ? rr.map(z => `<span class="chip red k-${catOfCode(z.code)}">${esc(z.txt)}</span>`).join("") + (g.type === "BECMG" ? `<span class="chip mute">após ${fmtHZ(g.to)}</span>` : "") : `<span class="chip ok">OK</span>`;
+      const per = g.type === "FM" ? "de " + fmtDHZ(g.from) : g.from != null ? fmtDHZ(g.from).replace(/00Z$/, "Z") + "–" + fmtDHZ(g.to).replace(/00Z$/, "Z") : "—";
+      return `<tr><td class="lbl">${esc(g.label)}</td><td class="m">${per}</td><td class="m">${vis}</td><td class="m">${cig}</td><td class="m">${esc(wx)}</td><td><div class="chips">${chips}</div></td></tr>`;
+    }).join("");
+    h += `<div class="d-sec"><h3>Grupos</h3><div class="gtabwrap"><table class="gtab"><thead><tr><th>Grupo</th><th>Período</th><th>Vis</th><th>Teto</th><th>Tempo</th><th>Avaliação</th></tr></thead><tbody>${rowsG}</tbody></table></div></div>`;
+  }
+  el.innerHTML = h;
+  // secções do painel abrem e fecham ao carregar no título; a escolha fica guardada
+  ui.secClosed = ui.secClosed || {};
+  el.querySelectorAll(".d-sec").forEach(sec => {
+    const h3 = sec.querySelector(":scope > h3"); if (!h3) return;
+    const key = h3.textContent.split(/\s[·(]/)[0].trim().toUpperCase();
+    sec.classList.add("coll");
+    sec.classList.toggle("is-closed", !!ui.secClosed[key]);
+    h3.setAttribute("role", "button"); h3.tabIndex = 0;
+    h3.setAttribute("aria-expanded", String(!ui.secClosed[key]));
+    const tog = () => { ui.secClosed[key] = !ui.secClosed[key]; saveUI(); sec.classList.toggle("is-closed", !!ui.secClosed[key]); h3.setAttribute("aria-expanded", String(!ui.secClosed[key])); };
+    h3.addEventListener("click", tog);
+    h3.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); tog(); } });
+  });
+  const cl = $("#dClose"); if (cl) cl.onclick = closeDetail;
+  el.classList.toggle("closed", !!ui.detailClosed);
+  $(".layout").classList.toggle("nodetail", !!ui.detailClosed);
+}
+
+/* ---------- interação ---------- */
+function saveUI(){ store.set("tafmon.ui", ui); }
+document.querySelectorAll(".seg button[data-f]").forEach(b => b.addEventListener("click", () => { ui.filter = b.dataset.f; saveUI(); render(); }));
+// filtro guardado inválido (versão anterior) volta a "Todos"
+if (!["all", "alert", "now", "next6", "notaf", "new"].includes(ui.filter)) ui.filter = "all";
+/* carregar num contador mostra só esses aeroportos; carregar outra vez mostra todos */
+$("#summary").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (!b) return; ui.filter = ui.filter === b.dataset.f ? "all" : b.dataset.f; saveUI(); render(); $("#gridwrap").scrollTop = 0; });
+$("#lists").addEventListener("click", e => { const b = e.target.closest("[data-list]"); if (!b) return; ui.list = b.dataset.list; saveUI(); render(); $("#gridwrap").scrollTop = 0; });
+$("#areas").addEventListener("click", e => { const b = e.target.closest("[data-area]"); if (!b) return; ui.area = b.dataset.area; saveUI(); render(); $("#gridwrap").scrollTop = 0; });
+$("#cats").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (!b) return; ui.cat = ui.cat === b.dataset.cat ? "" : b.dataset.cat; saveUI(); render(); });
+$("#q").addEventListener("input", e => { ui.q = e.target.value.toUpperCase().replace(/[^A-Z]/g, ""); saveUI(); render(); });
+$("#sortAlert").addEventListener("change", e => { ui.sortAlert = e.target.checked; saveUI(); render(); });
+$("#grid").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-icao]"); if (!tr) return;
+  selected = tr.dataset.icao;
+  document.querySelectorAll("#grid tr.sel").forEach(x => x.classList.remove("sel"));
+  tr.classList.add("sel");
+  ui.detailClosed = false; saveUI();
+  const t0 = Math.floor(Date.now() / HOUR) * HOUR;
+  renderDetail(Array.from({length: +cfg.hours || 30}, (_, k) => t0 + k * HOUR));
+});
+/* ---------- largura do painel: arrastar a pega à esquerda do painel ---------- */
+(function(){
+  const lay = $(".layout"), hdl = $("#dResize"), det = $("#detail");
+  const MIN = 320, maxW = () => Math.max(MIN, Math.round(window.innerWidth * 0.7));
+  const setW = w => { w = Math.round(Math.min(maxW(), Math.max(MIN, w))); lay.style.setProperty("--detail-w", w + "px"); return w; };
+  const place = () => {};
+  if (ui.detailW) setW(ui.detailW);
+  let start = null;
+  hdl.addEventListener("pointerdown", e => { start = {x: e.clientX, w: det.getBoundingClientRect().width}; hdl.setPointerCapture(e.pointerId); hdl.classList.add("drag"); document.body.classList.add("resizing"); e.preventDefault(); });
+  hdl.addEventListener("pointermove", e => { if (!start) return; ui.detailW = setW(start.w + (start.x - e.clientX)); place(); });
+  const end = () => { if (!start) return; start = null; hdl.classList.remove("drag"); document.body.classList.remove("resizing"); saveUI(); };
+  hdl.addEventListener("pointerup", end); hdl.addEventListener("pointercancel", end);
+  hdl.addEventListener("dblclick", () => { ui.detailW = null; lay.style.removeProperty("--detail-w"); saveUI(); place(); });
+  hdl.addEventListener("keydown", e => { if (e.key === "ArrowLeft" || e.key === "ArrowRight"){ ui.detailW = setW(det.getBoundingClientRect().width + (e.key === "ArrowLeft" ? 30 : -30)); saveUI(); place(); e.preventDefault(); } });
+})();
+
+/* fechar o painel do aeroporto: a grelha passa a ocupar a largura toda */
+function closeDetail(){
+  ui.detailClosed = true; saveUI();
+  selected = null;
+  document.querySelectorAll("#grid tr.sel").forEach(x => x.classList.remove("sel"));
+  $("#detail").classList.add("closed");
+  $(".layout").classList.add("nodetail");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#settings").hidden && $("#report").hidden && !ui.detailClosed) closeDetail(); });
+$("#btnRefresh").addEventListener("click", load);
+$("#btnParse").addEventListener("click", () => { manualText = $("#manualText").value; store.set("tafmon.manual", manualText); selected = null; load(); });
+$("#manualText").value = manualText;
+
+// definições
+const dlg = $("#settings");
+function openSettings(){
+  $("#m" + {live: "Live", manual: "Manual", sample: "Sample"}[cfg.mode]).checked = true;
+  $("#fWorker").value = cfg.worker; $("#fIcao").value = cfg.icao; $("#fDestIcao").value = cfg.destIcao || ""; $("#fAltIcao").value = cfg.altIcao || "";
+  $("#fVis").value = cfg.vis; $("#fCig").value = cfg.cig; $("#fCig2").value = cfg.cig2;
+  $("#fWind").value = cfg.wind; $("#fInt").checked = cfg.intensity;
+  $("#fPhen").innerHTML = PHEN.map(p => `<label><input type="checkbox" id="ph_${p.k}" value="${p.k}"${(cfg.phen || []).includes(p.k) ? " checked" : ""}> ${esc(p.label)}</label>`).join("");
+  $("#fHours").value = String(cfg.hours); $("#fRefresh").value = cfg.refresh;
+  dlg.hidden = false; $("#fWorker").focus();
+}
+function closeSettings(){ dlg.hidden = true; $("#btnSettings").focus(); }
+function openPin(){ $("#pinInput").value = ""; $("#pinMsg").textContent = ""; $("#pinDlg").hidden = false; $("#pinInput").focus(); }
+function closePin(){ $("#pinDlg").hidden = true; $("#btnSettings").focus(); }
+$("#btnSettings").addEventListener("click", () => { if (!SETTINGS_LOCKED || isAdmin) openSettings(); else portalNotAdmin(); });
+function portalNotAdmin(){ const b = $("#banner"); b.innerHTML = "<b>Definições bloqueadas.</b> <span>Só um Administrador do portal pode alterar as definições do TAF.</span>"; b.className = "banner"; b.hidden = false; setTimeout(() => { if (b.textContent.startsWith("Definições bloqueadas")) b.hidden = true; }, 6000); }
+$("#pinClose").addEventListener("click", closePin);
+$("#pinDlg").addEventListener("click", e => { if (e.target.id === "pinDlg") closePin(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#pinDlg").hidden){ e.stopImmediatePropagation(); closePin(); } }, true);
+$("#pinForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const h = await pinHash($("#pinInput").value.trim());
+  if (h !== ADMIN_HASH && h !== ADMIN_HASH_FNV){ $("#pinMsg").textContent = "PIN errado."; $("#pinInput").select(); return; }
+  isAdmin = true; store.set("tafmon.admin", h);
+  cfg = Object.assign({}, DEFAULTS, store.get("tafmon.cfg", {}));
+  $("#pinDlg").hidden = true; paintLock(); openSettings(); load();
+});
+$("#setLock").addEventListener("click", () => {
+  isAdmin = false; store.set("tafmon.admin", "");
+  if (SETTINGS_LOCKED) cfg = Object.assign({}, DEFAULTS);
+  closeSettings(); paintLock(); selected = null; load();
+});
+function paintLock(){
+  const b = $("#btnSettings");
+  b.innerHTML = SETTINGS_LOCKED && !isAdmin ? 'Definições <svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' : "Definições";
+  b.title = SETTINGS_LOCKED && !isAdmin ? "Só Administradores do portal" : "Definições";
+  const ed = $("#lnkEditBox"); if (ed) ed.hidden = SETTINGS_LOCKED && !isAdmin;
+}
+paintLock();
+$("#setClose").addEventListener("click", closeSettings);
+dlg.addEventListener("click", e => { if (e.target === dlg) closeSettings(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !dlg.hidden) closeSettings(); });
+$("#setReset").addEventListener("click", () => { cfg = Object.assign({}, DEFAULTS); store.set("tafmon.cfg", cfg); openSettings(); });
+$("#setForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const mode = (document.querySelector('input[name="mode"]:checked') || {}).value || "sample";
+  cfg = Object.assign(cfg, {
+    mode, worker: $("#fWorker").value.trim(), icao: $("#fIcao").value, destIcao: $("#fDestIcao").value.trim(), altIcao: $("#fAltIcao").value.trim(),
+    vis: Math.max(0, +$("#fVis").value || DEFAULTS.vis), cig: Math.max(0, +$("#fCig").value || DEFAULTS.cig), cig2: Math.max(0, +$("#fCig2").value || 0),
+    wind: Math.max(0, +$("#fWind").value || DEFAULTS.wind),
+    phen: [...document.querySelectorAll("#fPhen input:checked")].map(x => x.value),
+    intensity: $("#fInt").checked,
+    hours: +$("#fHours").value || 30, refresh: Math.min(60, Math.max(5, +$("#fRefresh").value || 10))
+  });
+  store.set("tafmon.cfg", cfg);
+  closeSettings(); selected = null; load();
+});
+
+/* ---------- relatório de alertas ----------
+   Junta as horas seguidas de cada alerta, por aeroporto: "LPMA 10-20UTC OUT OF LIM", "LPPT 03-15UTC BKN004" */
+let repUI = Object.assign({ord: "icao", onlyVis: false, cats: CATS.map(c => c.k)}, store.get("tafmon.rep", {}));
+let visibleIcaos = null;
+const stripVia = t => String(t || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+function repTok(z){
+  const t = stripVia(z.txt);
+  switch (z.code){
+    case "LIM": return {lab: z.outLabel || "OUT OF LIM", wind: t.split(" ")[0]};
+    case "MRG": return {lab: "WND NEAR THE LIM", wind: t.split(" ")[0]};
+    case "RVAC": return {lab: "RVAC RWY " + z.rw + (z.what ? " " + z.what : "")};
+    case "BMIN": return {lab: "BELOW MIN RWY " + z.rw + (z.what ? " " + z.what : "")};
+    case "CAPT": return {lab: "CAPT TKOF/LDG MANDATORY", cw: z.cw || 0, wind: t.split(" ")[0]};
+    case "VIS": { const v = (/(\d+)/.exec(t) || [, "0"])[1]; return {lab: "VIS " + v.padStart(4, "0"), vis: +v}; }
+    case "CIG": case "CIG4": { const k = z.short || t; const m = /(\d{3})/.exec(k); return {lab: k, cig: m ? +m[1] : 0}; }
+    case "WIND": case "VRB": return {lab: t.replace(/^Vento\s+/, ""), wind: t.replace(/^Vento\s+/, "")};
+    default: return {lab: z.short && z.code === "TS" ? z.short : t.split(" ").slice(0, 2).join(" ")};
+  }
+}
+/* descrição em inglês para o relatório: "-TSRA" -> "THUNDERSTORM AND LOW RAIN", "24019G33KT" -> "GUST" */
+const WX_WORDS = {RA: "RAIN", DZ: "DRIZZLE", SN: "SNOW", SG: "SNOW GRAINS", PL: "ICE PELLETS", GR: "HAIL", GS: "SMALL HAIL", IC: "ICE CRYSTALS", UP: "UNKNOWN PRECIPITATION",
+  BR: "MIST", FG: "FOG", FU: "SMOKE", VA: "VOLCANIC ASH", DU: "DUST", SA: "SAND", HZ: "HAZE", PO: "DUST WHIRLS", SQ: "SQUALLS", FC: "FUNNEL CLOUD", SS: "SANDSTORM", DS: "DUSTSTORM"};
+const DESC_WORDS = {SH: "SHOWERS", FZ: "FREEZING", BL: "BLOWING", DR: "LOW DRIFTING", MI: "SHALLOW", BC: "PATCHES OF", PR: "PARTIAL"};
+function wxDesc(w){
+  const m = /^(\+|-|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:[A-Z]{2})*)$/.exec(w); if (!m) return "";
+  const inten = m[1] === "-" ? "LOW" : m[1] === "+" ? "HEAVY" : "";
+  const vc = m[1] === "VC" ? " IN VICINITY" : "";
+  const ph = (m[3].match(/[A-Z]{2}/g) || []).map(c => WX_WORDS[c] || c);
+  const phs = ph.join(" AND ");
+  if (m[2] === "TS"){
+    if (!ph.length) return (inten ? inten + " " : "") + "THUNDERSTORM" + vc;
+    return "THUNDERSTORM AND " + (inten ? inten + " " : "") + phs + vc;
+  }
+  if (m[2] === "SH") return [inten, phs, "SHOWERS"].filter(Boolean).join(" ") + vc;
+  return [inten, m[2] ? DESC_WORDS[m[2]] : "", phs].filter(Boolean).join(" ") + vc;
+}
+function windDesc(tok){
+  const m = /^(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)$/.exec(tok); if (!m) return "";
+  const f = m[4] === "MPS" ? 1.944 : 1, spd = +m[2] * f, gust = m[3] ? +m[3] * f : null;
+  const strong = spd >= cfg.wind, gusty = gust != null && gust >= cfg.wind;
+  const base = m[1] === "VRB" ? "VARIABLE WIND" : "";
+  if (base) return base + (gust != null ? " AND GUST" : "");
+  return strong && gusty ? "STRONG WIND AND GUST" : gusty || gust != null ? "GUST" : "STRONG WIND";
+}
+function describeItem(it){
+  const L = it.label;
+  if (it.code === "LIM" || it.code === "MRG" || it.code === "CAPT" || it.code === "RVAC" || it.code === "BMIN") return L;
+  if (it.code === "VIS") return L + " LVO";
+  if (it.code === "CIG") return L + " LVO";
+  if (it.code === "CIG4") return L + " LOW CEILING";
+  if (it.code === "WIND" || it.code === "VRB") return L + " " + windDesc(L.split(" ")[0]);
+  return L.split(" ").map(w => { const d = wxDesc(w); return d ? w + " " + d : w; }).join(" / ");
+}
+const windMag = w => { const m = /(\d{2,3})(?:G(\d{2,3}))?KT/.exec(w || ""); return m ? Math.max(+m[1], +(m[2] || 0)) : 0; };
+function reportItems(){
+  const n = +cfg.hours || 30, t0 = Math.floor(Date.now() / HOUR) * HOUR;
+  const slots = Array.from({length: n}, (_, k) => t0 + k * HOUR);
+  const rows = rowsCache.length ? rowsCache : buildRows(slots);
+  const items = [];
+  const repL = repIcaoList(), repSet = repL.length ? new Set(repL) : null;
+  const repIdx = ic => { const i = repL.indexOf(ic); return i < 0 ? 9999 : i; };
+  for (const r of rows){
+    if (!r.T || r.T.error) continue;
+    if (repUI.onlyVis && visibleIcaos && !visibleIcaos.has(r.icao)) continue;
+    if (repSet && !repSet.has(r.icao)) continue;
+    const open = {};
+    r.res.forEach((x, k) => {
+      const seen = new Set();
+      if (x.level === "red"){
+        let hard = x.hard;
+        if (hard.some(z => z.code === "LIM")) hard = hard.filter(z => z.code !== "MRG");
+        for (const z of hard){
+          const cat = catOfCode(z.code);
+          if (!repUI.cats.includes(cat)) continue;
+          const via = !z.via || z.via === "Previsão" || z.via === "FM" ? "" : shortGroup(z.via).replace("P30 TMP", "PROB30 TEMPO").replace("P40 TMP", "PROB40 TEMPO");
+          const key = z.code;
+          if (seen.has(key)){ const o = open[key]; if (o){ o.parts.push(repTok(z)); o.vias.add(via); } continue; }
+          seen.add(key);
+          const tk = repTok(z);
+          let it = open[key];
+          if (it && it.endK === k){ it.endK = k + 1; it.end = slots[k] + HOUR; it.parts.push(tk); it.vias.add(via); }
+          else { it = {icao: r.icao, idx: repSet ? repIdx(r.icao) : r.idx, code: z.code, cat, vias: new Set([via]), start: slots[k], end: slots[k] + HOUR, endK: k + 1, parts: [tk]}; open[key] = it; items.push(it); }
+        }
+      }
+      for (const key of Object.keys(open)) if (!seen.has(key)) delete open[key];
+    });
+  }
+  for (const it of items){
+    const P = it.parts;
+    if (it.code === "CIG" || it.code === "CIG4") it.label = P.reduce((a, b) => b.cig < a.cig ? b : a).lab;
+    else if (it.code === "VIS") it.label = P.reduce((a, b) => b.vis < a.vis ? b : a).lab;
+    else if (it.code === "RVAC" || it.code === "BMIN") it.label = [...new Set(P.map(p => p.lab))].slice(0, 2).join(" / ");
+    else if (it.code === "CAPT"){ const b = P.reduce((a, c) => (c.cw || 0) > (a.cw || 0) ? c : a); it.label = b.lab + " CW" + b.cw + (b.wind ? " " + b.wind : ""); }
+    else if (it.code === "LIM" || it.code === "MRG"){ const w = P.reduce((a, b) => windMag(b.wind) > windMag(a.wind) ? b : a).wind; it.label = P[0].lab + (w ? " " + w : ""); }
+    else if (it.code === "WIND" || it.code === "VRB") it.label = P.reduce((a, b) => windMag(b.wind) > windMag(a.wind) ? b : a).lab;
+    else it.label = [...new Set(P.map(p => p.lab))].slice(0, 3).join(" ");
+    it.raw = it.label; it.lab0 = (P[0] && P[0].lab) || "";
+    it.label = describeItem(it);
+    it.per = fmtWin(it.start, it.end);
+    it.via = it.vias.size === 1 ? [...it.vias][0] : "";
+  }
+  const all = items.slice();
+  /* alertas do mesmo aeroporto com o mesmo período ficam numa só linha */
+  const merged = [], byKey = {};
+  for (const it of items.sort((a, b) => catRank(a.cat) - catRank(b.cat))){
+    const k = it.icao + "|" + it.start + "|" + it.end;
+    const m = byKey[k];
+    if (m){
+      if (!m.words.includes(it.label)) m.words.push(it.label);
+      m.label = m.words.join(" / ");
+      if (!m.cats.includes(it.cat)) m.cats.push(it.cat);
+    } else { const c = Object.assign({}, it, {words: [it.label], cats: [it.cat]}); byKey[k] = c; merged.push(c); }
+  }
+  items.length = 0; items.push(...merged);
+  items.sort(repUI.ord === "time"
+    ? (a, b) => a.start - b.start || a.idx - b.idx || catRank(a.cat) - catRank(b.cat)
+    : (a, b) => a.idx - b.idx || a.start - b.start || catRank(a.cat) - catRank(b.cat));
+  return {items, slots, all};
+}
+/* ---------- relatório em tabela: 2 blocos de 12 h, uma linha por aeroporto e tipo de alerta ---------- */
+const REP_CAT_NAME = {cig: "LVO", bmin: "BELOW MIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SNOW/ICE", wind: "WIND", mar: "WND NEAR LIM", cig4: "LOW CIG", obsc: "MIST", int: "INTENSITY"};
+/* ordem do relatório: gravidade e depois zona (Portugal, Europa, América do Sul, América do Norte, África) */
+const REP_SEV = {"OUT OF LIM": 0, "LDG NOT ALLOWED": 0, "BELOW MIN": 0, "LVO": 1, "TS": 2, "VA": 2.5, "LOW CIG": 3, "RVAC": 3,
+  "SNOW/ICE": 4, "WIND": 5, "WND NEAR LIM": 6, "CAPT TKOF/LDG": 6, "MIST": 7, "INTENSITY": 8};
+const repSev = n => n in REP_SEV ? REP_SEV[n] : 9;
+const REP_ZONE_NAME = ["PORTUGAL", "EUROPE", "SOUTH AMERICA", "NORTH AMERICA", "AFRICA", "OTHER"];
+const repZone = ic => regionOf(ic) === "Portugal" ? 0 : ({EU: 1, SA: 2, NA: 3, AF: 4}[areaOf(ic)] ?? 5);
+function repCatName(it){
+  if (it.code === "LIM") return /NOT ALLOWED/.test(it.lab0) ? "LDG NOT ALLOWED" : "OUT OF LIM";
+  if (it.code === "CAPT") return "CAPT TKOF/LDG";
+  return REP_CAT_NAME[it.cat] || "OTHER";
+}
+function repCond(it){
+  let s = String(it.raw || "");
+  if (it.code === "LIM" || it.code === "MRG") s = s.replace(/^.*?(?=(\d{3}|VRB)\d{2,3}(G\d{2,3})?(KT|MPS))/, "");
+  else if (it.code === "RVAC") s = s.replace(/RVAC /g, "");
+  else if (it.code === "BMIN") s = s.replace(/BELOW MIN /g, "");
+  else if (it.code === "CAPT") s = s.replace(/^CAPT TKOF\/LDG MANDATORY\s*/, "");
+  return s.replace(/\bVIS (\d+)/g, "VIS$1").trim();
+}
+const repNum = (s, re) => { const m = re.exec(s); return m ? +m[1] : null; };
+/* junta períodos que se tocam ou sobrepõem */
+function mergeWins(ws){
+  const out = [];
+  ws.sort((a, b) => a.s - b.s).forEach(w => { const l = out[out.length - 1]; if (l && w.s <= l.e) l.e = Math.max(l.e, w.e); else out.push({s: w.s, e: w.e}); });
+  return out;
+}
+/* formato fixo DD/HH-HHZ; DD/HH-DD/HHZ quando passa a meia-noite; DD/HHZ para uma só hora */
+function fmtWinT(s, e){
+  const S = new Date(s), L = new Date(e - HOUR);
+  const sd = pad(S.getUTCDate()), ld = pad(L.getUTCDate()), sh = pad(S.getUTCHours()), lh = pad(L.getUTCHours());
+  if (sd === ld) return sh === lh ? `${sd}/${sh}Z` : `${sd}/${sh}-${lh}Z`;
+  return `${sd}/${sh}-${ld}/${lh}Z`;
+}
+/* grupo do TAF com FZFG que coincide com o período da linha: devolve visibilidade, tempo e nuvens tal como estão no TAF */
+function fzfgFull(icao, wins){
+  const row = rowsCache.find(x => x.icao === icao), T = row && row.T;
+  if (!T || !T.groups) return null;
+  let best = null, bv = Infinity;
+  for (const g of T.groups){
+    if (!g.el || !(g.el.wx || []).some(w => /^[+-]?FZFG$/.test(w))) continue;
+    const gs = g.from ?? T.from, ge = g.to ?? T.to;
+    if (gs != null && ge != null && !wins.some(w => w.s < ge + HOUR && gs < w.e)) continue;
+    const parts = g.tokens.filter(t => /^\d{4}$/.test(t) || /SM$/.test(t) || isWx(t) || /^(FEW|SCT|BKN|OVC)\d{3}(CB|TCU)?$/.test(t) || /^VV(\d{3}|\/\/\/)$/.test(t))
+      .map(t => /^\d{4}$/.test(t) ? "VIS" + t : t);
+    const v = g.el.vis ?? 99999;
+    if (parts.length && v < bv){ bv = v; best = parts.join(" "); }
+  }
+  return best;
+}
+function reportTable(){
+  const {all, slots} = reportItems();
+  /* turnos fixos 00Z-12Z e 12Z-24Z: o turno em curso e o seguinte; a menos de 3 h do fim, passa para os dois seguintes.
+     As horas até ao início do 1.º bloco entram nesse bloco, para não se perder nenhum alerta. */
+  const t0 = slots[0], now = Date.now(), d0 = new Date(t0);
+  const day0 = Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), d0.getUTCDate());
+  let st = [day0, day0 + 12 * HOUR].filter(b => b <= now).pop();
+  if (st + 12 * HOUR - now < 3 * HOUR) st += 12 * HOUR;
+  const blocks = [
+    {s: st, e: st + 12 * HOUR, ds: Math.min(t0, st)},
+    {s: st + 12 * HOUR, e: st + 24 * HOUR, ds: st + 12 * HOUR}
+  ];
+  /* o turno em curso fica marcado (é o que abre por omissão), mas os botões ficam sempre pela ordem 00Z-12Z, 12Z-24Z */
+  blocks[0].cur = true;
+  if (new Date(blocks[0].s).getUTCHours() === 12) blocks.reverse();
+  const hz = (t, end) => { const h = new Date(t).getUTCHours(); return (end && h === 0 ? "24" : pad(h)) + "Z"; };
+  blocks.forEach(B => { B.name = hz(B.s) + "-" + hz(B.e, true); });
+  /* 3.º botão: as próximas 24 h a partir da hora atual */
+  blocks.push({s: t0, e: t0 + 24 * HOUR, ds: t0, name: "24 H"});
+  /* 4.º botão (Personalizado): faixa horária escolhida por cada utilizador (guardada só neste browser) */
+  const W = repWin(), dur = ((W.to - W.from + 24) % 24 || 24) * HOUR;
+  let cs = day0 + W.from * HOUR;
+  if (cs > now) cs -= 24 * HOUR;
+  if (now >= cs + dur) cs += 24 * HOUR;
+  blocks.push({s: cs, e: cs + dur, ds: Math.max(cs, t0), name: "PERÍODO " + pad(W.from) + "Z-" + (W.to === 0 ? "24" : pad(W.to)) + "Z", custom: true});
+  const catSum = {}, icaos = new Set();
+  for (const B of blocks){
+    const groups = {};
+    for (const it of all){
+      const s = Math.max(it.start, B.ds), e = Math.min(it.end, B.e);
+      if (e <= s) continue;
+      const name = repCatName(it), k = it.icao + "|" + name;
+      const g = groups[k] || (groups[k] = {icao: it.icao, name, rank: catRank(it.cat), wins: [], conds: []});
+      g.wins.push({s, e}); g.conds.push({code: it.code, txt: repCond(it)});
+      (catSum[name] = catSum[name] || new Set()).add(it.icao); icaos.add(it.icao);
+    }
+    B.rows = Object.values(groups).map(g => {
+      g.wins = mergeWins(g.wins);
+      /* condição: o pior valor de cada tipo (menor visibilidade, teto mais baixo, vento mais forte) */
+      const best = {}, order = [];
+      for (const c of g.conds){
+        if (!c.txt) continue;
+        const kind = c.code === "VIS" ? "VIS" : c.code === "CIG" || c.code === "CIG4" ? "CIG" : c.code === "WIND" || c.code === "VRB" || c.code === "LIM" || c.code === "MRG" ? "WND" : "X:" + c.txt;
+        if (!(kind in best)){ best[kind] = c.txt; order.push(kind); continue; }
+        const cur = best[kind];
+        if (kind === "VIS" && repNum(c.txt, /VIS(\d+)/) < repNum(cur, /VIS(\d+)/)) best[kind] = c.txt;
+        if (kind === "CIG" && repNum(c.txt, /(\d{3})/) < repNum(cur, /(\d{3})/)) best[kind] = c.txt;
+        if (kind === "WND" && windMag(c.txt) > windMag(cur)) best[kind] = c.txt;
+      }
+      const toks = [];
+      order.map(k => best[k]).join(" ").split(/\s+\/\s+|\s+/).forEach(t => { if (t && !toks.includes(t)) toks.push(t); });
+      const fullToks = toks.slice();
+      /* LVO: só a condição mais gravosa, a que fica mais abaixo do limite (visibilidade vs 850 m, teto vs 250 ft) */
+      if (g.name === "LVO"){
+        let worst = null, wr = Infinity;
+        for (const t of toks){
+          let r = null;
+          const v = /^VIS(\d{4})$/.exec(t), c = /^(BKN|OVC|VV)(\d{3}|\/\/\/)/.exec(t);
+          if (v) r = +v[1] / (cfg.vis || 850);
+          else if (c) r = c[2] === "///" ? 0 : (+c[2] * 100) / (cfg.cig || 250);
+          if (r != null && r < wr){ wr = r; worst = t; }
+        }
+        if (worst){ toks.length = 0; toks.push(worst); }
+      }
+      /* nevoeiro gelado associado à baixa visibilidade ou ao teto baixo: acrescenta FZFG */
+      if ((g.name === "LVO" || g.name === "LOW CIG") && fullToks.some(t => /^[+-]?FZFG$/.test(t)) && !toks.includes("FZFG")) toks.push("FZFG");
+      g.cond = toks.slice(0, 6).join(" ");
+      g.full = repFullName(g.name, toks);
+      if ((g.name === "LVO" || g.name === "LOW CIG") && toks.includes("FZFG")) g.full += " / FREEZING FOG";
+      g.per = g.wins.map(w => fmtWinT(w.s, w.e)).join(", ");
+      g.first = g.wins[0].s; g.toks = fullToks;
+      return g;
+    }).sort((a, b) => repZone(a.icao) - repZone(b.icao) || repSev(a.name) - repSev(b.name) || a.first - b.first || a.icao.localeCompare(b.icao));
+    /* sem repetições: uma linha cujas condições já aparecem noutra linha do mesmo aeroporto sai (ex.: FZFG já está no LVO) */
+    B.rows = B.rows.filter((r, i) => !(r.toks.length && B.rows.some((o, j) => j !== i && o.icao === r.icao && o.rank < r.rank && r.toks.every(t => o.toks.includes(t)))));
+    /* FZFG na mesma altura que LVO ou teto baixo: junta-se a essa linha em vez de aparecer à parte como neve/gelo */
+    const isFz = r => r.toks.length && r.toks.every(t => /^[+-]?FZFG$/.test(t));
+    const overlap = (a, b) => a.wins.some(x => b.wins.some(y => x.s < y.e && y.s < x.e));
+    B.rows = B.rows.filter(r => {
+      if (!isFz(r)) return true;
+      const host = B.rows.find(o => o !== r && o.icao === r.icao && (o.name === "LVO" || o.name === "LOW CIG") && overlap(o, r));
+      if (!host) return true;
+      if (!/\bFZFG\b/.test(host.cond)){ host.cond += " FZFG"; host.full += " / FREEZING FOG"; host.toks.push("FZFG"); }
+      return false;
+    });
+    /* com FZFG, a condição mostra a informação toda do grupo do TAF: visibilidade, tempo e nuvens (ex.: VIS0400 FZFG VV001) */
+    B.rows.forEach(r => {
+      if (!(/\bFZFG\b/.test(r.cond) || r.name === "LVO" || r.name === "LOW CIG")) return;
+      const f = fzfgFull(r.icao, r.wins); if (!f) return;
+      r.cond = f;
+      if ((r.name === "LVO" || r.name === "LOW CIG") && !/FREEZING FOG/.test(r.full)) r.full += " / FREEZING FOG";
+    });
+  }
+  for (const k in catSum) delete catSum[k]; icaos.clear();
+  for (const B of blocks) for (const r of B.rows){ (catSum[r.name] = catSum[r.name] || new Set()).add(r.icao); icaos.add(r.icao); }
+  const summary = Object.entries(catSum)
+    .sort((a, b) => repSev(a[0]) - repSev(b[0]))
+    .map(([n, s]) => `${n} ${s.size}`).join(" · ");
+  return {blocks, summary, nAirports: icaos.size, nRows: blocks.reduce((a, B) => a + B.rows.length, 0), t0};
+}
+/* alerta por extenso; na trovoada, neve/gelo, névoa e intensidade descreve o fenómeno ("-TSRA" -> THUNDERSTORM AND LOW RAIN) */
+const REP_FULL = {"LVO": "LVO", "TS": "THUNDERSTORM", "LOW CIG": "LOW CEILING", "OUT OF LIM": "OUT OF LIMITS",
+  "LDG NOT ALLOWED": "LANDING NOT ALLOWED", "WND NEAR LIM": "WIND NEAR THE LIMITS", "BELOW MIN": "BELOW MINIMA", "RVAC": "RVAC",
+  "VA": "VOLCANIC ASH", "SNOW/ICE": "SNOW / ICE", "MIST": "MIST", "INTENSITY": "PRECIPITATION", "CAPT TKOF/LDG": "CAPTAIN TAKEOFF / LANDING", "WIND": "STRONG WIND"};
+function repFullName(name, toks){
+  if (name === "WIND"){ const w = toks.find(t => windDesc(t)); return w ? windDesc(w) : REP_FULL.WIND; }
+  if (["TS", "SNOW/ICE", "MIST", "INTENSITY"].includes(name)){
+    const d = [...new Set(toks.map(wxDesc).filter(Boolean))];
+    if (d.length) return d.slice(0, 2).join(" / ");
+  }
+  return REP_FULL[name] || name;
+}
+const REP_COLS = ["AEROPORTO", "PERÍODO (UTC)", "CONDIÇÃO", "ALERTA"];
+const repCells = r => [icIata(r.icao), r.per, r.cond, r.full];
+/* "10-20UTC" no dia de hoje; "25/03-15UTC" noutro dia; "24/22-25/04UTC" quando passa a meia-noite */
+function fmtWin(s, e){
+  // mostra a primeira e a última hora com alerta (horas inteiras): 04-12UTC = das 04:00 às 12:59
+  const S = new Date(s), L = new Date(e - HOUR), today = new Date().getUTCDate();
+  const sh = pad(S.getUTCHours()), lh = pad(L.getUTCHours()), sd = S.getUTCDate(), ld = L.getUTCDate();
+  const hours = sh === lh && sd === ld ? sh : sh + "-" + lh;
+  if (sd === ld) return (sd === today ? "" : pad(sd) + "/") + hours + "UTC";
+  return pad(sd) + "/" + sh + "-" + pad(ld) + "/" + lh + "UTC";
+}
+/* separador escolhido no relatório: 0 = turno atual, 1 = seguinte, 2 = 24 H, 3 = faixa própria */
+let repBlk = -1; /* -1 = turno em curso */
+function repWin(){ try { const w = JSON.parse(localStorage.getItem("tafmon.repwin") || "null"); if (w && w.from >= 0 && w.from < 24 && w.to >= 0 && w.to < 24) return w; } catch(e){} return {from: 6, to: 18}; }
+function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringify(w)); } catch(e){} }
+function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
+function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
+function reportText(){
+  const T = reportTable();
+  const B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur), first = !!B.cur;
+  const now = new Date();
+  const fz = t => { const d = new Date(t); return pad(d.getUTCDate()) + "/" + pad(d.getUTCHours()) + "Z"; };
+  const head = `ALERTAS TAF · ${pad(now.getUTCDate())}/${pad(now.getUTCMonth() + 1)} ${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z · ${B.name === "24 H" ? "PRÓXIMAS 24 H" : B.custom ? B.name : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}`;
+  const early = first && B.ds < B.s ? `Inclui as horas desde ${fz(B.ds)}.` : "";
+  /* resumo só do turno escolhido */
+  const cs = {}; B.rows.forEach(r => (cs[r.name] = cs[r.name] || new Set()).add(r.icao));
+  const nA = new Set(B.rows.map(r => r.icao)).size;
+  const summary = Object.entries(cs).sort((a, b) => repSev(a[0]) - repSev(b[0])).map(([n, x]) => `${n} ${x.size}`).join(" · ");
+  const sub = B.rows.length ? `${summary}  (${nA} ${nA === 1 ? "aeroporto" : "aeroportos"})` : "Sem alertas neste período.";
+  const cells = B.rows.map(repCells);
+  const W = REP_COLS.map((h, i) => Math.max(h.length, ...cells.map(c => c[i].length)));
+  const line = c => c.map((x, i) => i === c.length - 1 ? x : x.padEnd(W[i])).join("  ").trimEnd();
+  const out = [head, sub];
+  if (early) out.push(early);
+  if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } out.push(line(cells[k])); }); }
+  const nHead = (early ? 3 : 2) + 1; /* linhas do cabeçalho: não vão na cópia */
+  const tbl = (cells.length
+      ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +
+        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}">${esc(c)}</td>`).join("")}</tr>`; }).join("") + `</table>`
+      : `<p style="margin:0">${esc(sub)}</p>`);
+  const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p style="margin:0 0 8px"><b>${esc(head)}</b><br>${esc(sub)}${early ? "<br>" + esc(early) : ""}</p>` + (cells.length ? tbl : "") + `</div>`;
+  /* cópia: só a tabela, sem título nem resumo */
+  /* documento HTML completo (charset e marcas de fragmento), como o Word/Outlook/Teams esperam ao colar */
+  const copyHtml = `<html><head><meta charset="utf-8"></head><body><!--StartFragment--><div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">${tbl}<p style="margin:0">&nbsp;</p></div><!--EndFragment--></body></html>`;
+  const copyText = cells.length ? out.slice(nHead).join("\n") : sub;
+  return {T, B, nA, head, text: out.join("\n"), html, copyHtml, copyText};
+}
+function renderReport(){
+  const R = reportText();
+  $("#repText").value = R.text;
+  $("#repPrev").innerHTML = R.html;
+  const nA = R.nA, nR = R.B.rows.length;
+  const fz = t => { const d = new Date(t); return pad(d.getUTCDate()) + "/" + pad(d.getUTCHours()) + "Z"; };
+  /* ordem fixa dos botões: 00Z-12Z, 12Z-24Z, 24 H, Personalizado (o turno em curso continua a ser o escolhido ao abrir) */
+  const ord = [0, 1, 2, 3].filter(k => R.T.blocks[k]).sort((a, b) => (a < 2 && b < 2) ? (R.T.blocks[a].name.startsWith("00Z") ? -1 : R.T.blocks[b].name.startsWith("00Z") ? 1 : 0) : a - b);
+  $("#repBlk").innerHTML = ord.map(k => [R.T.blocks[k], k]).map(([B, k]) => `<button type="button" data-blk="${k}" aria-pressed="${k === repBlk || (repBlk === -1 && !!B.cur)}">${B.custom ? "Personalizado" : B.name} <small>${fz(B.s)}-${fz(B.e)}</small></button>`).join("");
+  const W = repWin();
+  $("#repWin").hidden = repBlk !== 3;
+  if (repBlk === 3 && !$("#repWinFrom")){
+    /* dois campos curtos: funcionam no teclado numérico do telemóvel, que não tem espaço nem "-" */
+    $("#repWin").innerHTML = `Das <input id="repWinFrom" class="rw-h" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="Hora de início (UTC)">Z às <input id="repWinTo" class="rw-h" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="Hora de fim (UTC)">Z <span class="hint" id="repWinMsg">guardado neste browser</span>`;
+    $("#repWinFrom").value = pad(W.from); $("#repWinTo").value = W.to === 0 ? "24" : pad(W.to);
+  }
+  $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto e alerta, por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
+  $("#repVis").checked = !!repUI.onlyVis;
+}
+$("#repBlk").addEventListener("click", e => { const b = e.target.closest("[data-blk]"); if (!b) return; repBlk = +b.dataset.blk; setRepTab(repBlk); renderReport(); });
+/* faixa personalizada: horas 00-23 no início, 01-24 no fim; aplica assim que as duas estão completas */
+function applyWin(final){
+  const fi = $("#repWinFrom"), ti = $("#repWinTo"), msg = $("#repWinMsg");
+  [fi, ti].forEach(x => { x.value = x.value.replace(/\D/g, "").slice(0, 2); });
+  const f = fi.value === "" ? NaN : +fi.value, t = ti.value === "" ? NaN : +ti.value;
+  const okF = f >= 0 && f <= 23, okT = t >= 0 && t <= 24;
+  fi.toggleAttribute("aria-invalid", fi.value !== "" && !okF);
+  ti.toggleAttribute("aria-invalid", ti.value !== "" && !okT);
+  if (!(okF && okT) || (!final && (fi.value.length < 2 || ti.value.length < 2))){
+    if (final || (fi.value.length === 2 && !okF) || (ti.value.length === 2 && !okT)) msg.textContent = "Início 00 a 23, fim 01 a 24";
+    return;
+  }
+  setRepWin({from: f, to: t % 24}); renderReport();
+  fi.value = pad(f); ti.value = t === 0 || t === 24 ? "24" : pad(t);
+  msg.textContent = "Faixa aplicada · guardada neste browser";
+}
+$("#repWin").addEventListener("input", e => {
+  if (!e.target.classList.contains("rw-h")) return;
+  if (e.target.id === "repWinFrom" && e.target.value.replace(/\D/g, "").length === 2) $("#repWinTo").select();
+  applyWin(false);
+});
+$("#repWin").addEventListener("change", e => { if (e.target.classList.contains("rw-h")) applyWin(true); });
+$("#repWin").addEventListener("focusin", e => { if (e.target.classList.contains("rw-h")) e.target.select(); });
+$("#repWin").addEventListener("keydown", e => { if (e.target.classList.contains("rw-h") && e.key === "Enter"){ e.preventDefault(); applyWin(true); e.target.blur(); } });
+function openReport(){
+  repBlk = repTabSaved();
+  visibleIcaos = new Set([...document.querySelectorAll("#grid tr[data-icao]")].map(tr => tr.dataset.icao));
+  $("#repCats").innerHTML = CATS.map(c => `<label class="k-${c.k}"><input type="checkbox" value="${c.k}"${repUI.cats.includes(c.k) ? " checked" : ""}><i></i>${esc(c.label)}</label>`).join("");
+  $("#repMsg").textContent = "";
+  renderReport();
+  $("#report").hidden = false; $("#repCopy").focus();
+}
+/* ---------- sites de meteorologia ---------- */
+const DEFAULT_LINKS = `TAF / METAR | Aviation Weather Center (NOAA) | https://aviationweather.gov/
+TAF / METAR | Ogimet — TAF e METAR por país | https://www.ogimet.com/
+TAF / METAR | NAV CANADA — Weather Recall | https://plan.navcanada.ca/wxrecall/
+TAF / METAR | ATIS.info — ATIS digital | https://atis.info/
+Portugal | IPMA | https://www.ipma.pt/
+Europa | Meteoalarm — avisos europeus | https://www.meteoalarm.org/
+Modelos | Windy | https://www.windy.com/
+Modelos | ECMWF — meteograma de visibilidade (Lisboa) | https://charts.ecmwf.int/products/visibility_meteogram?epsgram=visibility_meteogram_aviation&lat=38.7167&lon=-9.13333&station_name=Lisbon
+Trovoada | LightningMaps — descargas elétricas | https://www.lightningmaps.org/#m=oss;t=3;s=0;o=0;b=52.75;ts=0;tr=1;tc=1;y=40.0444;x=-10.9863;z=3;
+Ciclones tropicais | NHC — National Hurricane Center | https://www.nhc.noaa.gov/
+Poeira e areia | AEMET — previsão de poeira | https://dust.aemet.es/products/daily-dust-products
+Fumo e incêndios | FireSmoke Canada — previsão de fumo | https://firesmoke.ca/forecasts/current/
+Fumo e incêndios | Esri Canada — incêndios florestais | https://climate.esri.ca/pages/wildfire
+Cinza vulcânica | VAAC Toulouse | https://www.meteo.fr/vaac/
+Cinza vulcânica | VAAC London | https://www.metoffice.gov.uk/aviation/vaac
+Alertas globais | GDACS — desastres (sismos, ciclones, vulcões) | https://www.gdacs.org/`;
+const getLinksText = () => SETTINGS_LOCKED && !isAdmin ? DEFAULT_LINKS : store.get("tafmon.links2", DEFAULT_LINKS);
+function parseLinks(t){
+  return String(t).split(/\n/).map(l => l.split("|").map(x => x.trim())).filter(p => p.length >= 3 && /^https?:\/\//i.test(p[2])).map(p => ({grp: p[0] || "Outros", name: p[1] || p[2], url: p[2]}));
+}
+function renderLinks(){
+  const L = parseLinks(getLinksText()), groups = {};
+  L.forEach(x => (groups[x.grp] = groups[x.grp] || []).push(x));
+  $("#lnkList").innerHTML = Object.keys(groups).length ? Object.entries(groups).map(([g, xs]) => `<section class="lnk-group"><h3>${esc(g)}</h3><ul>${xs.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><b>${esc(x.name)}</b><small>${esc(x.url.replace(/^https?:\/\//, "").split(/[\/?#]/)[0])}</small></a></li>`).join("")}</ul></section>`).join("") : `<p class="hint">Sem sites. Abra «Editar lista» para acrescentar.</p>`;
+  $("#lnkText").value = getLinksText();
+}
+$("#btnLinks").addEventListener("click", () => { renderLinks(); $("#lnkMsg").textContent = ""; $("#links").hidden = false; $("#lnkClose").focus(); });
+$("#lnkClose").addEventListener("click", () => { $("#links").hidden = true; $("#btnLinks").focus(); });
+$("#links").addEventListener("click", e => { if (e.target.id === "links") $("#links").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#links").hidden){ e.stopImmediatePropagation(); $("#links").hidden = true; } }, true);
+$("#lnkSave").addEventListener("click", () => { store.set("tafmon.links2", $("#lnkText").value); renderLinks(); $("#lnkMsg").textContent = "Lista guardada."; });
+$("#lnkReset").addEventListener("click", () => { store.set("tafmon.links2", DEFAULT_LINKS); renderLinks(); $("#lnkMsg").textContent = "Lista inicial reposta."; });
+$("#btnLegend").addEventListener("click", () => { const L = $("#legend"); L.hidden = !L.hidden; $("#btnLegend").setAttribute("aria-expanded", String(!L.hidden)); });
+function closeReport(){ $("#report").hidden = true; $("#btnReport").focus(); }
+const saveRep = () => store.set("tafmon.rep", repUI);
+$("#btnReport").addEventListener("click", openReport);
+$("#repClose").addEventListener("click", closeReport);
+$("#report").addEventListener("click", e => { if (e.target.id === "report") closeReport(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#report").hidden) closeReport(); });
+$("#repCats").addEventListener("change", () => { repUI.cats = [...document.querySelectorAll("#repCats input:checked")].map(x => x.value); saveRep(); renderReport(); });
+$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });
+$("#repCopy").addEventListener("click", () => {
+  const R = reportText(), txt = R.copyText;
+  const ok = () => { $("#repMsg").textContent = "Tabela copiada. Cole com Ctrl+V no Outlook, Teams, Word ou Excel."; };
+  const selectIt = () => {
+    try { const rg = document.createRange(); rg.selectNodeContents($("#repPrev").querySelector("table") || $("#repPrev")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg); } catch(e){}
+    $("#repMsg").textContent = "O browser bloqueou a cópia automática. A tabela ficou selecionada: carregue em Ctrl+C.";
+  };
+  /* 1.º método: evento de cópia do próprio browser, com a tabela em HTML e o texto alinhado (funciona em todos os browsers) */
+  let done = false;
+  const onCopy = e => { try { e.clipboardData.setData("text/html", R.copyHtml); e.clipboardData.setData("text/plain", txt); e.preventDefault(); done = true; } catch(err){} };
+  document.addEventListener("copy", onCopy, true);
+  try { document.execCommand("copy"); } catch(err){}
+  document.removeEventListener("copy", onCopy, true);
+  if (done){ ok(); return; }
+  /* 2.º método: API moderna da área de transferência */
+  try {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      navigator.clipboard.write([new ClipboardItem({"text/html": new Blob([R.copyHtml], {type: "text/html"}), "text/plain": new Blob([txt], {type: "text/plain"})})]).then(ok, selectIt);
+      return;
+    }
+  } catch(err){}
+  selectIt();
+});
+$("#repWord").addEventListener("click", () => {
+  // ficheiro de texto simples, abre no Bloco de Notas (UTF-8 com BOM e quebras de linha do Windows)
+  const R = reportText();
+  const txt = R.text + "\n\nFerramenta de apoio à análise, não certificada. Confirmar sempre com o TAF oficial.\n";
+  try {
+    const now = new Date(), nome = `alertas-taf-${pad(now.getUTCDate())}${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z.txt`;
+    const url = URL.createObjectURL(new Blob(["\ufeff" + txt.replace(/\n/g, "\r\n")], {type: "text/plain;charset=utf-8"}));
+    const a = document.createElement("a"); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    $("#repMsg").textContent = "Ficheiro " + nome + " guardado em Transferências.";
+  } catch(err){ $("#repMsg").textContent = "Não foi possível descarregar. Use Copiar tabela."; }
+});
+
+/* tema claro / escuro: a lua passa para escuro, o sol para claro; a escolha fica guardada */
+function isDark(){
+  const t = document.documentElement.getAttribute("data-theme");
+  if (t) return t === "dark";
+  return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function paintThemeBtn(){
+  const d = isDark(), b = $("#btnTheme");
+  b.classList.toggle("is-dark", d);
+  b.setAttribute("aria-label", d ? "Mudar para tema claro" : "Mudar para tema escuro");
+  b.title = d ? "Tema claro" : "Tema escuro";
+}
+(function(){
+  const t = store.get("tafmon.theme", "");
+  if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+  paintThemeBtn();
+  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintThemeBtn); } catch(e){}
+})();
+$("#btnTheme").addEventListener("click", () => {
+  const next = isDark() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  store.set("tafmon.theme", next);
+  paintThemeBtn();
+});
+
+// relógio e atualização automática
+let lastAuto = Date.now();
+function tick(){
+  const d = new Date();
+  $("#utc").textContent = pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes());
+  $("#utcDate").textContent = DOW[d.getUTCDay()] + " " + pad(d.getUTCDate()) + "/" + pad(d.getUTCMonth() + 1);
+  const t0 = Math.floor(d.getTime() / HOUR) * HOUR;
+  if (cfg.mode === "live" && Date.now() - lastAuto > cfg.refresh * 60000){ lastAuto = Date.now(); load(); return; }
+  if (lastHour !== null && t0 !== lastHour){ if (cfg.mode === "sample") load(); else render(); return; }
+  updateAge();
+}
+function updateAge(){
+  const upd = $("#upd"); if (!lastFetch) return;
+  const age = Math.round((Date.now() - lastFetch) / 60000);
+  const f = new Date(lastFetch);
+  upd.textContent = "TAF " + (cfg.mode === "manual" ? "analisados" : "carregados") + " " + pad(f.getUTCHours()) + ":" + pad(f.getUTCMinutes()) + "Z" + (age >= 1 ? " · há " + age + " min" : "");
+  upd.className = "upd num" + (cfg.mode === "live" && age > cfg.refresh * 2 ? " stale" : "");
+}
+tick(); setInterval(tick, 30000);
+
+// manter o ecrã ligado em posto operacional (se o navegador permitir)
+async function wake(){ try { if (navigator.wakeLock && document.visibilityState === "visible") await navigator.wakeLock.request("screen"); } catch(e){} }
+document.addEventListener("visibilitychange", wake); wake();
+
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin || !e.data) return;
+  const d = e.data;
+  if (d.type === "taf-select" && d.icao){
+    let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);
+    if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }
+    if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }
+  } else if (d.type === "taf-refresh") load();
+  else if (d.type === "taf-role"){
+    isAdmin = d.role === "admin";
+    cfg = SETTINGS_LOCKED && !isAdmin ? Object.assign({}, DEFAULTS) : Object.assign({}, DEFAULTS, store.get("tafmon.cfg", {}));
+    if (!isAdmin) dlg.hidden = true;
+    paintLock(); load();
+  }
+});
+load();
+</script>
+
+
+
+</body></html>
+<script>
+/* Portal Operational Control: o TAF só abre dentro do portal, com sessão iniciada e conta aprovada. */
+(function(){
+  if (window.top === window){ location.replace("../#taf"); return; }
+  var tries = 0;
+  (function wait(){
+    var P = null;
+    try { P = window.parent.__portal; } catch(e){}
+    if (P && P.role){
+      window.__portalRole = P.role;
+      var x = document.createElement("script");
+      x.textContent = document.getElementById("tafMain").textContent;
+      document.documentElement.classList.remove("gate");
+      document.body.appendChild(x);
+      return;
+    }
+    if (++tries > 100){ document.body.innerHTML = '<p style="padding:24px;font-family:system-ui,sans-serif">Abre o TAF a partir do portal, com sessão iniciada.</p>'; document.documentElement.classList.remove("gate"); return; }
+    setTimeout(wait, 100);
+  })();
+})();
+</script>
+</body>
+</html>
