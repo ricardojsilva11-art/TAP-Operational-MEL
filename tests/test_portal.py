@@ -2,9 +2,13 @@
 from harness import UID, logged_in, open_app, visible
 
 SUMMARY = ("{type:'taf-summary',updatedAt:Date.UTC(2026,10,10,9,30),total:42,"
-           "now:[{icao:'LPPT',name:'Lisboa'}],next6:[{icao:'LPPR',name:'Porto'}],noTaf:0,error:null,"
-           "newTafs:[{icao:'LPFR',name:'Faro',amd:true,at:Date.UTC(2026,10,10,9,12),level:'amber'},"
-           "{icao:'LEMD',name:'Madrid',amd:false,at:Date.UTC(2026,10,10,9,5),level:'green'}]}")
+           "now:[{icao:'LPPT',name:'Lisboa'}],next6:[{icao:'LPPT',name:'Lisboa'},{icao:'LPPR',name:'Porto'}],noTaf:0,error:null,"
+           "alerts:[{icao:'LPPT',name:'Lisboa',now:true,from:Date.UTC(2026,10,10,9),to:Date.UTC(2026,10,10,14),open:false,cats:['LVO','Wind / gust'],cond:['VIS400m','FG','BKN002','G35']},"
+           "{icao:'LPPR',name:'Porto',now:false,from:Date.UTC(2026,10,10,12),to:Date.UTC(2026,10,10,16),open:false,cats:['Thunderstorm'],cond:['TSRA']}],"
+           "newTafs:[{icao:'LPFR',name:'Faro',amd:true,at:Date.UTC(2026,10,10,9,12),level:'amber',alert:true},"
+           "{icao:'LEMD',name:'Madrid',amd:false,at:Date.UTC(2026,10,10,9,5),level:'green',alert:true},"
+           "{icao:'LEBL',name:'Barcelona',amd:true,at:Date.UTC(2026,10,10,9,20),level:'green',alert:false}]}")
+NEW_LPMA = "newTafs:[{icao:'LPMA',name:'Madeira',amd:true,at:Date.UTC(2026,10,10,9,40),level:'red',alert:true},"
 
 
 def taf_frame(page):
@@ -50,9 +54,10 @@ def test_resumo_taf_no_inicio_e_alerta_no_separador(browser, server, mock):
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_function("document.getElementById('pNew').textContent==='2'")
     assert page.inner_text('#tafBadge') == '2' and visible(page, '#tafBadge')
-    assert page.inner_text('#pNow') == '1' and page.inner_text('#pNext') == '1'  # (o resumo de teste traz 1 em cada)
+    assert page.inner_text('#pNow') == '1' and page.inner_text('#pNext') == '2'  # LPPT já em alerta conta também nas 6 h
     lst = page.inner_text('#pNewList')
     assert 'LPFR' in lst and 'AMD' in lst and 'NOVO' in lst and '09:12Z' in lst
+    assert 'LEBL' not in lst  # TAF emendado sem alerta não conta
     assert 'LPPT' in page.inner_text('#pAlertList') and 'LPPR' in page.inner_text('#pAlertList')
     assert '42 aeroportos' in page.inner_text('#pTafUpd')
     # mensagens de outra origem/janela são ignoradas
@@ -161,9 +166,10 @@ def test_abrir_taf_limpa_o_alerta(browser, server, mock):
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)  # os mesmos TAF: continua limpo
     page.wait_for_timeout(300)
     assert not visible(page, '#tafBadge')
-    assert 'LPFR' in page.inner_text('#pNewList')  # o Início continua a mostrar a lista
+    assert 'LPFR' not in page.inner_text('#pNewList')  # depois de abrir o TAF, sai também do Início
+    assert page.inner_text('#pNew') == '0' and 'por ver' in page.inner_text('#pNewList')
     # um TAF novo volta a acender o alerta (só esse)
-    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", "newTafs:[{icao:'LPMA',name:'Madeira',amd:true,at:Date.UTC(2026,10,10,9,40),level:'red'},"))
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", NEW_LPMA))
     page.wait_for_function("document.getElementById('tafBadge').textContent==='1'")
     ctx.close()
 
@@ -303,7 +309,7 @@ def test_aviso_diz_qual_o_aeroporto(browser, server, mock):
     page.evaluate("document.querySelectorAll('.taf-toast').forEach(x=>x.remove())")
     # chega um TAF novo: o aviso diz qual, e carregar abre esse aeroporto no TAF
     f.evaluate("window.__sel=[];addEventListener('message',e=>{if(e.data&&e.data.type==='taf-select')__sel.push(e.data.icao)})")
-    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", "newTafs:[{icao:'LPMA',name:'Madeira',amd:true,at:Date.UTC(2026,10,10,9,40),level:'red'},"))
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", NEW_LPMA))
     page.wait_for_selector('.taf-toast')
     t = page.inner_text('.taf-toast')
     assert 'TAF emendado (AMD): LPMA Madeira' in t and '09:40Z' in t
@@ -325,4 +331,48 @@ def test_taf_atualiza_ao_voltar_a_janela(browser, server, mock):
     page.evaluate("dispatchEvent(new Event('focus'))")  # logo a seguir não repete
     page.wait_for_timeout(300)
     assert f.evaluate('__ref') == 1
+    ctx.close()
+
+
+
+def test_so_tafs_com_alerta_contam(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage({type:'taf-summary',total:42,now:[],next6:[],alerts:[],newTafs:[{icao:'LEBL',name:'Barcelona',amd:true,at:1,level:'green',alert:false}]},location.origin)")
+    page.wait_for_timeout(500)
+    assert not visible(page, '#tafBadge') and page.evaluate("document.querySelectorAll('.taf-toast').length") == 0
+    assert page.inner_text('#pNew') == '0'
+    ctx.close()
+
+
+def test_meteorologia_nos_destinos(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    many = SUMMARY.replace("alerts:[", "alerts:[" + ",".join(
+        "{icao:'X%03d',name:'N',now:false,from:Date.UTC(2026,10,10,13),to:Date.UTC(2026,10,10,15),open:true,cats:['MIST'],cond:['BR']}" % i for i in range(6)) + ",")
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_selector('#pAlertList .p-wxrow')
+    rows = page.evaluate("[...document.querySelectorAll('#pAlertList .p-wxrow')].map(e=>e.innerText.replace(/\\s+/g,' '))")
+    assert rows[0].startswith('LPPT Agora–14Z LVO VIS400m FG BKN002')  # só a categoria mais grave e até 3 valores
+    assert 'Wind / gust' not in rows[0] and 'G35' not in rows[0]
+    assert rows[1].startswith('LPPR 12Z–16Z Thunderstorm TSRA')
+    assert 'Wind / gust' in page.get_attribute('#pAlertList [data-icao="LPPT"]', 'title')
+    f.evaluate("parent.postMessage(%s,location.origin)" % many)
+    page.wait_for_function("document.querySelectorAll('#pAlertList .p-wxrow').length===6")
+    assert 'Ver todos (8)' in page.inner_text('#pAlertList')
+    page.click('.p-wxall')
+    assert visible(page, '#tafView')
+    page.wait_for_timeout(300)
+    assert f.evaluate('ui.filter') == 'next6' and f.evaluate('ui.list') == 'DST'
+    ctx.close()
+
+
+def test_resumo_traz_meteorologia_real(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    al = page.evaluate("tafSum.alerts")
+    assert al and all(a['cats'] and a['cond'] and a['to'] > a['from'] for a in al)
+    assert all(isinstance(t.get('alert'), bool) for t in page.evaluate("tafSum.newTafs"))
     ctx.close()

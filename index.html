@@ -276,7 +276,7 @@ th,td{padding-left:8px;padding-right:8px}.col-rs{display:none}#resetCols{display
 <header class="top"><div class="brand"><div><h1>OPERATIONAL CONTROL</h1><small>TAF · MEL</small></div></div>
 <nav class="nav hidden" id="nav">
 <button class="on" data-nav="portal"><svg class="i"><use href="#i-home"/></svg>Início</button>
-<button data-nav="taf" id="navTaf"><svg class="i"><use href="#i-cloud"/></svg>TAF<span class="badge hidden" id="tafBadge" title="TAF novos ou emendas (última hora)"></span></button>
+<button data-nav="taf" id="navTaf"><svg class="i"><use href="#i-cloud"/></svg>TAF<span class="badge hidden" id="tafBadge" title="TAF novos ou emendas com alerta, por ver"></span></button>
 <button data-nav="home"><svg class="i"><use href="#i-list"/></svg>MEL</button>
 <button data-nav="history"><svg class="i"><use href="#i-clock"/></svg>Histórico</button>
 <button data-nav="users" id="navUsers" class="hidden"><svg class="i"><use href="#i-users"/></svg>Utilizadores<span class="badge hidden" id="pendBadge"></span></button>
@@ -298,12 +298,12 @@ th,td{padding-left:8px;padding-right:8px}.col-rs{display:none}#resetCols{display
 <section class="card p-card" id="pTaf" aria-labelledby="pTafH">
 <div class="p-head"><b id="pTafH"><svg class="i"><use href="#i-cloud"/></svg>TAF</b><small id="pTafUpd">A carregar…</small><button class="btn sm" type="button" data-go="taf">Abrir TAF Monitor<svg class="i"><use href="#i-right"/></svg></button></div>
 <div class="p-stats">
-<button type="button" class="p-stat nt" data-tf="new" title="Abrir o TAF só com os TAF novos ou emendados"><span class="n" id="pNew">—</span><span>TAF novos / AMD<small>última hora</small></span></button>
+<button type="button" class="p-stat nt" data-tf="new" title="Abrir o TAF só com os TAF novos ou emendados"><span class="n" id="pNew">—</span><span>TAF novos / AMD<small>com alerta · por ver</small></span></button>
 <button type="button" class="p-stat red" data-tf="now" title="Abrir o TAF só com os destinos em alerta agora"><span class="n" id="pNow">—</span><span>Em alerta agora<small>destinos</small></span></button>
 <button type="button" class="p-stat amb" data-tf="next6" title="Abrir o TAF só com os destinos em alerta nas próximas 6 h"><span class="n" id="pNext">—</span><span>Alerta nas próximas 6 h<small>destinos</small></span></button>
 </div>
 <p class="p-warn hidden" id="pTafErr"></p>
-<h4>TAF novos ou emendas <small>(última hora)</small></h4><div class="p-list" id="pNewList"><p class="muted">A carregar…</p></div>
+<h4>TAF novos ou emendas com alerta <small>(por ver)</small></h4><div class="p-list" id="pNewList"><p class="muted">A carregar…</p></div>
 <h4>Meteorologia nos destinos <small>(agora e próximas 6 h)</small></h4><div class="p-wx" id="pAlertList"><p class="muted">A carregar…</p></div>
 </section>
 <section class="card p-card p-melcard" id="pMel" aria-labelledby="pMelH">
@@ -696,7 +696,7 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=8911ae8542';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=bafad0c8c3';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
 /* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
@@ -715,18 +715,19 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin||!$('tafFram
 /* alerta no separador TAF: conta só os TAF novos/AMD ainda não vistos; abrir o separador TAF limpa-o */
 const TAF_SEEN_KEY='mel_taf_seen_v1';const tafKey=t=>t.icao+'|'+(t.at||'');
 function tafSeenGet(){try{return new Set(JSON.parse(localStorage.getItem(TAF_SEEN_KEY)||'[]'))}catch(e){return new Set()}}
-function markTafSeen(){const nw=tafSum?.newTafs||[];try{localStorage.setItem(TAF_SEEN_KEY,JSON.stringify(nw.map(tafKey)))}catch(e){}paintTafBadge();renderPortalTaf()}
-function paintTafBadge(){if(!$('tafView').classList.contains('hidden')&&tafSum){const nw=tafSum.newTafs||[],seen=tafSeenGet();if(nw.some(t=>!seen.has(tafKey(t)))){try{localStorage.setItem(TAF_SEEN_KEY,JSON.stringify(nw.map(tafKey)))}catch(e){}}}const seen=tafSeenGet(),n=(tafSum?.newTafs||[]).filter(t=>!seen.has(tafKey(t))).length,b=$('tafBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hidden',!n);b.title=n?`Por ver: `+(tafSum.newTafs||[]).filter(t=>!seen.has(tafKey(t))).map(t=>t.icao+(t.amd?' (AMD)':'')).join(', '):''}
+function markTafSeen(){document.querySelectorAll('.taf-toast').forEach(x=>x.remove());const nw=tafSum?.newTafs||[];try{localStorage.setItem(TAF_SEEN_KEY,JSON.stringify(nw.map(tafKey)))}catch(e){}paintTafBadge();renderPortalTaf()}
+const alertTafs=()=>(tafSum?.newTafs||[]).filter(t=>t.alert);
+function paintTafBadge(){if(!$('tafView').classList.contains('hidden')&&tafSum){const nw=tafSum.newTafs||[],seen=tafSeenGet();if(nw.some(t=>!seen.has(tafKey(t)))){try{localStorage.setItem(TAF_SEEN_KEY,JSON.stringify(nw.map(tafKey)))}catch(e){}}}const seen=tafSeenGet(),un=alertTafs().filter(t=>!seen.has(tafKey(t))),n=un.length,b=$('tafBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hidden',!n);b.title=n?`Por ver (com alerta): `+un.map(t=>t.icao+(t.amd?' (AMD)':'')).join(', '):''}
 /* aviso de qual o aeroporto que teve TAF novo ou emenda (carregar abre o TAF nesse aeroporto) */
 let tafNotified=null;
-function notifyNewTafs(){const nw=tafSum?.newTafs||[],away=$('tafView').classList.contains('hidden');if(tafNotified===null){tafNotified=new Set(nw.map(tafKey));const seen=tafSeenGet(),un=nw.filter(t=>!seen.has(tafKey(t)));if(un.length&&away)tafToast(un);return}const fresh=nw.filter(t=>!tafNotified.has(tafKey(t)));fresh.forEach(t=>tafNotified.add(tafKey(t)));if(fresh.length&&away)tafToast(fresh)}
+function notifyNewTafs(){const nw=alertTafs(),away=$('tafView').classList.contains('hidden');if(tafNotified===null){tafNotified=new Set(nw.map(tafKey));const seen=tafSeenGet(),un=nw.filter(t=>!seen.has(tafKey(t)));if(un.length&&away)tafToast(un);return}const fresh=nw.filter(t=>!tafNotified.has(tafKey(t)));fresh.forEach(t=>tafNotified.add(tafKey(t)));if(fresh.length&&away)tafToast(fresh)}
 function tafToast(list){const box=$('liveToasts');while(box.children.length>=3)box.firstChild.remove();const t=document.createElement('div');t.className='live-toast taf-toast';t.setAttribute('role','status');const one=list.length===1?list[0]:null;
 t.innerHTML=one?`${one.amd?'TAF emendado (AMD)':'TAF novo'}: <b>${safe(one.icao)}</b> ${safe(one.name||'')}<small>${one.at?zTime(one.at)+' · ':''}carrega para abrir no TAF</small>`:`${list.length} TAF novos ou emendados: `+list.slice(0,6).map(x=>`<b>${safe(x.icao)}</b>${x.amd?' (AMD)':''}`).join(', ')+(list.length>6?' …':'')+'<small>carrega para ver no TAF</small>';
 t.onclick=()=>{t.remove();if(one)tafSelect(one.icao);else{goNav('taf');postTaf({type:'taf-filter',f:'new',list:''})}};box.append(t);setTimeout(()=>t.remove(),12000)}
-function renderPortalTaf(){const d=tafSum;if(!d)return;const nw=d.newTafs||[],now=d.now||[],nx=d.next6||[];$('pNew').textContent=nw.length;$('pNow').textContent=now.length;$('pNext').textContent=nx.length;
+function renderPortalTaf(){const d=tafSum;if(!d)return;const seen0=tafSeenGet(),nw=alertTafs().filter(t=>!seen0.has(tafKey(t))),now=d.now||[],nx=d.next6||[];$('pNew').textContent=nw.length;$('pNow').textContent=now.length;$('pNext').textContent=nx.length;
 $('pTafUpd').textContent=d.updatedAt?`${d.total} aeroportos · TAF carregados às ${zTime(d.updatedAt)}`:`${d.total||0} aeroportos`;
 $('pTafErr').textContent=d.error?'Não foi possível atualizar os TAF: '+d.error:'';$('pTafErr').classList.toggle('hidden',!d.error);
-const seenNow=tafSeenGet();$('pNewList').innerHTML=nw.length?nw.slice(0,8).map(t=>`<button type="button" class="p-item${seenNow.has(tafKey(t))?'':' unseen'}" data-icao="${safe(t.icao)}"${seenNow.has(tafKey(t))?'':' title="Ainda não visto"'}><span class="p-dot ${safe(t.level||'')}"></span><b>${safe(t.icao)}</b><span class="t">${safe(t.name||'')}</span><span class="p-tag${t.amd?' amd':''}">${t.amd?'AMD':'NOVO'}</span>${t.at?`<time>${zTime(t.at)}</time>`:''}</button>`).join('')+(nw.length>8?`<p class="muted">+ ${nw.length-8} no TAF Monitor</p>`:''):'<p class="muted">Nenhum TAF novo ou emendado na última hora.</p>';
+const seenNow=tafSeenGet();$('pNewList').innerHTML=nw.length?nw.slice(0,8).map(t=>`<button type="button" class="p-item${seenNow.has(tafKey(t))?'':' unseen'}" data-icao="${safe(t.icao)}"${seenNow.has(tafKey(t))?'':' title="Ainda não visto"'}><span class="p-dot ${safe(t.level||'')}"></span><b>${safe(t.icao)}</b><span class="t">${safe(t.name||'')}</span><span class="p-tag${t.amd?' amd':''}">${t.amd?'AMD':'NOVO'}</span>${t.at?`<time>${zTime(t.at)}</time>`:''}</button>`).join('')+(nw.length>8?`<p class="muted">+ ${nw.length-8} no TAF Monitor</p>`:''):'<p class="muted">Nenhum TAF novo ou emendado com alerta por ver.</p>';
 const al=d.alerts||[];const hh=ms=>String(new Date(ms).getUTCHours()).padStart(2,'0')+'Z';const MAXWX=6;
 $('pAlertList').innerHTML=al.length?al.slice(0,MAXWX).map(a=>`<button type="button" class="p-wxrow ${a.now?'now':'soon'}" data-icao="${safe(a.icao)}" title="${safe(a.icao)} ${safe(a.name||'')}${(a.cats||[]).length>1?' · '+safe(a.cats.join(' · ')):''} — abrir no TAF"><span class="p-dot ${a.now?'red':'amber'}"></span><b>${safe(a.icao)}</b><span class="p-when">${a.now?'Agora':hh(a.from)}${a.open?' →':'–'+hh(a.to)}</span><span class="p-cat">${safe((a.cats||[])[0]||'')}</span><code class="p-cond">${safe((a.cond||[]).slice(0,3).join(' '))}</code></button>`).join('')+(al.length>MAXWX?`<button type="button" class="btn sm p-wxall" data-tf="next6">Ver todos (${al.length}) no TAF Monitor</button>`:''):'<p class="muted">Nenhum destino em alerta.</p>'}
 let pTab='',pLimit=60;const pHtml=new Map();
