@@ -116,6 +116,10 @@ s = rep(s, """    const groups = {};
     vis.forEach(r => { const gk = isFavAp(r.icao) ? "★ Favoritos" : r.region; (groups[gk] = groups[gk] || []).push(r); });
     const order = ["★ Favoritos"].concat(REGIONS.map(x => x[0]), "Outros");""")
 
+# 3f) colunas das horas mais estreitas (52 px): cabem mais horas no ecrã sem cortar o texto
+s = rep(s, '.grid td.c{width:62px;min-width:62px;max-width:62px;height:44px;font-size:12px}', '.grid td.c{width:52px;min-width:52px;max-width:52px;height:42px;font-size:10.5px;padding:1px 1px}')
+s = rep(s, '.grid thead tr.hrs th{top:28px;height:26px;font-size:14px;width:62px;min-width:62px}', '.grid thead tr.hrs th{top:28px;height:26px;font-size:13px;width:52px;min-width:52px}')
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
