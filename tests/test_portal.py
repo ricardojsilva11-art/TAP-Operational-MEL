@@ -376,3 +376,24 @@ def test_resumo_traz_meteorologia_real(browser, server, mock):
     assert al and all(a['cats'] and a['cond'] and a['to'] > a['from'] for a in al)
     assert all(isinstance(t.get('alert'), bool) for t in page.evaluate("tafSum.newTafs"))
     ctx.close()
+
+
+def test_carregar_no_alerta_do_inicio_faz_desaparecer(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_selector('#pNewList [data-icao="LPFR"]')
+    page.evaluate("document.querySelectorAll('.taf-toast').forEach(x=>x.remove())")
+    page.click('#pNewList [data-icao="LPFR"]')
+    assert visible(page, '#tafView')
+    page.click('[data-nav="portal"]')
+    assert page.evaluate("document.querySelectorAll('#pNewList [data-icao]').length") == 0
+    assert page.inner_text('#pNew') == '0' and not visible(page, '#tafBadge')
+    page.reload()  # e continua assim depois de recarregar
+    page.wait_for_selector('#appPanel:not(.hidden)')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_timeout(500)
+    assert page.inner_text('#pNew') == '0' and not visible(page, '#tafBadge')
+    assert page.evaluate("document.querySelectorAll('.taf-toast').length") == 0
+    ctx.close()

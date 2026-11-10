@@ -1,6 +1,6 @@
 // Service worker do portal Operational Control (TAF · MEL): guarda a "casca" da app para abrir sem ligação.
 // Os dados das MEL NÃO passam por aqui: a app guarda a última cópia no próprio browser.
-const CACHE = 'mel-shell-v5';
+const CACHE = 'mel-shell-v6';
 const SHELL = ['./', './index.html', './taf/', './taf/index.html', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
                './img/a320.webp', './img/a330.webp', './img/e190.webp',
                './vendor/supabase-js-2.119.0.js'];
@@ -37,7 +37,7 @@ self.addEventListener('fetch', e => {
       const c = await caches.open(CACHE);
       try {
         const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
-        const r = await fetch(req, { signal: ctl.signal }); clearTimeout(t);
+        const r = await fetch(req, { signal: ctl.signal, cache: 'no-cache' }); clearTimeout(t);   // confirma sempre com o servidor: sem versões antigas
         const page = url.pathname.includes('/taf/') ? './taf/index.html' : './index.html';   // TAF tem a sua própria página
         if (r.ok) c.put(req.mode === 'navigate' ? page : req, r.clone());
         return r;
