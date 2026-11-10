@@ -289,3 +289,27 @@ def test_larguras_guardadas_cabem_na_pagina(browser, server, mock):
                       "return {sw:w.scrollWidth,cw:w.clientWidth,act:a.getBoundingClientRect().width,doc:document.documentElement.scrollWidth,vw:innerWidth}})()")
     assert r['sw'] <= r['cw'] + 2 and r['act'] >= 205 and r['doc'] <= r['vw']
     ctx.close()
+
+
+def test_aviso_diz_qual_o_aeroporto(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_selector('.taf-toast')
+    t = page.inner_text('.taf-toast')
+    assert '2 TAF novos ou emendados' in t and 'LPFR' in t and 'LEMD' in t
+    assert 'LPFR (AMD)' in page.get_attribute('#tafBadge', 'title')
+    assert page.evaluate("document.querySelectorAll('#pNewList .p-item.unseen').length") == 2
+    page.evaluate("document.querySelectorAll('.taf-toast').forEach(x=>x.remove())")
+    # chega um TAF novo: o aviso diz qual, e carregar abre esse aeroporto no TAF
+    f.evaluate("window.__sel=[];addEventListener('message',e=>{if(e.data&&e.data.type==='taf-select')__sel.push(e.data.icao)})")
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", "newTafs:[{icao:'LPMA',name:'Madeira',amd:true,at:Date.UTC(2026,10,10,9,40),level:'red'},"))
+    page.wait_for_selector('.taf-toast')
+    t = page.inner_text('.taf-toast')
+    assert 'TAF emendado (AMD): LPMA Madeira' in t and '09:40Z' in t
+    page.click('.taf-toast')
+    assert visible(page, '#tafView')
+    page.wait_for_timeout(300)
+    assert f.evaluate('__sel') == ['LPMA']
+    assert page.evaluate("document.querySelectorAll('#pNewList .p-item.unseen').length") == 0
+    ctx.close()
