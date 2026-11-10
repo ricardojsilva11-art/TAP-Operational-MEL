@@ -108,7 +108,7 @@ def test_link_direto_do_taf_vai_para_o_portal(browser, server, mock):
     page.wait_for_function("location.pathname==='/'&&!document.getElementById('appPanel').classList.contains('hidden')", timeout=20000)
     page.wait_for_timeout(300)
     assert visible(page, '#tafView')
-    assert location_hash(page) == ''
+    assert location_hash(page) == '#taf'
     ctx.close()
 
 
@@ -258,7 +258,7 @@ def test_importa_definicoes_do_site_antigo(browser, server, mock):
     page.reload()  # só mudar o # não recarrega a página
     page.wait_for_function("window.__portal&&window.__portal.cfg&&window.__portal.cfg.vis===1234", timeout=15000)
     assert mock.taf_cfg['cfg'] == {'vis': 1234, 'icao': 'LPPT LPPR'}
-    assert visible(page, '#tafView') and page.evaluate('location.hash') == ''
+    assert visible(page, '#tafView') and page.evaluate('location.hash') == '#taf'
     ctx.close()
 
 
@@ -531,4 +531,28 @@ def test_favoritos_no_topo_da_grelha(browser, server, mock):
     assert f.evaluate("document.querySelector('#grid tr.reg th').textContent").startswith('★ Favoritos')
     assert f.evaluate("document.querySelector('#grid tr[data-icao]').dataset.icao") == last
     assert f.evaluate(f"document.querySelectorAll('#grid tr[data-icao=\"{last}\"]').length") == 1  # não aparece repetido na região
+    ctx.close()
+
+
+def test_recarregar_mantem_a_pagina(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    for nav, view, h in (('taf', '#tafView', '#taf'), ('home', '#homeView', '#mel'), ('history', '#historyView', '#historico'),
+                         ('settings', '#settingsView', '#configuracoes'), ('portal', '#portalView', '')):
+        page.click(f'[data-nav="{nav}"]')
+        assert page.evaluate('location.hash') == h
+        page.reload()
+        page.wait_for_selector('#appPanel:not(.hidden)')
+        page.wait_for_timeout(300)
+        assert visible(page, view), nav
+    ctx.close()
+
+
+def test_pagina_de_administrador_no_endereco_sem_permissao(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    page.goto(server.url + '#configuracoes')
+    page.reload()
+    page.wait_for_selector('#appPanel:not(.hidden)')
+    page.wait_for_timeout(300)
+    assert visible(page, '#portalView') and not visible(page, '#settingsView')
     ctx.close()
