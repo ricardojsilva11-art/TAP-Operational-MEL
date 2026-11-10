@@ -78,11 +78,11 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 ## Funcionalidades
 
 ### Início
-Resumo das duas ferramentas: TAF novos ou emendados (AMD) na última hora, aeroportos em alerta agora e nas próximas 6 h (clicar num aeroporto abre o painel lateral desse aeroporto no TAF), pesquisa rápida de MEL, contagem por frota com a revisão em vigor, últimas alterações e as minhas favoritas.
+Ecrã dividido a meio. **À esquerda, TAF:** TAF novos ou emendados (AMD) na última hora, aeroportos em alerta agora e nas próximas 6 h; clicar num aeroporto abre o painel lateral desse aeroporto no TAF. **À direita, MEL:** todas as MEL ativas com o texto todo do impacto operacional e as notas, separadores por frota (com a revisão em vigor) e Favoritas, e pesquisa que filtra logo. O botão **MEL** de cada uma abre-a na página MEL (copiar, anexos, editar).
 
 ### TAF
 - É o TAF Monitor tal como era, com a mesma grelha, filtros e painel lateral, agora dentro do portal e com a mesma entrada das MEL. Aberto diretamente (`/taf/`) reencaminha para o portal.
-- O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) na última hora; desaparece quando não há nenhum.
+- O número vermelho no separador **TAF** conta os TAF novos ou emendados (AMD) que ainda não viste; limpa quando abres o separador TAF e só volta a aparecer quando chega outro TAF novo ou emenda.
 - **Definições do TAF:** só Administradores do portal (deixou de haver PIN). Ficam guardadas no Supabase (`sql/014_definicoes_taf.sql`) e valem para todos; quando o Administrador grava, o TAF de todos atualiza logo. Só o modo (ao vivo / exemplo / manual) fica no navegador do Administrador, para testes não afetarem ninguém; os outros veem sempre ao vivo. As definições que um Administrador tinha no site antigo do TAF Monitor são trazidas para o portal na primeira vez que abre o link antigo.
 - Os TAF/METAR vêm do Worker `taf` (Cloudflare). Esse Worker tem de aceitar pedidos do endereço do portal (variável `ALLOWED_ORIGIN` = `https://ricardojsilva11-art.github.io`).
 - **Atualizar o TAF Monitor:** substituir `tools/taf-monitor-original.html` pela versão nova e correr `python3 tools/build_taf.py`; o script avisa se alguma parte que adapta deixou de existir.

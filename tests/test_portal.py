@@ -23,7 +23,7 @@ def test_inicio_por_omissao_e_ordem_do_menu(browser, server, mock):
     assert page.inner_text('.brand h1') == 'OPERATIONAL CONTROL'
     assert page.inner_text('.brand small') == 'TAF · MEL'
     assert page.inner_text('#pMelTotal').startswith('3 MEL ativas')
-    assert 'A320' in page.inner_text('#pFleets')
+    assert 'A320' in page.inner_text('#pTabs')
     assert not errors
     ctx.close()
 
@@ -116,32 +116,49 @@ def test_taf_sem_sessao_mostra_login(browser, server, mock):
     ctx.close()
 
 
-def test_pesquisa_rapida_e_frotas_no_inicio(browser, server, mock):
+def test_todas_as_mel_com_texto_completo_no_inicio(browser, server, mock):
+    long = 'Linha 1<br>' + '<br>'.join(f'Linha {i} do impacto operacional' for i in range(2, 30))
+    mock.rows[0].update(operational_impact_html=long, notes='Nota importante')
+    mock.prefs = [{'record_id': 'r3', 'is_favorite': True, 'last_used_at': None}]
     ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    page.wait_for_timeout(400)
+    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 3
+    txt = page.inner_text('#pMelList')
+    assert 'Linha 29 do impacto operacional' in txt and 'Nota importante' in txt  # texto todo, sem cortes
+    # separadores por frota e favoritas
+    page.click('[data-ptab="A330"]')
+    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 1 and 'M-21-28-03A' in page.inner_text('#pMelList')
+    page.click('[data-ptab="fav"]')
+    assert 'M-21-28-03A' in page.inner_text('#pMelList')
+    page.click('[data-ptab=""]')
+    # pesquisa filtra logo, com destaque
     page.fill('#pSearch', '21-26-02')
-    page.press('#pSearch', 'Enter')
-    assert visible(page, '#homeView') and not visible(page, '#portalView')
-    assert page.input_value('#search') == '21-26-02'
-    assert page.evaluate("document.querySelectorAll('#rows tr[data-id]').length") in (1,) or 'M-21-26-02' in page.inner_text('#rows')
+    page.wait_for_timeout(400)
+    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 1
+    assert 'M-21-26-02' in page.inner_text('#pMelList')
+    # botão MEL abre a página MEL com essa MEL
+    page.click('#pMelList [data-mel="M-21-26-02"]')
+    assert visible(page, '#homeView') and page.input_value('#search') == 'M-21-26-02'
     assert 'M-21-26-01' not in page.inner_text('#rows')
-    page.click('[data-nav="portal"]')
-    page.click('#pFleets [data-fleet="A330"]')
-    assert page.input_value('#fleetFilter') == 'A330' and page.input_value('#search') == ''
-    assert 'M-21-28-03A' in page.inner_text('#rows') and 'M-21-26-01' not in page.inner_text('#rows')
     assert not errors
     ctx.close()
 
 
-def test_ultimas_alteracoes_e_favoritas_no_inicio(browser, server, mock):
-    mock.rows[1]['updated_at'] = '2026-11-09T12:00:00Z'
-    mock.prefs = [{'record_id': 'r3', 'is_favorite': True, 'last_used_at': None}]
+def test_abrir_taf_limpa_o_alerta(browser, server, mock):
     ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
-    page.wait_for_timeout(500)
-    first = page.inner_text('#pRecent .p-item >> nth=0')
-    assert 'M-21-26-02' in first
-    assert 'M-21-28-03A' in page.inner_text('#pFavs')
-    page.click('#pFavs [data-mel="M-21-28-03A"]')
-    assert visible(page, '#homeView') and page.input_value('#search') == 'M-21-28-03A'
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_function("document.getElementById('tafBadge').textContent==='2'")
+    page.click('[data-nav="taf"]')
+    assert not visible(page, '#tafBadge')
+    page.click('[data-nav="portal"]')
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)  # os mesmos TAF: continua limpo
+    page.wait_for_timeout(300)
+    assert not visible(page, '#tafBadge')
+    assert 'LPFR' in page.inner_text('#pNewList')  # o Início continua a mostrar a lista
+    # um TAF novo volta a acender o alerta (só esse)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("newTafs:[", "newTafs:[{icao:'LPMA',name:'Madeira',amd:true,at:Date.UTC(2026,10,10,9,40),level:'red'},"))
+    page.wait_for_function("document.getElementById('tafBadge').textContent==='1'")
     ctx.close()
 
 
