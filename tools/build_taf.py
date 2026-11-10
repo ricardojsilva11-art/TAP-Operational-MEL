@@ -49,6 +49,14 @@ s = rep(s, '$("#btnSettings").addEventListener("click", () => { if (!SETTINGS_LO
 s = rep(s, 'b.title = SETTINGS_LOCKED && !isAdmin ? "Bloqueado: precisa de PIN" : "Definições";',
         'b.title = SETTINGS_LOCKED && !isAdmin ? "Só Administradores do portal" : "Definições";')
 
+# 2b) TAF mais rápidos: o browser não guarda cópia (o Worker já guarda) e, por omissão, atualiza de 2 em 2 minutos
+s = rep(s, 'fetch(url, {signal: ctl.signal, headers: {Accept: "application/json, text/plain"}})', 'fetch(url, {signal: ctl.signal, cache: "no-store", headers: {Accept: "application/json, text/plain"}})')
+s = rep(s, 'fetch(url, {signal: ctl.signal, headers: {Accept: "application/json"}})', 'fetch(url, {signal: ctl.signal, cache: "no-store", headers: {Accept: "application/json"}})')
+s = rep(s, 'intensity: true, hours: 30, refresh: 5};', 'intensity: true, hours: 30, refresh: 2};')
+
+s = rep(s, 'Math.min(60, Math.max(5, +$("#fRefresh").value || 10))', 'Math.min(60, Math.max(1, +$("#fRefresh").value || 2))')
+s = rep(s, '<input type="number" id="fRefresh" min="5" max="60" step="5">', '<input type="number" id="fRefresh" min="1" max="60" step="1">')
+
 # 3) ponte com o portal: resumo depois de cada render
 s = rep(s, '  $("#legendCodes").textContent = ',
         '  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,\n'

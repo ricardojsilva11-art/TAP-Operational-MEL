@@ -695,7 +695,7 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=09e467b572';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=0581168ce0';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
 /* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
@@ -749,6 +749,9 @@ function darkFix(root){(root||document).querySelectorAll('.impact [style*="color
 {const r0=render;render=function(){r0.apply(this,arguments);try{renderPortal()}catch(e){}darkFix($('rows'))}}
 {const h0=renderHistory;renderHistory=function(){const x=h0.apply(this,arguments);darkFix($('historyView'));return x}}
 {const a0=applyRole;applyRole=function(){a0.apply(this,arguments);syncTafRole()}}
+/* ao voltar a esta janela (vindo de outra app ou separador), o TAF atualiza logo em vez de esperar pelo ciclo */
+let tafRefAt=Date.now();function tafRefreshIfStale(){if(document.hidden||!$('tafFrame')||Date.now()-tafRefAt<60000)return;tafRefAt=Date.now();postTaf({type:'taf-refresh'})}
+document.addEventListener('visibilitychange',tafRefreshIfStale);addEventListener('focus',tafRefreshIfStale);
 function enterPortal(){const imp=location.hash.match(/[#&]taf-import=([^&]+)/);ensureTaf();loadTafCfg().then(()=>{if(imp)importOldTafCfg(imp[1])});if(sb&&!offline)sb.channel('taf-settings-live').on('postgres_changes',{event:'*',schema:'public',table:'taf_settings'},()=>{clearTimeout(tafCfgTimer);tafCfgTimer=setTimeout(loadTafCfg,400)}).subscribe();renderPortal();if(/^#taf\b/.test(location.hash)){goNav('taf');history.replaceState(null,'',location.pathname+location.search)}}
 const VIEW_OF={portal:'portalView',taf:'tafView',home:'homeView',history:'historyView',users:'usersView',settings:'settingsView'};
 function goNav(n){document.querySelector(`[data-nav="${n}"]`)?.click()}

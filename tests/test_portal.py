@@ -313,3 +313,16 @@ def test_aviso_diz_qual_o_aeroporto(browser, server, mock):
     assert f.evaluate('__sel') == ['LPMA']
     assert page.evaluate("document.querySelectorAll('#pNewList .p-item.unseen').length") == 0
     ctx.close()
+
+
+def test_taf_atualiza_ao_voltar_a_janela(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    assert f.evaluate('DEFAULTS.refresh') == 2
+    f.evaluate("window.__ref=0;addEventListener('message',e=>{if(e.data&&e.data.type==='taf-refresh')__ref++})")
+    page.evaluate("tafRefAt=Date.now()-120000;dispatchEvent(new Event('focus'))")
+    page.wait_for_timeout(300)
+    page.evaluate("dispatchEvent(new Event('focus'))")  # logo a seguir não repete
+    page.wait_for_timeout(300)
+    assert f.evaluate('__ref') == 1
+    ctx.close()

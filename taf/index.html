@@ -604,7 +604,7 @@ body.resizing{cursor:col-resize;user-select:none}
           <label class="fld"><span>Horas na grelha</span>
             <select id="fHours"><option value="24">24 h</option><option value="30">30 h</option><option value="36">36 h</option></select>
           </label>
-          <label class="fld"><span>Atualizar a cada (min)</span><input type="number" id="fRefresh" min="5" max="60" step="5"></label>
+          <label class="fld"><span>Atualizar a cada (min)</span><input type="number" id="fRefresh" min="1" max="60" step="1"></label>
         </div>
       </div>
       <footer>
@@ -767,7 +767,7 @@ const PHEN = [
 ];
 /* destinos; os alternativos são os da lista própria ou, se estiver vazia, os restantes da grelha */
 const DEFAULT_DEST_ICAO = `LPPT LPFR LPPR LPMA LPPS LPLA LPPD LPAZ LEVC LEBL LEMD LEZL LEMG GCLP GCTS GCXO LFBO LFLL LFML LFMN LFPO LIMC LIPZ LIPE LIRF LIRQ LIRN LSGG LSZH EIDW EGCC EGLL EGKK EBBR EHAM ELLX EDDH EDDB EDDL EDDF EDDM LKPR EPWA LOWW EKCH ESSA ENGM LLBG LGAV GMMN GMMX GVAC GVNP GVSV GVBA GOBD GGOV FPST DGAA SBFZ SBSG SBCT SBSV SBRF SBBE SBBR SBCF SBGR SBGL SBPA SBMO SVMI SVVA TFFR KEWR KJFK KMIA KORD KBOS KIAD KSFO KLAX CYYZ CYUL FNLU FQMA FNBJ KMCO SBSL SBFL`;
-const DEFAULTS = {destV: 3, listV: 8, repIcao: DEFAULT_REP_ICAO, destIcao: DEFAULT_DEST_ICAO, altIcao: "", phenV: 2, mode: PRESET_WORKER ? "live" : "sample", worker: PRESET_WORKER, icao: DEFAULT_ICAO, vis: 850, cig: 250, cig2: 400, wind: 30, windV: 2, phen: PHEN.filter(p => !p.off).map(p => p.k), intensity: true, hours: 30, refresh: 5};
+const DEFAULTS = {destV: 3, listV: 8, repIcao: DEFAULT_REP_ICAO, destIcao: DEFAULT_DEST_ICAO, altIcao: "", phenV: 2, mode: PRESET_WORKER ? "live" : "sample", worker: PRESET_WORKER, icao: DEFAULT_ICAO, vis: 850, cig: 250, cig2: 400, wind: 30, windV: 2, phen: PHEN.filter(p => !p.off).map(p => p.k), intensity: true, hours: 30, refresh: 2};
 
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
@@ -1480,7 +1480,7 @@ async function fetchLive(){
   const url = cfg.worker.replace(/\/+$/, "") + (cfg.worker.includes("?") ? "&" : "?") + "ids=" + ids.join(",");
   const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 20000);
   try {
-    const r = await fetch(url, {signal: ctl.signal, headers: {Accept: "application/json, text/plain"}});
+    const r = await fetch(url, {signal: ctl.signal, cache: "no-store", headers: {Accept: "application/json, text/plain"}});
     if (!r.ok) throw new Error("O Worker respondeu " + r.status + ".");
     const body = await r.text();
     let raws = [];
@@ -1500,7 +1500,7 @@ async function fetchMetars(){
   const url = cfg.worker.replace(/\/+$/, "") + (cfg.worker.includes("?") ? "&" : "?") + "type=metar&ids=" + ids.join(",");
   const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 20000);
   try {
-    const r = await fetch(url, {signal: ctl.signal, headers: {Accept: "application/json"}});
+    const r = await fetch(url, {signal: ctl.signal, cache: "no-store", headers: {Accept: "application/json"}});
     if (!r.ok) throw new Error(String(r.status));
     const arr = await r.json();
     if (!Array.isArray(arr)) throw new Error("formato");
@@ -2088,7 +2088,7 @@ $("#setForm").addEventListener("submit", e => {
     wind: Math.max(0, +$("#fWind").value || DEFAULTS.wind),
     phen: [...document.querySelectorAll("#fPhen input:checked")].map(x => x.value),
     intensity: $("#fInt").checked,
-    hours: +$("#fHours").value || 30, refresh: Math.min(60, Math.max(5, +$("#fRefresh").value || 10))
+    hours: +$("#fHours").value || 30, refresh: Math.min(60, Math.max(1, +$("#fRefresh").value || 2))
   });
   store.set("tafmon.mode", cfg.mode);
   const shared = Object.assign({}, cfg); delete shared.mode;
