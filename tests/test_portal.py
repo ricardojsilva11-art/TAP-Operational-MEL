@@ -62,7 +62,7 @@ def test_resumo_taf_no_inicio_e_alerta_no_separador(browser, server, mock):
     # sem TAF novos, o alerta desaparece
     f.evaluate("parent.postMessage({type:'taf-summary',total:42,now:[],next6:[],newTafs:[]},location.origin)")
     page.wait_for_function("document.getElementById('tafBadge').classList.contains('hidden')")
-    assert 'Nenhum aeroporto' in page.inner_text('#pAlertList')
+    assert 'Nenhum destino' in page.inner_text('#pAlertList')
     assert not errors
     ctx.close()
 
@@ -241,3 +241,51 @@ def test_versao_do_taf_atualizada():
     taf = open(os.path.join(root, 'taf', 'index.html'), encoding='utf-8').read()
     ver = hashlib.sha256(taf.encode('utf-8')).hexdigest()[:10]
     assert f"f.src='taf/?v={ver}'" in open(os.path.join(root, 'index.html'), encoding='utf-8').read()
+
+
+def test_numeros_do_taf_abrem_o_filtro_certo(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
+    page.wait_for_function("document.getElementById('pNew').textContent==='2'")
+    for tf, lst in (('now', 'DST'), ('next6', 'DST'), ('new', '')):
+        page.click('[data-nav="portal"]')
+        page.click(f'[data-tf="{tf}"]')
+        assert visible(page, '#tafView')
+        page.wait_for_timeout(300)
+        assert f.evaluate('ui.filter') == tf and f.evaluate('ui.list') == lst
+    ctx.close()
+
+
+def test_resumo_do_taf_so_com_destinos(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    f = next(x for x in page.frames if '/taf/' in x.url)
+    icaos = page.evaluate("tafSum.now.concat(tafSum.next6).map(a=>a.icao)")
+    assert icaos and all(f.evaluate(f"inList('{ic}','DST')") for ic in icaos)
+    ctx.close()
+
+
+def test_texto_escuro_fica_legivel_no_tom_escuro(browser, server, mock):
+    mock.rows[0]['operational_impact_html'] = '<span style="color:#000000">preto</span> <span style="color:rgb(31,31,31)">quase</span> <font color="#000080">azul</font> <span style="color:#d62f37">vermelho</span>'
+    ctx, page, errors = open_app(browser, server, mock, logged_in({'mel-theme': 'dark'}))
+    marked = page.evaluate("[...document.querySelectorAll('#rows td.impact .dk')].map(e=>e.textContent)")
+    assert marked == ['preto', 'quase', 'azul']
+    col = page.evaluate("getComputedStyle(document.querySelector('#rows td.impact .dk')).color")
+    assert col != 'rgb(0, 0, 0)'
+    assert not errors
+    ctx.close()
+
+
+def test_larguras_guardadas_cabem_na_pagina(browser, server, mock):
+    # larguras antigas, maiores do que o ecrã e com a coluna Ações estreita
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'mel-colw': '[400,1400,300,300,120]'}), view='portal')
+    page.set_viewport_size({'width': 1400, 'height': 900})
+    page.click('[data-nav="home"]')
+    page.wait_for_timeout(400)
+    r = page.evaluate("(()=>{const w=document.querySelector('.tablewrap'),t=document.getElementById('melTable'),a=t.querySelector('thead th:last-child');"
+                      "return {sw:w.scrollWidth,cw:w.clientWidth,act:a.getBoundingClientRect().width,doc:document.documentElement.scrollWidth,vw:innerWidth}})()")
+    assert r['sw'] <= r['cw'] + 2 and r['act'] >= 205 and r['doc'] <= r['vw']
+    ctx.close()

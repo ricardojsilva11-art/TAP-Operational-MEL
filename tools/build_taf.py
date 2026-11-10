@@ -4,7 +4,7 @@ O conteúdo do monitor fica igual; só se acrescenta:
   - verificação de acesso: só abre dentro do portal, com sessão aprovada (senão vai para o portal);
   - Definições: abrem só para Administradores do portal (deixa de haver PIN) e ficam guardadas no Supabase,
     iguais para todos (o modo ao vivo/exemplo/manual fica só no navegador do Administrador);
-  - ponte com o portal: envia o resumo (TAF novos/AMD, alertas) e aceita "abrir aeroporto".
+  - ponte com o portal: envia o resumo (TAF novos/AMD, destinos em alerta) e aceita "abrir aeroporto" e "filtro".
 Para atualizar o monitor: substituir tools/taf-monitor-original.html e correr  python3 tools/build_taf.py
 """
 import os, re, sys
@@ -52,8 +52,8 @@ s = rep(s, 'b.title = SETTINGS_LOCKED && !isAdmin ? "Bloqueado: precisa de PIN" 
 # 3) ponte com o portal: resumo depois de cada render
 s = rep(s, '  $("#legendCodes").textContent = ',
         '  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,\n'
-        '    now: allRows.filter(r => r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
-        '    next6: allRows.filter(r => r.levels.slice(0, 6).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
+        '    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
+        '    next6: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 6).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
         '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0]})).sort((a, b) => (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
@@ -69,6 +69,9 @@ s = rep(s, main_end,
         '    let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);\n'
         '    if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }\n'
         '    if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }\n'
+        '  } else if (d.type === "taf-filter"){\n'
+        '    ui.filter = d.f || "all"; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();\n'
+        '    const g = document.querySelector("#grid"); if (g) g.scrollIntoView({block: "start"});\n'
         '  } else if (d.type === "taf-refresh") load();\n'
         '  else if (d.type === "taf-role"){\n'
         '    isAdmin = d.role === "admin";\n'

@@ -1709,8 +1709,8 @@ function render(){
     <button type="button" class="stat none mini" data-f="notaf" aria-pressed="${ui.filter === "notaf"}" title="Mostrar só estes aeroportos"><span class="sw"></span><span class="n">${noTaf.length}</span><div class="l"><b>Sem TAF</b></div></button>`;
 
   try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,
-    now: allRows.filter(r => r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),
-    next6: allRows.filter(r => r.levels.slice(0, 6).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),
+    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),
+    next6: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 6).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),
     noTaf: allRows.filter(r => !r.T || r.T.error).length,
     newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0]})).sort((a, b) => (b.at || 0) - (a.at || 0)),
     error: fetchError || null}, location.origin); } catch(e){}
@@ -2611,6 +2611,9 @@ window.addEventListener("message", e => {
     let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);
     if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }
     if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }
+  } else if (d.type === "taf-filter"){
+    ui.filter = d.f || "all"; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();
+    const g = document.querySelector("#grid"); if (g) g.scrollIntoView({block: "start"});
   } else if (d.type === "taf-refresh") load();
   else if (d.type === "taf-role"){
     isAdmin = d.role === "admin";

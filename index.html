@@ -176,6 +176,7 @@ tr.flash td{animation:rowFlash 3s ease-out}@keyframes rowFlash{0%,30%{background
 body.taf-mode{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}body.taf-mode main{flex:1;min-height:0;width:100%;max-width:none;margin:0;padding:0;display:flex;flex-direction:column}body.taf-mode #offBanner{margin:8px 12px}body.taf-mode #tafView{flex:1;min-height:0}body.taf-mode #tafWrap{height:100%}
 #tafView.hidden{display:block!important;position:fixed;left:-20000px;top:0;width:1280px;height:800px;visibility:hidden;pointer-events:none}
 #tafFrame{display:block;width:100%;height:100%;border:0;background:#fff}
+[data-theme=dark] .impact .dk,[data-theme=dark] .mel-note .dk{color:var(--ink)!important}
 [data-theme=dark] .p-tabs button:not(.on),[data-theme=dark] .p-stat,[data-theme=dark] .p-fleet{background:#0f1b29;border-color:#2a3d52;color:var(--ink)}[data-theme=dark] .p-item{color:var(--ink)}[data-theme=dark] .p-item:hover{background:#18283b}
 [data-theme=dark] .p-tag{background:#1e3249;color:#a9cdf0}[data-theme=dark] .p-tag.amd{background:#4a3a12;color:#ffd58a}[data-theme=dark] .p-tag.fl{background:#22344a;color:#c4d4e4}
 [data-theme=dark] .p-chip{background:#4a1d22;color:#ffb3b7;border-color:#7a2f36}[data-theme=dark] .p-chip.amb{background:#4a3a12;color:#ffd58a;border-color:#7a5f1f}[data-theme=dark] .p-warn{background:#4a3a12;color:#ffd58a;border-color:#7a5f1f}
@@ -273,13 +274,13 @@ body.taf-mode{display:flex;flex-direction:column;height:100vh;height:100dvh;over
 <section class="card p-card" id="pTaf" aria-labelledby="pTafH">
 <div class="p-head"><b id="pTafH"><svg class="i"><use href="#i-cloud"/></svg>TAF</b><small id="pTafUpd">A carregar…</small><button class="btn sm" type="button" data-go="taf">Abrir TAF Monitor<svg class="i"><use href="#i-right"/></svg></button></div>
 <div class="p-stats">
-<button type="button" class="p-stat nt" data-go="taf"><span class="n" id="pNew">—</span><span>TAF novos / AMD<small>última hora</small></span></button>
-<button type="button" class="p-stat red" data-go="taf"><span class="n" id="pNow">—</span><span>Em alerta agora</span></button>
-<button type="button" class="p-stat amb" data-go="taf"><span class="n" id="pNext">—</span><span>Alerta nas próximas 6 h</span></button>
+<button type="button" class="p-stat nt" data-tf="new" title="Abrir o TAF só com os TAF novos ou emendados"><span class="n" id="pNew">—</span><span>TAF novos / AMD<small>última hora</small></span></button>
+<button type="button" class="p-stat red" data-tf="now" title="Abrir o TAF só com os destinos em alerta agora"><span class="n" id="pNow">—</span><span>Em alerta agora<small>destinos</small></span></button>
+<button type="button" class="p-stat amb" data-tf="next6" title="Abrir o TAF só com os destinos em alerta nas próximas 6 h"><span class="n" id="pNext">—</span><span>Alerta nas próximas 6 h<small>destinos</small></span></button>
 </div>
 <p class="p-warn hidden" id="pTafErr"></p>
 <h4>TAF novos ou emendas <small>(última hora)</small></h4><div class="p-list" id="pNewList"><p class="muted">A carregar…</p></div>
-<h4>Aeroportos em alerta</h4><div class="p-chips" id="pAlertList"><p class="muted">A carregar…</p></div>
+<h4>Destinos em alerta</h4><div class="p-chips" id="pAlertList"><p class="muted">A carregar…</p></div>
 </section>
 <section class="card p-card p-melcard" id="pMel" aria-labelledby="pMelH">
 <div class="p-head"><b id="pMelH"><svg class="i"><use href="#i-list"/></svg>MEL</b><small id="pMelTotal"></small><button class="btn sm" type="button" data-go="home">Abrir MEL<svg class="i"><use href="#i-right"/></svg></button></div>
@@ -626,14 +627,16 @@ $('pages').innerHTML=`<button class="nav-b" data-page="${page-1}" ${page<=1?'dis
 
 const COLW_KEY='mel-colw';
 function setupResize(){const tbl=$('melTable');const ths=[...tbl.querySelectorAll('thead th')];
-const apply=w=>{if(!w||w.length!==ths.length)return;ths.forEach((th,i)=>th.style.width=w[i]+'px');tbl.classList.add('fixed')};
+const ACT_MIN=210;const apply=w=>{if(!w||w.length!==ths.length)return;const W=tbl.parentElement.clientWidth-24;if(W<400)return;const act=Math.max(w[w.length-1],ACT_MIN),rest=w.slice(0,-1),sum=rest.reduce((a,b)=>a+b,0)||1,k=Math.max(0,W-act)/sum;rest.forEach((x,i)=>ths[i].style.width=Math.max(70,Math.round(x*k))+'px');ths[ths.length-1].style.width=act+'px';tbl.classList.add('fixed')};
+{let rt=null;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!tbl.classList.contains('fixed'))return;try{apply(JSON.parse(localStorage.getItem(COLW_KEY)||'null'))}catch(e){}},200)})}
+window.reapplyCols=()=>{try{apply(JSON.parse(localStorage.getItem(COLW_KEY)||'null'))}catch(e){}};
 try{apply(JSON.parse(localStorage.getItem(COLW_KEY)||'null'))}catch(e){}
 ths.slice(0,-1).forEach((th,i)=>{const h=document.createElement('span');h.className='col-rs';h.title='Arrasta para alargar · duplo clique repõe';th.appendChild(h);
 h.addEventListener('click',e=>e.stopPropagation());
 h.addEventListener('dblclick',e=>{e.stopPropagation();resetCols()});
 h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const widths=ths.map(x=>x.getBoundingClientRect().width);ths.forEach((x,j)=>x.style.width=widths[j]+'px');tbl.classList.add('fixed');
 const x0=e.clientX,w0=widths[i],wn=widths[i+1];h.classList.add('drag');document.body.classList.add('resizing');
-const mv=ev=>{const d=Math.max(70-w0,Math.min(ev.clientX-x0,wn-70));th.style.width=(w0+d)+'px';ths[i+1].style.width=(wn-d)+'px'};
+const mv=ev=>{const d=Math.max(70-w0,Math.min(ev.clientX-x0,wn-(i+1===ths.length-1?ACT_MIN:70)));th.style.width=(w0+d)+'px';ths[i+1].style.width=(wn-d)+'px'};
 const up=()=>{h.classList.remove('drag');document.body.classList.remove('resizing');removeEventListener('pointermove',mv);removeEventListener('pointerup',up);try{localStorage.setItem(COLW_KEY,JSON.stringify(ths.map(x=>Math.round(x.getBoundingClientRect().width))))}catch(e){}};
 addEventListener('pointermove',mv);addEventListener('pointerup',up)})})}
 function resetCols(){const tbl=$('melTable');tbl.classList.remove('fixed');tbl.querySelectorAll('thead th').forEach(th=>th.style.width='');try{localStorage.removeItem(COLW_KEY)}catch(e){}toast('Largura das colunas reposta.')}
@@ -669,7 +672,7 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=62e177fa6f';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader'});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=09e467b572';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
 /* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
@@ -695,7 +698,7 @@ $('pTafUpd').textContent=d.updatedAt?`${d.total} aeroportos · TAF carregados à
 $('pTafErr').textContent=d.error?'Não foi possível atualizar os TAF: '+d.error:'';$('pTafErr').classList.toggle('hidden',!d.error);
 $('pNewList').innerHTML=nw.length?nw.slice(0,8).map(t=>`<button type="button" class="p-item" data-icao="${safe(t.icao)}"><span class="p-dot ${safe(t.level||'')}"></span><b>${safe(t.icao)}</b><span class="t">${safe(t.name||'')}</span><span class="p-tag${t.amd?' amd':''}">${t.amd?'AMD':'NOVO'}</span>${t.at?`<time>${zTime(t.at)}</time>`:''}</button>`).join('')+(nw.length>8?`<p class="muted">+ ${nw.length-8} no TAF Monitor</p>`:''):'<p class="muted">Nenhum TAF novo ou emendado na última hora.</p>';
 const chips=now.map(a=>`<button type="button" class="p-chip" data-icao="${safe(a.icao)}" title="${safe(a.name||a.icao)} · em alerta agora">${safe(a.icao)}${a.name?` <small>${safe(a.name)}</small>`:''}</button>`).concat(nx.filter(a=>!now.some(b=>b.icao===a.icao)).map(a=>`<button type="button" class="p-chip amb" data-icao="${safe(a.icao)}" title="${safe(a.name||a.icao)} · alerta nas próximas 6 h">${safe(a.icao)} <small>6 h</small></button>`));
-$('pAlertList').innerHTML=chips.length?chips.join(''):'<p class="muted">Nenhum aeroporto em alerta.</p>'}
+$('pAlertList').innerHTML=chips.length?chips.join(''):'<p class="muted">Nenhum destino em alerta.</p>'}
 let pTab='',pLimit=60;const pHtml=new Map();
 function melHtml(r){const k=r.id+'|'+(r.updated_at||'');let h=pHtml.get(k);if(h===undefined){h=boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'));pHtml.set(k,h)}return h}
 function renderPortal(){if(!$('portalView')||!profile||$('portalView').classList.contains('hidden'))return;const h=new Date().getHours();$('pHi').textContent=h<6?'Boa noite':h<13?'Bom dia':h<20?'Boa tarde':'Boa noite';$('pName').textContent=(profileName()||'').split(/\s+/)[0];$('pDate').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -706,16 +709,21 @@ $('pTabs').innerHTML=tabs.map(([k,l,n])=>`<button type="button" role="tab" data-
 const toks=parseQ($('pSearch').value);const list=recent.filter(r=>(!pTab||r.fleet===pTab)&&rowMatches(r,toks)).sort((a,b)=>whenOf(b)-whenOf(a));
 const show=list.slice(0,pLimit);const kind=r=>r.is_active===false?['Apagada','del']:(!r.updated_at||Math.abs(new Date(r.updated_at)-new Date(r.created_at))<6e4)?['Nova','new']:['Alterada','upd'];
 $('pMelList').innerHTML=show.length?show.map(r=>{const [kl,kc]=kind(r);return `<article class="p-mel${kc==='del'?' gone':''}" data-id="${r.id}"><div class="p-mel-h"><span class="code">${safe(r.mel_item)}</span><span class="p-tag fl">${safe(r.fleet)}</span><span class="p-kind ${kc}">${kl}</span><span class="p-who">${safe(r.updated_by_name||r.created_by_name||'')} · ${fmtDate(r.updated_at||r.created_at)}</span>${kc==='del'?'':`<button type="button" class="p-open" data-mel="${safe(r.mel_item)}" data-fl="${safe(r.fleet)}" title="Abrir na página MEL (copiar, anexos, editar)">MEL${ico('right')}</button>`}</div><div class="impact">${melHtml(r)}</div>${r.notes&&r.notes.trim()?`<div class="mel-note" title="Nota">${ico('note')}<span>${safe(r.notes.trim()).replace(/\n/g,'<br>')}</span></div>`:''}</article>`}).join('')+(list.length>show.length?`<button type="button" class="btn sm p-more" id="pMore">Mostrar mais (${list.length-show.length})</button>`:''):`<p class="muted">${toks.length?'Nenhuma alteração encontrada nas últimas 24 horas.':'Nenhuma MEL foi adicionada, alterada ou apagada nas últimas 24 horas.'}</p>`;
-const terms=toks.map(k=>k.t).filter(t=>t.length>=2);$('pMelList').querySelectorAll('.p-mel').forEach(el=>{el.querySelectorAll('.impact').forEach(boldFirstLine);if(terms.length)el.querySelectorAll('.code,.impact,.mel-note span').forEach(x=>hlEl(x,terms))})}
+const terms=toks.map(k=>k.t).filter(t=>t.length>=2);$('pMelList').querySelectorAll('.p-mel').forEach(el=>{el.querySelectorAll('.impact').forEach(boldFirstLine);if(terms.length)el.querySelectorAll('.code,.impact,.mel-note span').forEach(x=>hlEl(x,terms))});darkFix($('pMelList'))}
 function openMel(q,fleet){$('search').value=q||'';$('fleetFilter').value=fleet||'';$('showFilter').value='';goNav('home');page=1;syncCards();render()}
-$('portalView').addEventListener('click',e=>{const g=e.target.closest('[data-go]'),i=e.target.closest('[data-icao]'),m=e.target.closest('[data-mel]'),t=e.target.closest('[data-ptab]');if(i)return tafSelect(i.dataset.icao);if(m)return openMel(m.dataset.mel,m.dataset.fl);if(t){pTab=t.dataset.ptab;pLimit=60;$('pMelList').scrollTop=0;return renderPortal()}if(e.target.id==='pMore'){pLimit+=100;return renderPortal()}if(g)goNav(g.dataset.go)});
+$('portalView').addEventListener('click',e=>{const tf=e.target.closest('[data-tf]');if(tf){goNav('taf');return postTaf({type:'taf-filter',f:tf.dataset.tf,list:tf.dataset.tf==='new'?'':'DST'})}const g=e.target.closest('[data-go]'),i=e.target.closest('[data-icao]'),m=e.target.closest('[data-mel]'),t=e.target.closest('[data-ptab]');if(i)return tafSelect(i.dataset.icao);if(m)return openMel(m.dataset.mel,m.dataset.fl);if(t){pTab=t.dataset.ptab;pLimit=60;$('pMelList').scrollTop=0;return renderPortal()}if(e.target.id==='pMore'){pLimit+=100;return renderPortal()}if(g)goNav(g.dataset.go)});
 {let pt=null;$('pSearch').oninput=()=>{clearTimeout(pt);pt=setTimeout(()=>{pLimit=60;$('pMelList').scrollTop=0;renderPortal()},150)}}
-{const r0=render;render=function(){r0.apply(this,arguments);try{renderPortal()}catch(e){}}}
+/* Tom escuro: texto com cor escura escolhida no editor (preto, cinzento escuro, azul-marinho…) passa a claro, para se ler */
+const darkCx=document.createElement('canvas').getContext('2d');
+function isDarkColor(c){if(!c)return false;darkCx.fillStyle='#fe01fe';darkCx.fillStyle=c;const v=darkCx.fillStyle;if(v==='#fe01fe'&&!/fe01fe/i.test(c))return false;let r,g,b;const m=v.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);if(m){r=parseInt(m[1],16);g=parseInt(m[2],16);b=parseInt(m[3],16)}else{const n=v.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);if(!n||n[4]==='0')return false;r=+n[1];g=+n[2];b=+n[3]}const L=x=>{x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)};return 0.2126*L(r)+0.7152*L(g)+0.0722*L(b)<0.07}
+function darkFix(root){(root||document).querySelectorAll('.impact [style*="color"],.impact font[color],.mel-note [style*="color"]').forEach(el=>{if(el.dataset.dk)return;el.dataset.dk='1';if(isDarkColor(el.style.color||el.getAttribute('color')))el.classList.add('dk')})}
+{const r0=render;render=function(){r0.apply(this,arguments);try{renderPortal()}catch(e){}darkFix($('rows'))}}
+{const h0=renderHistory;renderHistory=function(){const x=h0.apply(this,arguments);darkFix($('historyView'));return x}}
 {const a0=applyRole;applyRole=function(){a0.apply(this,arguments);syncTafRole()}}
 function enterPortal(){const imp=location.hash.match(/[#&]taf-import=([^&]+)/);ensureTaf();loadTafCfg().then(()=>{if(imp)importOldTafCfg(imp[1])});if(sb&&!offline)sb.channel('taf-settings-live').on('postgres_changes',{event:'*',schema:'public',table:'taf_settings'},()=>{clearTimeout(tafCfgTimer);tafCfgTimer=setTimeout(loadTafCfg,400)}).subscribe();renderPortal();if(/^#taf\b/.test(location.hash)){goNav('taf');history.replaceState(null,'',location.pathname+location.search)}}
 const VIEW_OF={portal:'portalView',taf:'tafView',home:'homeView',history:'historyView',users:'usersView',settings:'settingsView'};
 function goNav(n){document.querySelector(`[data-nav="${n}"]`)?.click()}
-document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if((n==='users'||n==='settings')&&(offline||profile?.role!=='admin'))return;document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));Object.entries(VIEW_OF).forEach(([k,id])=>$(id).classList.toggle('hidden',k!==n));document.body.classList.toggle('taf-mode',n==='taf');if(n==='taf'){ensureTaf();markTafSeen();try{$('tafFrame').focus()}catch(e){}}else if(n==='settings'){renderSettings();loadActivity()}else if(n==='users')loadUsers();else if(n==='history')renderHistory();else if(n==='portal')renderPortal();window.scrollTo({top:0,behavior:'smooth'})});
+document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav;if((n==='users'||n==='settings')&&(offline||profile?.role!=='admin'))return;document.querySelectorAll('[data-nav]').forEach(x=>x.classList.toggle('on',x===b));Object.entries(VIEW_OF).forEach(([k,id])=>$(id).classList.toggle('hidden',k!==n));document.body.classList.toggle('taf-mode',n==='taf');if(n==='taf'){ensureTaf();markTafSeen();try{$('tafFrame').focus()}catch(e){}}else if(n==='settings'){renderSettings();loadActivity()}else if(n==='users')loadUsers();else if(n==='history')renderHistory();else if(n==='portal')renderPortal();else if(n==='home')window.reapplyCols?.();window.scrollTo({top:0,behavior:'smooth'})});
 function renderHistory(){const toks=parseQ($('hSearch').value),f=$('hFleet').value;const del=rows.filter(r=>r.is_active===false);
 const list=del.filter(r=>(!f||r.fleet===f)&&rowMatches(r,toks)).sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0));
 $('hCount').textContent=`${list.length} de ${del.length} MEL apagadas`;const canEdit=!offline&&profile?.role!=='reader';
