@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TAP Operational Control</title><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#0b2f55"><link rel="icon" href="./icon-192.png"><link rel="apple-touch-icon" href="./icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MEL"><script src="vendor/supabase-js-2.119.0.js" integrity="sha384-uteMfOloLDGt042uDz+xHGF3ym63/WQ6rFq7murQRG8Ih7QrXGEGNtWd8688sb4O"></script><script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script src="./config.js"></script><script>try{if(localStorage.getItem("mel-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script><style>
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>TAP Operational Control</title><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#0b2f55"><link rel="icon" href="./icon-192.png"><link rel="apple-touch-icon" href="./icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MEL"><script src="vendor/supabase-js-2.119.0.js" integrity="sha384-uteMfOloLDGt042uDz+xHGF3ym63/WQ6rFq7murQRG8Ih7QrXGEGNtWd8688sb4O"></script><script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script src="./config.js"></script><script>try{if(localStorage.getItem("mel-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script><style>
 :root{--navy:#0b2f55;--navy2:#123e68;--blue:#0a6fc2;--blue2:#0759a0;--ink:#12365b;--muted:#6b7f93;--line:#dfe8f1;--bg:#f2f6fb;--red:#d62f37;--green:#2f8a3b;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg)}.hidden{display:none!important}
 svg.i.plane{transform:rotate(-45deg)}svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
@@ -182,6 +182,28 @@ body.taf-mode{display:flex;flex-direction:column;height:100vh;height:100dvh;over
 [data-theme=dark] .p-chip{background:#4a1d22;color:#ffb3b7;border-color:#7a2f36}[data-theme=dark] .p-chip.amb{background:#4a3a12;color:#ffd58a;border-color:#7a5f1f}[data-theme=dark] .p-warn{background:#4a3a12;color:#ffd58a;border-color:#7a5f1f}
 @media(max-width:1100px){.p-grid{grid-template-columns:1fr}.p-melcard{height:auto;max-height:none}.p-mels{max-height:75vh}}
 @media(max-width:560px){.p-stats{grid-template-columns:1fr}.p-stat{padding:10px}.p-fleets{gap:7px}.p-fleet{padding:9px;font-size:11.5px}.p-fleet b{font-size:20px}.p-head small{flex-basis:100%;order:3}}
+
+/* Telemóvel e tablet (também deitado): a tabela ocupa o ecrã todo, sem deslizar para o lado */
+.row-meta{display:none}
+@media(max-width:1000px){
+main{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));margin-top:10px}
+.top{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.tablewrap{padding:0 4px}
+#melTable,#melTable.fixed{table-layout:auto}#melTable th{width:auto!important}
+#melTable th:nth-child(3),#melTable th:nth-child(4),#melTable td:nth-child(3),#melTable td:nth-child(4){display:none}
+.melcell{min-width:0;width:1%}.melcell .code{white-space:nowrap}.impact{min-width:0}
+.row-meta{display:block;margin-top:6px;font-size:11.5px;color:var(--muted);line-height:1.5;white-space:nowrap}.row-meta svg{width:12px;height:12px;margin-right:4px}
+#melTable td:last-child,#melTable th:last-child{width:1%}#melTable .actions{display:grid;grid-template-columns:repeat(2,32px);gap:6px;justify-content:center}
+th,td{padding-left:8px;padding-right:8px}.col-rs{display:none}#resetCols{display:none}
+}
+@media(max-width:560px){
+#melTable thead{display:none}#melTable,#melTable tbody{display:block}
+#melTable tr[data-id]{display:grid;grid-template-columns:1fr auto;border-bottom:1px solid var(--line);padding:6px 0}
+#melTable tr[data-id]>td{display:block;border:0;padding:6px 6px}#melTable tr[data-id]>td:nth-child(3),#melTable tr[data-id]>td:nth-child(4){display:none}
+#melTable tr[data-id]>td.melcell{grid-column:1;grid-row:1;width:auto}#melTable tr[data-id]>td:last-child{grid-column:2;grid-row:1;width:auto}
+#melTable tr[data-id]>td.impact{grid-column:1/-1;grid-row:2}
+#melTable .actions{grid-template-columns:repeat(3,32px)}.row-meta br{display:none}.row-meta svg:last-of-type{margin-left:8px}
+}
 
 /* Tema escuro */
 .theme-btn{width:38px;height:38px;display:grid;place-items:center;background:transparent;color:#fff;border:1px solid #ffffff55;border-radius:9px;flex:none}.theme-btn:hover{background:#ffffff14}
@@ -619,7 +641,7 @@ $('count').innerHTML=(f?`${safe(f)}: ${list.length} registos<i>|</i>`:`${list.le
 const start=(page-1)*PER_PAGE,slice=list.slice(start,start+PER_PAGE);const canEdit=!offline&&profile?.role!=='reader';
 $('rows').innerHTML=slice.length?slice.map(r=>{const on=r.is_active!==false;const when=r.updated_at||r.created_at;
 const fv=!!prefs[r.id]?.fav;const st=`<button class="act fav mini${fv?' on':''}" data-fav="${r.id}" title="${fv?'Retirar das favoritas':'Marcar como favorita'}" aria-pressed="${fv}" ${offline?'disabled':''}>${ico('star')}</button>`;const cp=`<button class="act cpy" data-copy="${r.id}" title="Copiar impacto operacional">${ico('clip')}</button><button class="act aud" data-audit="${r.id}" title="Ver alterações" ${offline?'disabled':''}>${ico('clock')}</button>${attBtn(r)}`;const acts=!canEdit?cp:cp+`<button class="act" data-edit="${r.id}" title="Editar">${ico('edit')}</button><button class="act del" data-delete="${r.id}" title="Apagar registo">${ico('trash')}</button>`;
-return `<tr data-id="${r.id}"><td class="melcell"><div class="melhead">${st}<span class="code">${safe(r.mel_item)}</span></div>${r.notes&&r.notes.trim()?`<div class="mel-note" title="Nota">${ico('note')}<span>${safe(r.notes.trim()).replace(/\n/g,'<br>')}</span></div>`:''}</td><td class="impact">${boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'))}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}</span></td><td><span class="when">${ico('cal')}${when?fmtDate(when):'—'}</span></td><td><div class="actions">${acts}</div></td></tr>`}).join(''):`<tr><td colspan="5" class="empty">${emptyMsg()}</td></tr>`;
+return `<tr data-id="${r.id}"><td class="melcell"><div class="melhead">${st}<span class="code">${safe(r.mel_item)}</span></div><div class="row-meta">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}<br>${ico('cal')}${when?new Date(when).toLocaleDateString('pt-PT'):'—'}</div>${r.notes&&r.notes.trim()?`<div class="mel-note" title="Nota">${ico('note')}<span>${safe(r.notes.trim()).replace(/\n/g,'<br>')}</span></div>`:''}</td><td class="impact">${boldStars(r.operational_impact_html?cleanHtml(r.operational_impact_html):safe(r.operational_impact).replace(/\n/g,'<br>'))}</td><td><span class="by">${ico('user')}${safe(r.updated_by_name||r.created_by_name||'Importado')}</span></td><td><span class="when">${ico('cal')}${when?fmtDate(when):'—'}</span></td><td><div class="actions">${acts}</div></td></tr>`}).join(''):`<tr><td colspan="5" class="empty">${emptyMsg()}</td></tr>`;
 document.querySelectorAll('#rows td.impact').forEach(boldFirstLine);highlightRows($('rows'),parseQ($('search').value),id=>rows.find(x=>x.id===id));applyFlash();
 $('pageInfo').textContent=list.length?`A mostrar ${start+1}–${Math.min(start+PER_PAGE,list.length)} de ${list.length} registos${f?' ('+f+')':''}`:'Sem registos';
 let nums=[];for(let p=1;p<=pagesN;p++){if(p===1||p===pagesN||Math.abs(p-page)<=1||(page<=3&&p<=4))nums.push(p);else if(nums[nums.length-1]!=='…')nums.push('…')}
