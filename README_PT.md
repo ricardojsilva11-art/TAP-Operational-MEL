@@ -78,7 +78,7 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 ## Funcionalidades
 
 ### Início
-Ecrã dividido a meio. **À esquerda, TAF:** TAF novos ou emendados (AMD) na última hora, aeroportos em alerta agora e nas próximas 6 h; clicar num aeroporto abre o painel lateral desse aeroporto no TAF. **À direita, MEL:** todas as MEL ativas com o texto todo do impacto operacional e as notas, separadores por frota (com a revisão em vigor) e Favoritas, e pesquisa que filtra logo. O botão **MEL** de cada uma abre-a na página MEL (copiar, anexos, editar).
+Ecrã dividido a meio. **À esquerda, TAF:** TAF novos ou emendados (AMD) na última hora, aeroportos em alerta agora e nas próximas 6 h; clicar num aeroporto abre o painel lateral desse aeroporto no TAF. **À direita, MEL:** as MEL adicionadas, alteradas ou apagadas nas últimas 24 horas (mais recentes primeiro), com o texto todo do impacto operacional e as notas, quem alterou e quando; separadores por frota e pesquisa que filtra logo. O botão **MEL** de cada uma abre-a na página MEL (copiar, anexos, editar).
 
 ### TAF
 - É o TAF Monitor tal como era, com a mesma grelha, filtros e painel lateral, agora dentro do portal e com a mesma entrada das MEL. Aberto diretamente (`/taf/`) reencaminha para o portal.

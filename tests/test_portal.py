@@ -116,31 +116,37 @@ def test_taf_sem_sessao_mostra_login(browser, server, mock):
     ctx.close()
 
 
-def test_todas_as_mel_com_texto_completo_no_inicio(browser, server, mock):
+def test_alteracoes_das_ultimas_24h_no_inicio(browser, server, mock):
+    from datetime import datetime, timedelta, timezone
+    iso = lambda h: (datetime.now(timezone.utc) - timedelta(hours=h)).strftime('%Y-%m-%dT%H:%M:%SZ')
     long = 'Linha 1<br>' + '<br>'.join(f'Linha {i} do impacto operacional' for i in range(2, 30))
-    mock.rows[0].update(operational_impact_html=long, notes='Nota importante')
-    mock.prefs = [{'record_id': 'r3', 'is_favorite': True, 'last_used_at': None}]
+    mock.rows[0].update(operational_impact_html=long, notes='Nota importante', updated_at=iso(2), updated_by_name='Ana')  # alterada
+    mock.rows[2].update(created_at=iso(1), created_by_name='Rui')                                                         # nova (A330)
+    mock.rows[1].update(updated_at=iso(30))                                                                               # há mais de 24 h
+    mock.rows.append(dict(mock.rows[1], id='r9', mel_item='M-30-11-01', is_active=False, updated_at=iso(3)))              # apagada
     ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
     page.wait_for_timeout(400)
-    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 3
+    items = page.evaluate("[...document.querySelectorAll('#pMelList .p-mel .code')].map(e=>e.textContent)")
+    assert items == ['M-21-28-03A', 'M-21-26-01', 'M-30-11-01']  # mais recente primeiro, sem a de há 30 h
     txt = page.inner_text('#pMelList')
-    assert 'Linha 29 do impacto operacional' in txt and 'Nota importante' in txt  # texto todo, sem cortes
-    # separadores por frota e favoritas
+    assert 'Linha 29 do impacto operacional' in txt and 'Nota importante' in txt  # texto todo
+    assert 'Nova' in txt and 'Alterada' in txt and 'Apagada' in txt and 'Ana' in txt
+    assert '3 alterações nas últimas 24 h' in page.inner_text('#pMelTotal')
     page.click('[data-ptab="A330"]')
-    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 1 and 'M-21-28-03A' in page.inner_text('#pMelList')
-    page.click('[data-ptab="fav"]')
-    assert 'M-21-28-03A' in page.inner_text('#pMelList')
+    assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 1
     page.click('[data-ptab=""]')
-    # pesquisa filtra logo, com destaque
-    page.fill('#pSearch', '21-26-02')
+    page.fill('#pSearch', '26-01')
     page.wait_for_timeout(400)
     assert page.evaluate("document.querySelectorAll('#pMelList .p-mel').length") == 1
-    assert 'M-21-26-02' in page.inner_text('#pMelList')
-    # botão MEL abre a página MEL com essa MEL
-    page.click('#pMelList [data-mel="M-21-26-02"]')
-    assert visible(page, '#homeView') and page.input_value('#search') == 'M-21-26-02'
-    assert 'M-21-26-01' not in page.inner_text('#rows')
+    page.click('#pMelList [data-mel="M-21-26-01"]')
+    assert visible(page, '#homeView') and page.input_value('#search') == 'M-21-26-01'
     assert not errors
+    ctx.close()
+
+
+def test_sem_alteracoes_nas_ultimas_24h(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    assert 'Nenhuma MEL foi adicionada, alterada ou apagada' in page.inner_text('#pMelList')
     ctx.close()
 
 
