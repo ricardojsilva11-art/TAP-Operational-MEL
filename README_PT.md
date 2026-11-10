@@ -81,7 +81,7 @@ Em **Authentication > URL Configuration**, pôr o endereço publicado da app (o 
 Ecrã dividido a meio. **À esquerda, TAF:**
 - **TAF novos / AMD com alerta, por ver:** só contam TAF novos ou emendados que cumprem os critérios de alerta da análise de TAF; um TAF emendado sem alerta não aparece. Cada um sai da lista e do contador quando abres esse aeroporto (no Início, no aviso do canto ou na grelha do TAF); os outros continuam por ver. "Marcar todos como vistos" limpa tudo de uma vez.
 - **Em alerta agora / próximas 10 h:** só destinos; clicar no número abre o TAF já com esse filtro.
-- **Meteorologia nos destinos:** (agora e próximas 10 h) até 6 destinos em alerta (primeiro os que estão agora), uma linha cada: quando (ex.: Agora–14Z ou 12Z–16Z), a categoria mais grave (LVO, Thunderstorm, Wind / gust…) e até 3 valores do TAF (ex.: VIS400m FG BKN002). Passar o rato mostra as outras categorias; "Ver todos" abre o TAF filtrado. Carregar numa linha abre o painel lateral desse aeroporto.
+- **Meteorologia nos destinos:** (agora e próximas 10 h) até 6 destinos em alerta (primeiro os que estão agora), uma linha cada: quando (ex.: Agora–14Z ou 12Z–16Z), todas as categorias de alerta nesse período (LVO, Thunderstorm, Wind / gust…) e os valores do TAF que as causam (ex.: VIS400m FG BKN002 TSRA G35); "Ver todos" abre o TAF filtrado. Carregar numa linha abre o painel lateral desse aeroporto.
 
 **À direita, MEL:** as MEL adicionadas, alteradas ou apagadas nas últimas 24 horas (mais recentes primeiro), com o texto todo do impacto operacional e as notas, quem alterou e quando; separadores por frota e pesquisa que filtra logo.
 

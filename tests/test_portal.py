@@ -375,10 +375,8 @@ def test_meteorologia_nos_destinos(browser, server, mock):
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_selector('#pAlertList .p-wxrow')
     rows = page.evaluate("[...document.querySelectorAll('#pAlertList .p-wxrow')].map(e=>e.innerText.replace(/\\s+/g,' '))")
-    assert rows[0].startswith('LPPT Agora–14Z LVO VIS400m FG BKN002')  # só a categoria mais grave e até 3 valores
-    assert 'Wind / gust' not in rows[0] and 'G35' not in rows[0]
+    assert rows[0].startswith('LPPT Agora–14Z LVO Wind / gust VIS400m FG BKN002 G35')  # todas as categorias e valores
     assert rows[1].startswith('LPPR 12Z–16Z Thunderstorm TSRA')
-    assert 'Wind / gust' in page.get_attribute('#pAlertList [data-icao="LPPT"]', 'title')
     f.evaluate("parent.postMessage(%s,location.origin)" % many)
     page.wait_for_function("document.querySelectorAll('#pAlertList .p-wxrow').length===6")
     assert 'Ver todos (8)' in page.inner_text('#pAlertList')
