@@ -1781,12 +1781,12 @@ function render(){
   if (!vis.length){
     h += `<tr><td colspan="${n + 1}"><div class="empty">${rows.length ? "Nenhum aeroporto corresponde ao filtro." : cfg.mode === "manual" ? "Cole um ou mais TAF acima e carregue em Analisar." : "Sem aeroportos. Defina a lista ICAO em Definições."}</div></td></tr>`;
   } else if (ui.sortAlert){
-    vis = vis.slice().sort((a, b) => b.score - a.score || a.idx - b.idx);
+    vis = vis.slice().sort((a, b) => (isFavAp(b.icao) - isFavAp(a.icao)) || b.score - a.score || a.idx - b.idx);
     h += vis.map(rowHtml).join("");
   } else {
     const groups = {};
-    vis.forEach(r => (groups[r.region] = groups[r.region] || []).push(r));
-    const order = REGIONS.map(x => x[0]).concat("Outros");
+    vis.forEach(r => { const gk = isFavAp(r.icao) ? "★ Favoritos" : r.region; (groups[gk] = groups[gk] || []).push(r); });
+    const order = ["★ Favoritos"].concat(REGIONS.map(x => x[0]), "Outros");
     for (const name of order){
       const g = groups[name]; if (!g) continue;
       const nAl = g.filter(r => r.worst === "red").length;

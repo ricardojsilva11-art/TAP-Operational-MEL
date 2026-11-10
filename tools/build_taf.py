@@ -106,6 +106,16 @@ s = rep(s, 'function buildRows(slots){',
         'function buildRows(slots){')
 s = rep(s, 'th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}', '.tfav{font-size:14px;line-height:1;color:var(--muted,#8a99a8);cursor:pointer;margin-right:-2px;opacity:.55}.tfav:hover{opacity:1}.tfav.on{color:#e0a100;opacity:1}\nth.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line)}')
 
+# 3e) favoritos no topo da grelha: grupo "★ Favoritos" antes das regiões (ou primeiro, na ordenação por alerta)
+s = rep(s, """    vis = vis.slice().sort((a, b) => b.score - a.score || a.idx - b.idx);
+    h += vis.map(rowHtml).join("");""", """    vis = vis.slice().sort((a, b) => (isFavAp(b.icao) - isFavAp(a.icao)) || b.score - a.score || a.idx - b.idx);
+    h += vis.map(rowHtml).join("");""")
+s = rep(s, """    const groups = {};
+    vis.forEach(r => (groups[r.region] = groups[r.region] || []).push(r));
+    const order = REGIONS.map(x => x[0]).concat("Outros");""", """    const groups = {};
+    vis.forEach(r => { const gk = isFavAp(r.icao) ? "★ Favoritos" : r.region; (groups[gk] = groups[gk] || []).push(r); });
+    const order = ["★ Favoritos"].concat(REGIONS.map(x => x[0]), "Outros");""")
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,

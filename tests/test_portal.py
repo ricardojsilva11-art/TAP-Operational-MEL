@@ -516,3 +516,19 @@ def test_favoritos_sem_tabela_ficam_no_browser(browser, server, mock):
     assert page.inner_text('#pAlertList [data-favicao="LPPT"]') == '★'
     assert 'LPPT' in page.evaluate("localStorage.getItem('mel_taf_favs_v1')")
     ctx.close()
+
+
+def test_favoritos_no_topo_da_grelha(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    last = f.evaluate("[...document.querySelectorAll('#grid tr[data-icao]')].pop().dataset.icao")
+    f.evaluate(f"parent.postMessage({{type:'taf-fav',icao:'{last}',on:true}},location.origin)")
+    f.wait_for_function(f"document.querySelector('#grid tr[data-icao]').dataset.icao==='{last}'", timeout=5000)
+    # também na vista por regiões: grupo ★ Favoritos no topo
+    f.evaluate("ui.sortAlert=false;render()")
+    assert f.evaluate("document.querySelector('#grid tr.reg th').textContent").startswith('★ Favoritos')
+    assert f.evaluate("document.querySelector('#grid tr[data-icao]').dataset.icao") == last
+    assert f.evaluate(f"document.querySelectorAll('#grid tr[data-icao=\"{last}\"]').length") == 1  # não aparece repetido na região
+    ctx.close()
