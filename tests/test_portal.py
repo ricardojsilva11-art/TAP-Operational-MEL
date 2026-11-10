@@ -569,5 +569,8 @@ def test_relatorio_uma_linha_por_aeroporto(browser, server, mock):
     rows = f.evaluate("[...document.querySelectorAll('#repPrev table tr')].map(t=>[...t.children].map(c=>c.textContent)).filter(r=>r.length===4).slice(1)")
     icaos = [r[0] for r in rows]
     assert rows and len(icaos) == len(set(icaos))  # cada aeroporto numa só linha
-    assert any(' / ' in r[2] and ' / ' in r[3] for r in rows)  # condições e alertas juntos na mesma linha
+    # várias condições do mesmo aeroporto: cada uma por baixo da outra, com o alerta ao lado
+    assert f.evaluate("[...document.querySelectorAll('#repPrev table tr')].some(t=>t.children.length===4&&t.children[2].innerHTML.includes('<br>')&&t.children[3].innerHTML.includes('<br>'))")
+    txt = f.evaluate("document.getElementById('repText').value")
+    assert '\n                          ' in txt  # no texto, a 2.ª condição fica alinhada por baixo
     ctx.close()

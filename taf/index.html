@@ -2381,7 +2381,7 @@ function reportTable(){
       if (r.cond && !m.conds.includes(r.cond)) m.conds.push(r.cond);
       if (!m.fulls.includes(r.full)) m.fulls.push(r.full);
     }
-    B.rows = [...by.values()].map(m => { m.wins = mergeWins(m.wins); m.cond = m.conds.join(" / "); m.full = m.fulls.join(" / "); m.per = m.wins.map(w => fmtWinT(w.s, w.e)).join(", "); m.first = m.wins[0].s; return m; });
+    B.rows = [...by.values()].map(m => { m.wins = mergeWins(m.wins); m.cond = m.conds.join("\n"); m.full = m.fulls.join("\n"); m.per = m.wins.map(w => fmtWinT(w.s, w.e)).join(", "); m.first = m.wins[0].s; return m; });
   }
   for (const k in catSum) delete catSum[k]; icaos.clear();
   for (const B of blocks) for (const r of B.rows){ for (const n of (r.names || [r.name])) (catSum[n] = catSum[n] || new Set()).add(r.icao); icaos.add(r.icao); }
@@ -2432,15 +2432,15 @@ function reportText(){
   const summary = Object.entries(cs).sort((a, b) => repSev(a[0]) - repSev(b[0])).map(([n, x]) => `${n} ${x.size}`).join(" · ");
   const sub = B.rows.length ? `${summary}  (${nA} ${nA === 1 ? "aeroporto" : "aeroportos"})` : "Sem alertas neste período.";
   const cells = B.rows.map(repCells);
-  const W = REP_COLS.map((h, i) => Math.max(h.length, ...cells.map(c => c[i].length)));
+  const W = REP_COLS.map((h, i) => Math.max(h.length, ...cells.map(c => Math.max(...String(c[i]).split("\n").map(x => x.length)))));
   const line = c => c.map((x, i) => i === c.length - 1 ? x : x.padEnd(W[i])).join("  ").trimEnd();
   const out = [head, sub];
   if (early) out.push(early);
-  if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } out.push(line(cells[k])); }); }
+  if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } { const parts = cells[k].map(x => String(x).split("\n")), nl = Math.max(...parts.map(q => q.length)); for (let j = 0; j < nl; j++) out.push(line(parts.map(q => q[j] || ""))); } }); }
   const nHead = (early ? 3 : 2) + 1; /* linhas do cabeçalho: não vão na cópia */
   const tbl = (cells.length
       ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +
-        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}">${esc(c)}</td>`).join("")}</tr>`; }).join("") + `</table>`
+        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
       : `<p style="margin:0">${esc(sub)}</p>`);
   const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p style="margin:0 0 8px"><b>${esc(head)}</b><br>${esc(sub)}${early ? "<br>" + esc(early) : ""}</p>` + (cells.length ? tbl : "") + `</div>`;
   /* cópia: só a tabela, sem título nem resumo */
