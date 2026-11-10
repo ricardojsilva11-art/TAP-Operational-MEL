@@ -123,3 +123,14 @@ s = s[:k] + gate + s[k:]
 out = os.path.join(ROOT, 'taf', 'index.html')
 open(out, 'w', encoding='utf-8').write(s)
 print('taf/index.html gerado:', len(s), 'caracteres')
+
+# o portal pede taf/?v=<versão>, para os browsers não usarem uma cópia antiga guardada em cache
+import hashlib
+ver = hashlib.sha256(s.encode('utf-8')).hexdigest()[:10]
+ip = os.path.join(ROOT, 'index.html')
+idx = open(ip, encoding='utf-8').read()
+new_idx = re.sub(r"f\.src='taf/[^']*'", f"f.src='taf/?v={ver}'", idx)
+if new_idx.count(f"f.src='taf/?v={ver}'") != 1:
+    sys.exit('build_taf: não encontrei o iframe do TAF no index.html')
+open(ip, 'w', encoding='utf-8').write(new_idx)
+print('index.html: TAF versão', ver)

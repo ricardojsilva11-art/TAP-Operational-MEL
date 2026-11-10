@@ -12,7 +12,7 @@ def taf_frame(page):
     page.wait_for_function("(()=>{try{const d=document.getElementById('tafFrame').contentDocument;"
                            "return d&&!d.documentElement.classList.contains('gate')&&!!d.getElementById('grid')}catch(e){return false}})()",
                            timeout=20000)
-    return next(f for f in page.frames if f.url.rstrip('/').endswith('/taf'))
+    return next(f for f in page.frames if '/taf/' in f.url)
 
 
 def test_inicio_por_omissao_e_ordem_do_menu(browser, server, mock):
@@ -209,3 +209,12 @@ def test_importa_definicoes_do_site_antigo(browser, server, mock):
     assert mock.taf_cfg['cfg'] == {'vis': 1234, 'icao': 'LPPT LPPR'}
     assert visible(page, '#tafView') and page.evaluate('location.hash') == ''
     ctx.close()
+
+
+def test_versao_do_taf_atualizada():
+    """O portal pede taf/?v=<versão>; se isto falhar, correr python3 tools/build_taf.py."""
+    import hashlib, os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    taf = open(os.path.join(root, 'taf', 'index.html'), encoding='utf-8').read()
+    ver = hashlib.sha256(taf.encode('utf-8')).hexdigest()[:10]
+    assert f"f.src='taf/?v={ver}'" in open(os.path.join(root, 'index.html'), encoding='utf-8').read()
