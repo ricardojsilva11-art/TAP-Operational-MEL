@@ -418,3 +418,13 @@ def test_carregar_no_alerta_do_inicio_faz_desaparecer(browser, server, mock):
     t = page.inner_text('.taf-toast')
     assert 'LEMD' in t and 'LPFR' not in t  # o aviso só repete o que falta ver
     ctx.close()
+
+
+def test_hora_utc_no_inicio(browser, server, mock):
+    import re
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    t = page.inner_text('#pDate')
+    assert re.search(r' · \d{2}:\d{2} UTC$', t)
+    hh = page.evaluate("String(new Date().getUTCHours()).padStart(2,'0')")
+    assert (' ' + hh + ':') in t
+    ctx.close()
