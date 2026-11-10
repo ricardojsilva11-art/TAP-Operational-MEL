@@ -59,6 +59,26 @@ s = rep(s, 'intensity: true, hours: 30, refresh: 5};', 'intensity: true, hours: 
 s = rep(s, 'Math.min(60, Math.max(5, +$("#fRefresh").value || 10))', 'Math.min(60, Math.max(1, +$("#fRefresh").value || 2))')
 s = rep(s, '<input type="number" id="fRefresh" min="5" max="60" step="5">', '<input type="number" id="fRefresh" min="1" max="60" step="1">')
 
+# 2c) TAF "novo" = emissão mais recente (hora de emissão), não só texto diferente: o mesmo TAF
+#     devolvido com outra formatação, ou um TAF mais antigo que reaparece, já não conta como novo
+s = rep(s, """  for (const T of list){
+    if (!T.icao || T.error) continue;
+    const prev = tafSeen[T.icao];
+    if (prev && prev.raw !== T.raw) tafChanged[T.icao] = {at: now, prevRaw: prev.raw};
+    tafSeen[T.icao] = {raw: T.raw};
+  }""", """  const norm = r => String(r || "").replace(/\\s+/g, " ").trim();
+  const latest = {};
+  for (const T of list){ if (!T.icao || T.error) continue; const L = latest[T.icao]; if (!L || (T.issue || 0) >= (L.issue || 0)) latest[T.icao] = T; }
+  for (const T of Object.values(latest)){
+    const prev = tafSeen[T.icao], raw = norm(T.raw), iss = T.issue || null;
+    if (prev){
+      const newer = iss && prev.issue ? iss > prev.issue : raw !== norm(prev.raw);
+      if (newer) tafChanged[T.icao] = {at: now, prevRaw: prev.raw, issue: iss};
+      else if (iss && prev.issue && iss < prev.issue) continue;   // TAF mais antigo que reapareceu: ignorar
+    }
+    tafSeen[T.icao] = {raw: T.raw, issue: iss};
+  }""")
+
 # 3) ponte com o portal: resumo depois de cada render
 s = rep(s, '  $("#legendCodes").textContent = ',
         '  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,\n'
@@ -66,7 +86,7 @@ s = rep(s, '  $("#legendCodes").textContent = ',
         f'    win: {WX_H}, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => ({{icao: r.icao, name: nameOf(r.icao)}})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
         f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (y.now - x.now) || (x.from - y.from)),\n'
-        '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),\n'
+        '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
         '  $("#legendCodes").textContent = ')
 

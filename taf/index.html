@@ -891,11 +891,17 @@ let tafChanged = store.get("tafmon.changed", {}); // ICAO -> {at, prevRaw}
 const isNewTaf = ic => !!tafChanged[ic] && Date.now() - tafChanged[ic].at < NEW_MIN * 60000;
 function trackTafs(list){
   const now = Date.now();
-  for (const T of list){
-    if (!T.icao || T.error) continue;
-    const prev = tafSeen[T.icao];
-    if (prev && prev.raw !== T.raw) tafChanged[T.icao] = {at: now, prevRaw: prev.raw};
-    tafSeen[T.icao] = {raw: T.raw};
+  const norm = r => String(r || "").replace(/\s+/g, " ").trim();
+  const latest = {};
+  for (const T of list){ if (!T.icao || T.error) continue; const L = latest[T.icao]; if (!L || (T.issue || 0) >= (L.issue || 0)) latest[T.icao] = T; }
+  for (const T of Object.values(latest)){
+    const prev = tafSeen[T.icao], raw = norm(T.raw), iss = T.issue || null;
+    if (prev){
+      const newer = iss && prev.issue ? iss > prev.issue : raw !== norm(prev.raw);
+      if (newer) tafChanged[T.icao] = {at: now, prevRaw: prev.raw, issue: iss};
+      else if (iss && prev.issue && iss < prev.issue) continue;   // TAF mais antigo que reapareceu: ignorar
+    }
+    tafSeen[T.icao] = {raw: T.raw, issue: iss};
   }
   for (const ic of Object.keys(tafChanged)) if (now - tafChanged[ic].at > 24 * 3600e3) delete tafChanged[ic];
   store.set("tafmon.seen", tafSeen); store.set("tafmon.changed", tafChanged);
@@ -1713,7 +1719,7 @@ function render(){
     win: 8, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 8).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),
     noTaf: allRows.filter(r => !r.T || r.T.error).length,
     alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 8).includes("red")).map(r => { const a = r.levels.indexOf("red"); let b = r.levels.slice(0, 8).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, 8).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {}).label || k), cond: cellLabels(hard).slice(0, 10)}; }).sort((x, y) => (y.now - x.now) || (x.from - y.from)),
-    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),
+    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),
     error: fetchError || null}, location.origin); } catch(e){}
   $("#legendCodes").textContent = `Cor = cenário mais grave na hora · VIS300m visibilidade · BKN002 teto · W30 vento kt · G35 rajada kt · CB020 nuvem CB/TCU · fenómeno tal como no TAF (TSRA, BR, -FZDZ…) · + mais alertas · carregue num aeroporto para ver o TAF`;
   document.querySelectorAll(".seg button[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === ui.filter)));

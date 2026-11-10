@@ -428,3 +428,33 @@ def test_hora_utc_no_inicio(browser, server, mock):
     hh = page.evaluate("String(new Date().getUTCHours()).padStart(2,'0')")
     assert (' ' + hh + ':') in t
     ctx.close()
+
+
+def test_mesmo_taf_nao_volta_a_ser_novo(browser, server, mock):
+    """O mesmo TAF (mesma hora de emissão) devolvido com outra formatação, ou um TAF antigo que reaparece, não conta como novo."""
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    r = f.evaluate("""()=>{
+      const mk=(raw,iss)=>({icao:'LPPD',raw,issue:iss});
+      const t17=Date.UTC(2026,10,10,17,0), t20=Date.UTC(2026,10,10,20,0);
+      tafSeen={};tafChanged={};
+      trackTafs([mk('TAF LPPD 101700Z 1018/1118 24010KT 9999 SCT020',t17)]);
+      trackTafs([mk('TAF LPPD 101700Z 1018/1118  24010KT\\n 9999 SCT020',t17)]);   // mesma emissão, outra formatação
+      const a=!!tafChanged.LPPD;
+      trackTafs([mk('TAF LPPD 101700Z 1018/1118 24010KT 9999 SCT020',t17),mk('TAF LPPD 101400Z 1015/1115 VRB03KT CAVOK',Date.UTC(2026,10,10,14))]);  // antigo junto
+      const b=!!tafChanged.LPPD;
+      trackTafs([mk('TAF LPPD 102000Z 1021/1121 25012KT 9999 BKN015',t20)]);  // emissão nova
+      return {a,b,c:!!tafChanged.LPPD&&tafChanged.LPPD.issue===t20};
+    }""")
+    assert r == {'a': False, 'b': False, 'c': True}
+    # no portal, a chave é a hora de emissão: o mesmo TAF recebido de novo não volta a acender
+    f.evaluate("parent.postMessage({type:'taf-summary',total:1,now:[],nextWin:[],alerts:[],newTafs:[{icao:'LPPD',name:'Ponta Delgada',amd:false,at:1000,issue:Date.UTC(2026,10,10,17),level:'green',alert:true}]},location.origin)")
+    page.wait_for_function("document.getElementById('tafBadge').textContent==='1'")
+    assert '101700Z' in page.inner_text('#pNewList')
+    page.click('#pNewList [data-icao="LPPD"]')
+    page.click('[data-nav="portal"]')
+    f.evaluate("parent.postMessage({type:'taf-summary',total:1,now:[],nextWin:[],alerts:[],newTafs:[{icao:'LPPD',name:'Ponta Delgada',amd:false,at:999999,issue:Date.UTC(2026,10,10,17),level:'green',alert:true}]},location.origin)")
+    page.wait_for_timeout(400)
+    assert not visible(page, '#tafBadge') and page.inner_text('#pNew') == '0'
+    ctx.close()
