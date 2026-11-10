@@ -556,3 +556,18 @@ def test_pagina_de_administrador_no_endereco_sem_permissao(browser, server, mock
     page.wait_for_timeout(300)
     assert visible(page, '#portalView') and not visible(page, '#settingsView')
     ctx.close()
+
+
+def test_relatorio_uma_linha_por_aeroporto(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    page.click('[data-nav="taf"]')
+    f.click('#btnReport')
+    f.click('#repBlk [data-blk="2"]')
+    rows = f.evaluate("[...document.querySelectorAll('#repPrev table tr')].map(t=>[...t.children].map(c=>c.textContent)).filter(r=>r.length===4).slice(1)")
+    icaos = [r[0] for r in rows]
+    assert rows and len(icaos) == len(set(icaos))  # cada aeroporto numa só linha
+    assert any(' / ' in r[2] and ' / ' in r[3] for r in rows)  # condições e alertas juntos na mesma linha
+    ctx.close()

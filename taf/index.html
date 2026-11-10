@@ -2371,8 +2371,20 @@ function reportTable(){
       if ((r.name === "LVO" || r.name === "LOW CIG") && !/FREEZING FOG/.test(r.full)) r.full += " / FREEZING FOG";
     });
   }
+  /* uma linha por aeroporto: junta as condições e os alertas de todos os tipos (o mais grave primeiro) */
+  for (const B of blocks){
+    const by = new Map();
+    for (const r of B.rows){
+      const m = by.get(r.icao);
+      if (!m){ by.set(r.icao, Object.assign({}, r, {names: [r.name], wins: r.wins.slice(), conds: r.cond ? [r.cond] : [], fulls: [r.full]})); continue; }
+      m.names.push(r.name); m.wins.push(...r.wins);
+      if (r.cond && !m.conds.includes(r.cond)) m.conds.push(r.cond);
+      if (!m.fulls.includes(r.full)) m.fulls.push(r.full);
+    }
+    B.rows = [...by.values()].map(m => { m.wins = mergeWins(m.wins); m.cond = m.conds.join(" / "); m.full = m.fulls.join(" / "); m.per = m.wins.map(w => fmtWinT(w.s, w.e)).join(", "); m.first = m.wins[0].s; return m; });
+  }
   for (const k in catSum) delete catSum[k]; icaos.clear();
-  for (const B of blocks) for (const r of B.rows){ (catSum[r.name] = catSum[r.name] || new Set()).add(r.icao); icaos.add(r.icao); }
+  for (const B of blocks) for (const r of B.rows){ for (const n of (r.names || [r.name])) (catSum[n] = catSum[n] || new Set()).add(r.icao); icaos.add(r.icao); }
   const summary = Object.entries(catSum)
     .sort((a, b) => repSev(a[0]) - repSev(b[0]))
     .map(([n, s]) => `${n} ${s.size}`).join(" · ");
@@ -2415,7 +2427,7 @@ function reportText(){
   const head = `ALERTAS TAF · ${pad(now.getUTCDate())}/${pad(now.getUTCMonth() + 1)} ${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z · ${B.name === "24 H" ? "PRÓXIMAS 24 H" : B.custom ? B.name : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}`;
   const early = first && B.ds < B.s ? `Inclui as horas desde ${fz(B.ds)}.` : "";
   /* resumo só do turno escolhido */
-  const cs = {}; B.rows.forEach(r => (cs[r.name] = cs[r.name] || new Set()).add(r.icao));
+  const cs = {}; B.rows.forEach(r => (r.names || [r.name]).forEach(n => (cs[n] = cs[n] || new Set()).add(r.icao)));
   const nA = new Set(B.rows.map(r => r.icao)).size;
   const summary = Object.entries(cs).sort((a, b) => repSev(a[0]) - repSev(b[0])).map(([n, x]) => `${n} ${x.size}`).join(" · ");
   const sub = B.rows.length ? `${summary}  (${nA} ${nA === 1 ? "aeroporto" : "aeroportos"})` : "Sem alertas neste período.";
@@ -2453,7 +2465,7 @@ function renderReport(){
     $("#repWin").innerHTML = `Das <input id="repWinFrom" class="rw-h" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="Hora de início (UTC)">Z às <input id="repWinTo" class="rw-h" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="Hora de fim (UTC)">Z <span class="hint" id="repWinMsg">guardado neste browser</span>`;
     $("#repWinFrom").value = pad(W.from); $("#repWinTo").value = W.to === 0 ? "24" : pad(W.to);
   }
-  $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto e alerta, por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
+  $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto (condições e alertas juntos), por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
   $("#repVis").checked = !!repUI.onlyVis;
 }
 $("#repBlk").addEventListener("click", e => { const b = e.target.closest("[data-blk]"); if (!b) return; repBlk = +b.dataset.blk; setRepTab(repBlk); renderReport(); });

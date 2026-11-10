@@ -120,6 +120,27 @@ s = rep(s, """    const groups = {};
 s = rep(s, '.grid td.c{width:62px;min-width:62px;max-width:62px;height:44px;font-size:12px}', '.grid td.c{width:52px;min-width:52px;max-width:52px;height:42px;font-size:10.5px;padding:1px 1px}')
 s = rep(s, '.grid thead tr.hrs th{top:28px;height:26px;font-size:14px;width:62px;min-width:62px}', '.grid thead tr.hrs th{top:28px;height:26px;font-size:13px;width:52px;min-width:52px}')
 
+# 3g) relatório: uma linha por aeroporto, com todas as condições e alertas juntos (separados por " / ")
+s = rep(s, """  for (const k in catSum) delete catSum[k]; icaos.clear();
+  for (const B of blocks) for (const r of B.rows){ (catSum[r.name] = catSum[r.name] || new Set()).add(r.icao); icaos.add(r.icao); }""",
+"""  /* uma linha por aeroporto: junta as condições e os alertas de todos os tipos (o mais grave primeiro) */
+  for (const B of blocks){
+    const by = new Map();
+    for (const r of B.rows){
+      const m = by.get(r.icao);
+      if (!m){ by.set(r.icao, Object.assign({}, r, {names: [r.name], wins: r.wins.slice(), conds: r.cond ? [r.cond] : [], fulls: [r.full]})); continue; }
+      m.names.push(r.name); m.wins.push(...r.wins);
+      if (r.cond && !m.conds.includes(r.cond)) m.conds.push(r.cond);
+      if (!m.fulls.includes(r.full)) m.fulls.push(r.full);
+    }
+    B.rows = [...by.values()].map(m => { m.wins = mergeWins(m.wins); m.cond = m.conds.join(" / "); m.full = m.fulls.join(" / "); m.per = m.wins.map(w => fmtWinT(w.s, w.e)).join(", "); m.first = m.wins[0].s; return m; });
+  }
+  for (const k in catSum) delete catSum[k]; icaos.clear();
+  for (const B of blocks) for (const r of B.rows){ for (const n of (r.names || [r.name])) (catSum[n] = catSum[n] || new Set()).add(r.icao); icaos.add(r.icao); }""")
+s = rep(s, "const cs = {}; B.rows.forEach(r => (cs[r.name] = cs[r.name] || new Set()).add(r.icao));",
+        "const cs = {}; B.rows.forEach(r => (r.names || [r.name]).forEach(n => (cs[n] = cs[n] || new Set()).add(r.icao)));")
+s = rep(s, "uma linha por aeroporto e alerta, por zona", "uma linha por aeroporto (condições e alertas juntos), por zona")
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
