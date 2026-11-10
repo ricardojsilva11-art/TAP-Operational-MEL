@@ -574,3 +574,30 @@ def test_relatorio_uma_linha_por_aeroporto(browser, server, mock):
     txt = f.evaluate("document.getElementById('repText').value")
     assert '\n                          ' in txt  # no texto, a 2.ª condição fica alinhada por baixo
     ctx.close()
+
+
+def test_taf_visto_noutro_aparelho(browser, server, mock):
+    mock.taf_seen = {'LPPD': '2026-11-10T17:00:00.000Z'}  # visto no computador
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.wait_for_timeout(500)
+    f.evaluate("parent.postMessage({type:'taf-summary',total:2,now:[],nextWin:[],alerts:[],newTafs:["
+               "{icao:'LPPD',name:'Ponta Delgada',amd:false,at:1,issue:Date.UTC(2026,10,10,17),level:'green',alert:true},"
+               "{icao:'LPLA',name:'Lajes',amd:false,at:1,issue:Date.UTC(2026,10,10,17,1),level:'green',alert:true}]},location.origin)")
+    page.wait_for_timeout(400)
+    assert page.inner_text('#pNew') == '1' and 'LPPD' not in page.inner_text('#pNewList')
+    # ver LPLA aqui grava no Supabase para os outros aparelhos
+    page.click('#pNewList [data-icao="LPLA"]')
+    page.wait_for_timeout(400)
+    assert mock.taf_seen.get('LPLA', '').startswith('2026-11-10T17:01')
+    ctx.close()
+
+
+def test_taf_antigo_nao_conta_como_novo(browser, server, mock):
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    r = f.evaluate("""()=>{const now=Date.now();
+      tafChanged={OLD1:{at:now,issue:now-5*3600e3},NEW1:{at:now,issue:now-30*60e3},AMD1:{at:now-20*60e3,issue:now-90*60e3}};
+      return [isNewTaf('OLD1'),isNewTaf('NEW1'),isNewTaf('AMD1')]}""")
+    assert r == [False, True, True]  # emitido há 5 h: não é novo
+    ctx.close()

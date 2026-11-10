@@ -79,6 +79,11 @@ s = rep(s, """  for (const T of list){
     tafSeen[T.icao] = {raw: T.raw, issue: iss};
   }""")
 
+# 2d) um TAF só conta como novo se foi emitido há pouco (até 2 h): abrir o portal horas depois não marca como novos
+#     os TAF emitidos entretanto (ex.: um TAF das 17Z às 22Z)
+s = rep(s, 'const isNewTaf = ic => !!tafChanged[ic] && Date.now() - tafChanged[ic].at < NEW_MIN * 60000;',
+        'const isNewTaf = ic => { const c = tafChanged[ic]; if (!c || Date.now() - c.at >= NEW_MIN * 60000) return false; return !c.issue || Date.now() - c.issue < 2 * 3600e3; };')
+
 # 3) ponte com o portal: resumo depois de cada render
 s = rep(s, '  $("#legendCodes").textContent = ',
         '  try { if (window.parent !== window) window.parent.postMessage({type: "taf-summary", updatedAt: lastFetch || null, total: allRows.length,\n'

@@ -889,7 +889,7 @@ let metars = {};        // ICAO -> {raw, obs}
 const NEW_MIN = 60;     // durante quanto tempo um TAF novo fica destacado (minutos)
 let tafSeen = store.get("tafmon.seen", {});       // ICAO -> {raw}
 let tafChanged = store.get("tafmon.changed", {}); // ICAO -> {at, prevRaw}
-const isNewTaf = ic => !!tafChanged[ic] && Date.now() - tafChanged[ic].at < NEW_MIN * 60000;
+const isNewTaf = ic => { const c = tafChanged[ic]; if (!c || Date.now() - c.at >= NEW_MIN * 60000) return false; return !c.issue || Date.now() - c.issue < 2 * 3600e3; };
 function trackTafs(list){
   const now = Date.now();
   const norm = r => String(r || "").replace(/\s+/g, " ").trim();

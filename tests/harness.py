@@ -72,6 +72,7 @@ class MockSupabase:
         self.taf_missing = False
         self.taf_favs = []
         self.favs_missing = False
+        self.taf_seen = {}
         self.storage = {}
         self.attach_missing = False
         self.tables_missing = False
@@ -104,6 +105,12 @@ class MockSupabase:
                 path = u.split('/object/mel-pdfs/')[1].split('?')[0]
                 self.storage[path] = len(req.post_data_buffer or b'')
                 return self._json(route, {'Key': 'mel-pdfs/' + path})
+        if '/rest/v1/taf_seen' in u:
+            if m == 'POST':
+                for r in json.loads(req.post_data):
+                    self.taf_seen[r['icao']] = r['issue']
+                return route.fulfill(status=201, body='')
+            return self._json(route, [{'icao': k, 'issue': v} for k, v in self.taf_seen.items()])
         if '/rest/v1/taf_favorites' in u:
             if self.favs_missing:
                 return self._json(route, {'code': '42P01', 'message': 'relation "public.taf_favorites" does not exist'}, 404)
