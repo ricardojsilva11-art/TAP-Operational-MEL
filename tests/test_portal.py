@@ -639,3 +639,34 @@ def test_metar_anterior_guardado_no_browser(browser, server, mock):
       return [m.LPPT.raw.includes('111600Z'), m.LPPT.prev && m.LPPT.prev.raw.includes('111530Z')];}""")
     assert r == [True, True]
     ctx.close()
+
+
+def test_mel_favoritas_no_topo(browser, server, mock):
+    mock.prefs = [{'record_id': 'r3', 'is_favorite': True, 'last_used_at': None}]
+    ctx, page, _ = open_app(browser, server, mock, logged_in())
+    order = page.evaluate("[...document.querySelectorAll('#rows tr[data-id]')].map(t=>t.dataset.id)")
+    assert order[0] == 'r3'
+    # marcar outra como favorita passa logo para cima (ordem das favoritas segue a ordenação escolhida)
+    page.click('#rows tr[data-id="r2"] [data-fav]')
+    page.wait_for_timeout(400)
+    order = page.evaluate("[...document.querySelectorAll('#rows tr[data-id]')].map(t=>t.dataset.id)")
+    assert set(order[:2]) == {'r2', 'r3'} and order[2] == 'r1'
+    ctx.close()
+
+
+def test_mel_favoritas_sobem_para_o_topo(browser, server, mock):
+    from harness import rec
+    mock.rows = [rec('r%d' % i, 'A320', 'M-21-%02d-01' % i, 'Impacto %d' % i) for i in range(1, 6)]
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    order = lambda: page.evaluate("[...document.querySelectorAll('#rows tr[data-id]')].map(t=>t.dataset.id)")
+    assert order()[0] == 'r1' and page.evaluate("document.querySelectorAll('#rows tr.grp').length") == 0
+    page.click('#rows [data-fav="r4"]')
+    page.wait_for_timeout(300)
+    assert order()[0] == 'r4'
+    grp = page.evaluate("[...document.querySelectorAll('#rows tr.grp')].map(t=>t.innerText.trim())")
+    assert grp[0].upper().startswith('FAVORITAS') and grp[1].upper() == 'OUTRAS MEL'
+    page.click('#rows [data-fav="r4"]')  # tirar: volta ao lugar
+    page.wait_for_timeout(300)
+    assert order() == ['r1', 'r2', 'r3', 'r4', 'r5'] and page.evaluate("document.querySelectorAll('#rows tr.grp').length") == 0
+    assert not errors
+    ctx.close()
