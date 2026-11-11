@@ -379,7 +379,7 @@ def test_meteorologia_nos_destinos(browser, server, mock):
     assert rows[1].startswith('LPPR 1012/1016 Thunderstorm TSRA')
     f.evaluate("parent.postMessage(%s,location.origin)" % many)
     page.wait_for_function("document.querySelectorAll('#pAlertList .p-wxrow').length===8")  # todos os destinos em alerta
-    assert page.inner_text('#pWxAll') == 'Ver os 8 no TAF Monitor'
+    assert page.inner_text('#pWxAll') == 'Ver no TAF (8)'
     page.click('.p-wxall')
     assert visible(page, '#tafView')
     page.wait_for_timeout(300)
@@ -600,4 +600,69 @@ def test_taf_antigo_nao_conta_como_novo(browser, server, mock):
       tafChanged={OLD1:{at:now,issue:now-5*3600e3},NEW1:{at:now,issue:now-30*60e3},AMD1:{at:now-20*60e3,issue:now-90*60e3}};
       return [isNewTaf('OLD1'),isNewTaf('NEW1'),isNewTaf('AMD1')]}""")
     assert r == [False, True, True]  # emitido há 5 h: não é novo
+    ctx.close()
+
+
+WX_METAR = ("{type:'taf-summary',total:2,now:[{icao:'LPPT',name:'Lisboa'}],win:8,nextWin:[{icao:'LPPT',name:'Lisboa'}],newTafs:[],"
+            "alerts:[{icao:'LPPT',name:'Lisboa',now:true,from:Date.UTC(2026,10,11,16),to:Date.UTC(2026,10,11,20),open:false,cats:['Wind / gust'],cond:['G28'],"
+            "metar:{raw:'METAR LPPT 111600Z 21015G28KT 4000 RA BKN008 15/14 Q1008',obs:Date.UTC(2026,10,11,16),"
+            "prev:{raw:'METAR LPPT 111530Z 21012KT 9999 BKN008 16/13 Q1009',obs:Date.UTC(2026,10,11,15,30)}}}]}")
+
+
+def test_metar_atual_e_anterior_no_inicio(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % WX_METAR)
+    page.wait_for_selector('#pAlertList .p-metar')
+    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar').length") == 2
+    chg = page.evaluate("[...document.querySelectorAll('#pAlertList .p-metar:not(.prev) mark')].map(m=>m.textContent)")
+    assert chg == ['21015G28KT', '4000', 'RA', '15/14', 'Q1008']  # BKN008 igual: não assinala; hora e aeroporto também não
+    assert '111530Z' in page.inner_text('#pAlertList .p-metar.prev')
+    # esconder o METAR anterior (fica lembrado)
+    page.click('#pWxPrev')
+    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar.prev').length") == 0
+    assert page.inner_text('#pWxPrev') == 'Mostrar anterior'
+    assert page.evaluate("localStorage.getItem('mel_wx_prevmetar')") == '0'
+    assert visible(page, '#portalView')  # não abriu o TAF
+    page.click('#pWxPrev')
+    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar.prev').length") == 1
+    assert not errors
+    ctx.close()
+
+
+def test_painel_do_taf_mostra_anteriores(browser, server, mock):
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null&&tafSum.total>0", timeout=20000)
+    page.click('[data-nav="taf"]')
+    f.evaluate("""()=>{const now=Date.now();
+      metars.LPPT={raw:'METAR LPPT 111600Z 21015G28KT 4000 RA BKN008 15/14 Q1008',obs:now-600e3,prev:{raw:'METAR LPPT 111530Z 21012KT 9999 BKN008 16/13 Q1009',obs:now-2400e3}};
+      const T=tafs.find(t=>t.icao==='LPPT');tafChanged.LPPT={at:now-1200e3,prevRaw:T.raw.replace(/TSRA/g,'SHRA'),issue:T.issue};}""")
+    f.click('#grid tr[data-icao="LPPT"]')
+    page.wait_for_timeout(300)
+    marks = f.evaluate("[...document.querySelectorAll('#detail .raw mark.chg')].map(m=>m.textContent)")
+    assert '21015G28KT' in marks and 'TSRA' in marks and 'SHRA' in marks
+    assert f.evaluate("document.querySelectorAll('#detail .raw.prev').length") == 2
+    closed_before = f.evaluate("document.querySelectorAll('#detail .d-sec.is-closed').length")
+    f.click('#detail [data-prevtog]')
+    page.wait_for_timeout(300)
+    assert f.evaluate("document.querySelectorAll('#detail .raw.prev').length") == 0  # esconde o anterior (METAR e TAF)
+    assert f.evaluate("document.querySelectorAll('#detail .d-sec.is-closed').length") == closed_before  # não fecha secções
+    ctx.close()
+
+
+def test_metar_anterior_guardado_no_browser(browser, server, mock):
+    """Se o Worker só devolver o último METAR, o anterior vem do que este browser já tinha visto."""
+    mock.profile['role'] = 'admin'
+    ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    r = f.evaluate("""async ()=>{
+      const realFetch = window.fetch; let n = 0;
+      window.fetch = async (u, o) => { if (String(u).includes('type=metar')){ n++; const raw = n === 1 ? 'METAR LPPT 111530Z 21012KT 9999 16/13 Q1009' : 'METAR LPPT 111600Z 21015G28KT 4000 RA 15/14 Q1008';
+        return new Response(JSON.stringify([{icaoId:'LPPT',obsTime:(n===1?1762875000:1762876800),rawOb:raw}]),{status:200}); } return realFetch(u, o); };
+      cfg.worker = 'https://taf.ricardo-j-silva11.workers.dev';
+      await fetchMetars(); const m = await fetchMetars(); window.fetch = realFetch;
+      return [m.LPPT.raw.includes('111600Z'), m.LPPT.prev && m.LPPT.prev.raw.includes('111530Z')];}""")
+    assert r == [True, True]
     ctx.close()

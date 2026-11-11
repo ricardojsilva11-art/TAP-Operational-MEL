@@ -90,7 +90,7 @@ s = rep(s, '  $("#legendCodes").textContent = ',
         '    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
         f'    win: {WX_H}, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => ({{icao: r.icao, name: nameOf(r.icao)}})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
-        f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (y.now - x.now) || (x.from - y.from)),\n'
+        f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), cond: cellLabels(hard).slice(0, 10), metar: metars[r.icao] ? {{raw: metars[r.icao].raw, obs: metars[r.icao].obs, prev: metars[r.icao].prev || null}} : null}}; }}).sort((x, y) => (y.now - x.now) || (x.from - y.from)),\n'
         '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
         '  $("#legendCodes").textContent = ')
@@ -151,6 +151,82 @@ s = rep(s, "const W = REP_COLS.map((h, i) => Math.max(h.length, ...cells.map(c =
 s = rep(s, "out.push(line(cells[k])); }); }", "{ const parts = cells[k].map(x => String(x).split(\"\\n\")), nl = Math.max(...parts.map(q => q.length)); for (let j = 0; j < nl; j++) out.push(line(parts.map(q => q[j] || \"\"))); } }); }")
 s = rep(s, '${i === 2 ? ";font-family:Consolas,monospace" : ""}">${esc(c)}</td>`', '${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\\n/g, "<br>")}</td>`')
 
+# 3h) painel do aeroporto: os dois últimos METAR e o TAF anterior, com o que mudou assinalado; o anterior pode esconder-se
+s = rep(s, """    metarStatus = "ok";
+    return out;""", """    /* guarda o METAR anterior de cada aeroporto: vem do Worker (vários METAR) ou do que este browser já tinha */
+    const hist = store.get("tafmon.mhist", {});
+    for (const ic of Object.keys(out)){
+      const all = (byIc[ic] || []).sort((a, b) => b.obs - a.obs).filter((m, k, A) => k === 0 || m.obs !== A[k - 1].obs);
+      let prev = all[1] || null;
+      const H = hist[ic];
+      if (!prev && H){ if (H.obs < out[ic].obs) prev = {raw: H.raw, obs: H.obs}; else if (H.obs === out[ic].obs && H.prev) prev = H.prev; }
+      out[ic].prev = prev;
+      hist[ic] = {raw: out[ic].raw, obs: out[ic].obs, prev};
+    }
+    store.set("tafmon.mhist", hist);
+    metarStatus = "ok";
+    return out;""")
+s = rep(s, """    const out = {};
+    for (const x of arr) if (x.icaoId && x.rawOb){
+      const obs = x.obsTime ? x.obsTime * 1000 : Date.parse(x.reportTime || "");""", """    const out = {}, byIc = {};
+    for (const x of arr) if (x.icaoId && x.rawOb){
+      const obs = x.obsTime ? x.obsTime * 1000 : Date.parse(x.reportTime || "");
+      (byIc[x.icaoId] = byIc[x.icaoId] || []).push({raw: x.rawOb, obs});""")
+NEW_METAR = r'''/* tokens que mudaram em relação ao outro texto (ignora o tipo, o aeroporto e a hora) */
+/* a parte principal compara-se com a parte principal; a tendência / os grupos de mudança com os grupos de mudança */
+function diffSegs(raw){ let seg = 0; return String(raw || "").split(/\s+/).map(t => { if (/^(TEMPO|BECMG|NOSIG|RMK|PROB\d{2})$/.test(t) || /^FM\d{6}$/.test(t)) seg = 1; return seg + ":" + t; }); }
+function diffIdx(a, b){
+  const cnt = {}; diffSegs(b).forEach(k => cnt[k] = (cnt[k] || 0) + 1);
+  const out = new Set();
+  diffSegs(a).forEach((k, i) => {
+    const t = k.slice(2);
+    if (/^\d{6}Z$/.test(t) || /^\d{4}\/\d{4}$/.test(t) && i < 5 || (i < 4 && /^(METAR|SPECI|TAF|AMD|COR|AUTO|[A-Z]{4})$/.test(t))) return;
+    if (cnt[k]) cnt[k]--; else out.add(i);
+  });
+  return out;
+}
+const showPrev = () => store.get("tafmon.showprev", true);
+function metarToksHtml(icao, raw, chg){
+  let trend = false;
+  return String(raw).split(/\s+/).map((t, ix) => {
+    let h;
+    if (/^(TEMPO|BECMG|NOSIG|RMK)$/.test(t)){ trend = true; h = `<span class="kw">${esc(t)}</span>`; }
+    else if (/^(METAR|SPECI|COR|AUTO)$/.test(t)) h = `<span class="kw">${esc(t)}</span>`;
+    else { const kc = tokenCat(t, icao); h = kc ? `<span class="${trend ? "ign" : "hit k-" + kc}">${esc(t)}</span>` : esc(t); }
+    return chg && chg.has(ix) ? `<mark class="chg">${h}</mark>` : h;
+  }).join(" ");
+}
+const prevTog = () => `<button type="button" class="prevtog" data-prevtog aria-pressed="${showPrev()}">${showPrev() ? "Esconder anterior" : "Mostrar anterior"}</button>`;
+function metarHtml(icao){
+  const M = metars[icao];
+  if (!M){
+    const why = metarStatus === "old-worker" ? "Atualize o código do Worker para receber METAR." : metarStatus === "error" ? "Não foi possível obter METAR." : cfg.mode === "manual" ? "Cole também o METAR (linha começada por METAR) para o ver aqui." : "Sem METAR para este aeroporto.";
+    return `<div class="d-sec"><h3>METAR</h3><p class="hint" style="margin:0">${why}</p></div>`;
+  }
+  const age = Math.round((Date.now() - M.obs) / 60000), P = M.prev;
+  let h = `<div class="d-sec"><h3>METAR · ${fmtDHZ(M.obs)} · há ${age < 60 ? age + " min" : (age / 60).toFixed(1).replace(".", ",") + " h"}${age > 70 ? ` <span style="color:var(--t-amb)">desatualizado</span>` : ""}</h3>
+    <div class="raw">${metarToksHtml(icao, M.raw, P ? diffIdx(M.raw, P.raw) : null)}</div>`;
+  if (P && showPrev()) h += `<div class="prevlab">Anterior · ${fmtDHZ(P.obs)}</div><div class="raw prev">${metarToksHtml(icao, P.raw, diffIdx(P.raw, M.raw))}</div>`;
+  if (P) h += `<p class="hint chg-hint"><mark class="chg">assinalado</mark> = o que mudou entre os dois METAR ${prevTog()}</p>`;
+  return h + `</div>`;
+}
+'''
+a = s.index('function metarHtml(icao){'); b = s.index('\nasync function load(){', a)
+s = s[:a] + NEW_METAR + s[b:]
+# TAF: assinala o que mudou em relação ao TAF anterior (guardado até 24 h) e mostra o anterior por baixo
+s = rep(s, '''    // TAF com destaque
+    let raw = "", open = false;''', '''    // TAF com destaque
+    let raw = "", open = false;
+    const TP = tafChanged[T.icao] && tafChanged[T.icao].prevRaw, tCnt = {};
+    if (TP) String(TP).split(/\\s+/).forEach(t => tCnt[t] = (tCnt[t] || 0) + 1);
+    const tChg = t => { if (!TP || /^\\d{6}Z$/.test(t)) return false; if (tCnt[t]){ tCnt[t]--; return false; } return true; };''')
+s = rep(s, '''      raw += (cls ? `<span class="${cls}">${esc(tk.t)}</span>` : esc(tk.t)) + " ";''', '''      { const ch = tChg(tk.t); raw += (ch ? '<mark class="chg">' : "") + (cls ? `<span class="${cls}">${esc(tk.t)}</span>` : esc(tk.t)) + (ch ? "</mark>" : "") + " "; }''')
+s = rep(s, '''    h += `<div class="d-sec"><h3>TAF</h3><div class="raw">${raw}</div></div>`;''', '''    h += `<div class="d-sec"><h3>TAF</h3><div class="raw">${raw}</div>`;
+    if (TP && showPrev()) h += `<div class="prevlab">TAF anterior</div><div class="raw prev">${(() => { const tpn = String(TP).replace(/\\s+/g, " ").trim(), dd = diffIdx(tpn, T.raw); return tpn.split(" ").map((t, ix) => dd.has(ix) ? `<mark class="chg">${esc(t)}</mark>` : esc(t)).join(" "); })()}</div>`;
+    if (TP) h += `<p class="hint chg-hint"><mark class="chg">assinalado</mark> = o que mudou em relação ao TAF anterior ${prevTog()}</p>`;
+    h += `</div>`;''')
+s = rep(s, '.raw{font:400 13.5px/1.75 var(--f-mono);', '.raw .chg,.chg-hint .chg{background:rgba(255,196,0,.32);color:inherit;border-radius:3px;box-shadow:0 0 0 1px rgba(224,161,0,.55);padding:0 1px}.raw.prev{opacity:.78;font-size:12.5px;margin-top:4px}.prevlab{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 2px}.chg-hint{margin:6px 0 0;font-size:12px}.prevtog{margin-left:8px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0}.prevtog:hover{color:inherit}\\n.raw{font:400 13.5px/1.75 var(--f-mono);')
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
@@ -180,6 +256,7 @@ s = rep(s, main_end,
         '    setTimeout(() => { const b = $("#banner"); b.innerHTML = "<b>As definições não foram guardadas.</b> <span>" + esc(d.error || "Erro desconhecido") + "</span>"; b.className = "banner err"; b.hidden = false; }, 300);\n'
         '  }\n'
         '});\n'
+        '$("#detail").addEventListener("click", e => { if (!e.target.closest("[data-prevtog]")) return; e.stopPropagation(); store.set("tafmon.showprev", !showPrev()); const t0 = Math.floor(Date.now() / HOUR) * HOUR; renderDetail(Array.from({length: +cfg.hours || 30}, (_, k) => t0 + k * HOUR)); }, true);\n'
         '/* estrela de favorito na grelha: não abre o painel, avisa o portal */\n'
         '$("#grid").addEventListener("click", e => { const st = e.target.closest(".tfav"); if (!st) return; e.stopPropagation(); e.preventDefault(); const ic = st.dataset.fav; window.parent.postMessage({type: "taf-fav", icao: ic, on: !isFavAp(ic)}, location.origin); }, true);\n'
         '$("#grid").addEventListener("keydown", e => { const st = e.target.closest && e.target.closest(".tfav"); if (st && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); e.stopPropagation(); st.click(); } }, true);\n'
