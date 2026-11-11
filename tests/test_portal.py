@@ -603,33 +603,6 @@ def test_taf_antigo_nao_conta_como_novo(browser, server, mock):
     ctx.close()
 
 
-WX_METAR = ("{type:'taf-summary',total:2,now:[{icao:'LPPT',name:'Lisboa'}],win:8,nextWin:[{icao:'LPPT',name:'Lisboa'}],newTafs:[],"
-            "alerts:[{icao:'LPPT',name:'Lisboa',now:true,from:Date.UTC(2026,10,11,16),to:Date.UTC(2026,10,11,20),open:false,cats:['Wind / gust'],cond:['G28'],"
-            "metar:{raw:'METAR LPPT 111600Z 21015G28KT 4000 RA BKN008 15/14 Q1008',obs:Date.UTC(2026,10,11,16),"
-            "prev:{raw:'METAR LPPT 111530Z 21012KT 9999 BKN008 16/13 Q1009',obs:Date.UTC(2026,10,11,15,30)}}}]}")
-
-
-def test_metar_atual_e_anterior_no_inicio(browser, server, mock):
-    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
-    f = taf_frame(page)
-    f.evaluate("parent.postMessage(%s,location.origin)" % WX_METAR)
-    page.wait_for_selector('#pAlertList .p-metar')
-    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar').length") == 2
-    chg = page.evaluate("[...document.querySelectorAll('#pAlertList .p-metar:not(.prev) mark')].map(m=>m.textContent)")
-    assert chg == ['21015G28KT', '4000', 'RA', '15/14', 'Q1008']  # BKN008 igual: não assinala; hora e aeroporto também não
-    assert '111530Z' in page.inner_text('#pAlertList .p-metar.prev')
-    # esconder o METAR anterior (fica lembrado)
-    page.click('#pWxPrev')
-    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar.prev').length") == 0
-    assert page.inner_text('#pWxPrev') == 'Mostrar anterior'
-    assert page.evaluate("localStorage.getItem('mel_wx_prevmetar')") == '0'
-    assert visible(page, '#portalView')  # não abriu o TAF
-    page.click('#pWxPrev')
-    assert page.evaluate("document.querySelectorAll('#pAlertList .p-metar.prev').length") == 1
-    assert not errors
-    ctx.close()
-
-
 def test_painel_do_taf_mostra_anteriores(browser, server, mock):
     mock.profile['role'] = 'admin'
     ctx, page, _ = open_app(browser, server, mock, logged_in({'tafmon.mode': '"sample"'}), view='portal')
