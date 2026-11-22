@@ -388,6 +388,9 @@ function alertsAt(all, icao, t){
   else if (best.name !== "TS") cond = [...new Set(toks)].slice(0, 2).join(" ");
   return {name: best.name, cond, full: repFullName(best.name, [cond])};
 }
+/* voos por zona (Portugal, Europa, América do Norte, América do Sul, África) e, em cada zona, por hora de chegada */
+const FLT_ZONE_ORDER = [0, 1, 3, 2, 4, 5];
+const fltZone = ic => { const z = FLT_ZONE_ORDER.indexOf(repZone(ic)); return z < 0 ? 9 : z; };
 const hm = t => t == null ? "" : pad(new Date(t).getUTCHours()) + pad(new Date(t).getUTCMinutes()) + "Z";
 const hmE = (t, est) => t == null ? "" : (est ? "~" : "") + hm(t);
 const apIata = ic => iataOf(ic) || ic;
@@ -427,7 +430,7 @@ function flightRows(txt){
     f.alert = a;
     if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: tA, est: !!f.etaEst}, a));
   }
-  rows.sort((x, y) => repSev(x.name) - repSev(y.name) || x.t - y.t);
+  rows.sort((x, y) => fltZone(x.ap) - fltZone(y.ap) || x.t - y.t || repSev(x.name) - repSev(y.name));
   return {P, rows, text: txt};
 }
 let fltCache = null;
@@ -472,7 +475,7 @@ function postFlights(st){
     window.parent.postMessage({type: "taf-flights", has: !!(st && st.text), name: (st && st.name) || "", at: (st && st.at) || null,
       total: C ? C.P.flights.length : 0, restr: [...fl.values()].filter(v => v === 2).length, alert: [...fl.values()].filter(v => v === 1).length,
       outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0, landed: C ? C.P.flights.filter(f => f.landed).length : 0,
-      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
+      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
   } catch(e){}
 }
 let fltLast = null;
@@ -490,7 +493,7 @@ function renderFlights(){
   const COLS = ["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "ONDE", "CONDIÇÃO", "ALERTA"];
   const th = h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`;
   const td = (c, sty) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${sty || ""}">${esc(c)}</td>`;
-  const zs = rows.slice().sort((x, y) => repZone(x.ap) - repZone(y.ap) || repSev(x.name) - repSev(y.name) || x.t - y.t);
+  const zs = rows.slice().sort((x, y) => fltZone(x.ap) - fltZone(y.ap) || x.t - y.t || repSev(x.name) - repSev(y.name));
   let html;
   if (zs.length){
     html = `<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:10.5pt"><tr>${COLS.map(th).join("")}</tr>` + zs.map((r, k) => {
