@@ -292,6 +292,16 @@ async function pdfLines(file){
   return lines;
 }
 /* cada linha com um voo TP: origem e destino (IATA ou ICAO da lista), STD, STA e, se houver, ETD e ETA (UTC) */
+/* coordenadas dos aeroportos (OurAirports, domínio público) para estimar o tempo de voo */
+const AP_COORD = {"BIKF":[63.99,-22.61],"CYHM":[43.17,-79.93],"CYHZ":[44.88,-63.51],"CYJT":[48.54,-58.55],"CYOW":[45.32,-75.67],"CYQX":[48.94,-54.57],"CYUL":[45.47,-73.74],"CYYR":[53.32,-60.43],"CYYT":[47.62,-52.75],"CYYZ":[43.68,-79.63],"DAAG":[36.69,3.21],"DAAT":[22.81,5.45],"DAUG":[32.38,3.79],"DFFD":[12.35,-1.51],"DGAA":[5.61,-0.17],"DIAP":[5.26,-3.93],"DNKN":[12.05,8.52],"DNMM":[6.58,3.32],"DRRN":[13.48,2.18],"DXXX":[6.17,1.25],"EBBR":[50.9,4.48],"EDDB":[52.36,13.5],"EDDF":[50.03,8.56],"EDDH":[53.63,9.99],"EDDL":[51.29,6.77],"EDDM":[48.35,11.79],"EDDS":[48.69,9.22],"EFHK":[60.32,24.96],"EGCC":[53.35,-2.28],"EGKK":[51.15,-0.19],"EGLL":[51.47,-0.46],"EGPH":[55.95,-3.37],"EHAM":[52.31,4.76],"EIDW":[53.43,-6.26],"EINN":[52.7,-8.92],"EKCH":[55.62,12.66],"ELLX":[49.63,6.21],"ENGM":[60.19,11.1],"EPWA":[52.17,20.97],"ESSA":[59.65,17.93],"FABL":[-29.09,26.3],"FALE":[-29.61,31.12],"FAOR":[-26.14,28.25],"FCBB":[-4.25,15.25],"FCPP":[-4.82,11.89],"FGSL":[3.76,8.71],"FKKD":[4.01,9.72],"FLKK":[-15.33,28.45],"FNBJ":[-9.05,13.5],"FNLU":[-8.86,13.23],"FOOL":[0.46,9.41],"FPST":[0.38,6.71],"FQMA":[-25.92,32.57],"FTTJ":[12.13,15.03],"FZAA":[-4.39,15.44],"FZQA":[-11.59,27.53],"GBYD":[13.34,-16.65],"GCLP":[27.93,-15.39],"GCTS":[28.04,-16.57],"GCXO":[28.48,-16.34],"GGOV":[11.89,-15.65],"GMAD":[30.32,-9.41],"GMFO":[34.79,-1.93],"GMML":[27.14,-13.22],"GMMN":[33.37,-7.59],"GMMX":[31.6,-8.04],"GOBD":[14.67,-17.07],"GUCY":[9.58,-13.61],"GVAC":[16.74,-22.95],"GVBA":[16.14,-22.89],"GVNP":[14.94,-23.48],"GVSV":[16.83,-25.06],"KBGR":[44.81,-68.83],"KBOS":[42.36,-71.01],"KCPR":[42.91,-106.46],"KDTW":[42.21,-83.35],"KEWR":[40.69,-74.17],"KFAR":[46.92,-96.82],"KIAD":[38.94,-77.46],"KJFK":[40.64,-73.78],"KLAS":[36.08,-115.15],"KLAX":[33.94,-118.41],"KMCO":[28.43,-81.31],"KMIA":[25.8,-80.29],"KMSP":[44.88,-93.22],"KOAK":[37.72,-122.22],"KORD":[41.98,-87.9],"KPHL":[39.87,-75.24],"KPSM":[43.08,-70.82],"KSFO":[37.62,-122.37],"KSJC":[37.36,-121.93],"KSLC":[40.79,-111.98],"KSMF":[38.7,-121.59],"LBSF":[42.7,23.42],"LCLK":[34.88,33.62],"LDZA":[45.74,16.07],"LEBB":[43.3,-2.91],"LEBL":[41.3,2.08],"LEMD":[40.49,-3.57],"LEMG":[36.68,-4.5],"LEVC":[39.49,-0.48],"LEVX":[42.23,-8.63],"LEZL":[37.42,-5.89],"LFBD":[44.83,-0.72],"LFBO":[43.63,1.36],"LFLL":[45.73,5.09],"LFML":[43.44,5.21],"LFMN":[43.66,7.22],"LFPG":[49.01,2.55],"LFPO":[48.73,2.36],"LGAV":[37.94,23.94],"LHBP":[47.43,19.26],"LIMC":[45.63,8.73],"LIPE":[44.54,11.29],"LIPZ":[45.51,12.35],"LIRF":[41.8,12.25],"LIRN":[40.89,14.29],"LIRQ":[43.81,11.2],"LJLJ":[46.22,14.46],"LKPR":[50.1,14.26],"LLBG":[32.01,34.89],"LOWW":[48.11,16.57],"LPAZ":[36.97,-25.17],"LPFR":[37.02,-7.97],"LPHR":[38.52,-28.72],"LPLA":[38.76,-27.09],"LPMA":[32.7,-16.77],"LPPD":[37.74,-25.7],"LPPR":[41.25,-8.68],"LPPS":[33.07,-16.35],"LPPT":[38.78,-9.14],"LROP":[44.57,26.1],"LSGG":[46.24,6.11],"LSZH":[47.46,8.55],"MDPC":[18.57,-68.36],"MDSD":[18.43,-69.67],"MMCZ":[20.51,-86.93],"MMMD":[20.93,-89.65],"MMUN":[21.04,-86.87],"MUHA":[22.99,-82.41],"MYNN":[25.04,-77.47],"SBBE":[-1.38,-48.48],"SBBR":[-15.87,-47.92],"SBCF":[-19.64,-43.97],"SBCT":[-25.53,-49.18],"SBFL":[-27.67,-48.55],"SBFZ":[-3.78,-38.53],"SBGL":[-22.81,-43.25],"SBGR":[-23.43,-46.47],"SBKP":[-23.01,-47.13],"SBMO":[-9.51,-35.79],"SBPA":[-29.99,-51.17],"SBRF":[-8.13,-34.92],"SBSG":[-5.77,-35.37],"SBSL":[-2.59,-44.24],"SBSV":[-12.91,-38.32],"SVMC":[10.56,-71.73],"SVMG":[10.91,-63.97],"SVMI":[10.6,-66.99],"SVVA":[10.15,-67.93],"TAPA":[17.14,-61.79],"TFFF":[14.59,-61.0],"TFFR":[16.27,-61.53],"TJSJ":[18.44,-66.0],"TNCA":[12.5,-70.01],"TNCC":[12.19,-68.96],"TXKF":[32.36,-64.68]};
+/* tempo de voo (bloco) estimado pela distância: 43 min + distância / 453 kt; para oeste até +6 % (vento de frente) */
+function blockMin(o, d){
+  const A = AP_COORD[o], B = AP_COORD[d]; if (!A || !B) return null;
+  const R = 3440.065, r = Math.PI / 180, p1 = A[0] * r, p2 = B[0] * r, dl = (B[1] - A[1]) * r, dp = p2 - p1;
+  const nm = 2 * R * Math.asin(Math.sqrt(Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2));
+  const de = ((B[1] - A[1] + 540) % 360) - 180, f = 1 + 0.06 * Math.max(-1, Math.min(1, -de / 30));
+  return Math.round(43 + nm * f / 7.55);
+}
 const FLT_MON = {JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11, FEV: 1, ABR: 3, MAI: 4, AGO: 7, SET: 8, OUT: 9, DEZ: 11};
 /* data numa linha (22NOV, 22NOV26, 22/11, 22/11/2026, 2026-11-22): devolve o dia em UTC (ms) e o texto sem a data */
 function fltDate(line){
@@ -302,7 +312,7 @@ function fltDate(line){
   /* dd/mm ou dd/mm/aaaa; com pontos só com o ano (dd.mm.aaaa), para não confundir com horas como 10.30 */
   m = /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/.exec(line) || /\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/.exec(line);
   if (m && +m[1] >= 1 && +m[1] <= 31 && +m[2] >= 1 && +m[2] <= 12) return {day: fix(+m[1], +m[2] - 1, m[3]), rest: line.replace(m[0], " ")};
-  m = /\b(\d{1,2})\s?(JAN|FEB|FEV|MAR|APR|ABR|MAY|MAI|JUN|JUL|AUG|AGO|SEP|SET|OCT|OUT|NOV|DEC|DEZ)[A-Z]*\s?(\d{2}(?:\d{2})?)?\b/i.exec(line);
+  m = /\b(\d{1,2})[\s-]?(JAN|FEB|FEV|MAR|APR|ABR|MAY|MAI|JUN|JUL|AUG|AGO|SEP|SET|OCT|OUT|NOV|DEC|DEZ)[A-Z]*[\s-]?(\d{2}(?:\d{2})?)?\b/i.exec(line);
   if (m && +m[1] >= 1 && +m[1] <= 31) return {day: fix(+m[1], FLT_MON[m[2].toUpperCase()], m[3]), rest: line.replace(m[0], " ")};
   return null;
 }
@@ -313,7 +323,7 @@ function parseFlights(txt){
   for (const raw of String(txt || "").split(/\r?\n/)){
     const line0 = raw.trim(); if (!line0) continue;
     const dt = fltDate(line0), line = dt ? dt.rest : line0;
-    const fm = /\b(TP|TAP)\s?0*(\d{1,4}[A-Z]?)\b/i.exec(line);
+    const fm = /\b(TP|TAP)\s*0*(\d{1,4}[A-Z]?)\b/i.exec(line);
     if (!fm){ if (dt) curDay = dt.day; continue; }
     const fDay = dt ? dt.day : curDay;
     const num = fm[2].replace(/[A-Z]$/i, "");
@@ -323,6 +333,21 @@ function parseFlights(txt){
       if (/^[A-Z]{4}$/.test(t) && AIRPORTS[t]) aps.push(t);
       else if (/^[A-Z]{3}$/.test(t) && IATA2ICAO[t]) aps.push(IATA2ICAO[t]);
       else if (/^[A-Z]{3}$/.test(t)) unk.push(t);
+    }
+    /* lista do sistema de operações: STD e ETD em dia-hora-minuto (220850 = dia 22 às 08:50Z; 220945E = ETD estimada).
+       Não tem hora de chegada: a ETA é estimada pelo tempo de voo (distância) a partir da ETD ou, sem ETD, da STD. */
+    const dhm = [...rest.matchAll(/(?:^|\s)(\d{2})([01]\d|2[0-3])([0-5]\d)(E?)(?=\s|$)/g)];
+    if (dhm.length && aps.length >= 2){
+      const base = new Date(curDay != null ? curDay : Date.now());
+      const mk = m => { const dd = +m[1]; let t = Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), dd, +m[2], +m[3]);
+        if (t - now > 15 * 86400e3) t = Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - 1, dd, +m[2], +m[3]);
+        if (now - t > 15 * 86400e3) t = Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, dd, +m[2], +m[3]);
+        return t; };
+      const sM = dhm.find(m => !m[4]) || dhm[0], eM = dhm.find(m => m[4] && m !== sM);
+      const fl = "TP" + fm[2].toUpperCase(), std = mk(sM), etd = eM ? mk(eM) : null, bm = blockMin(aps[0], aps[1]);
+      const key = fl + "|" + aps[0] + "|" + std; if (seen.has(key)) continue; seen.add(key);
+      out.push({fl, org: aps[0], dst: aps[1], std, sta: null, etd, eta: bm != null ? (etd ?? std) + bm * 60000 : null, etaEst: true, block: bm});
+      continue;
     }
     /* horas: primeiro as escritas com ":" (07:30); só sem essas se usam as de 4 algarismos (0730) */
     const tc = [...rest.matchAll(/(?:^|[^\d])([01]?\d|2[0-3]):([0-5]\d)(?:Z|UTC)?(?![\d])/g)].map(m => +m[1] * 60 + +m[2]);
@@ -359,6 +384,7 @@ function alertsAt(all, icao, t){
   return {name: best.name, cond, full: repFullName(best.name, [cond])};
 }
 const hm = t => t == null ? "" : pad(new Date(t).getUTCHours()) + pad(new Date(t).getUTCMinutes()) + "Z";
+const hmE = (t, est) => t == null ? "" : (est ? "~" : "") + hm(t);
 const apIata = ic => iataOf(ic) || ic;
 const fltStore = {
   get(){ return store.get("tafmon.voos", null); },
@@ -376,9 +402,12 @@ function flightRows(txt){
   const all = allAlertItems();
   const rows = [];
   for (const f of P.flights){
-    const a = alertsAt(all, f.dst, f.eta ?? f.sta);
+    const tA = f.eta ?? f.sta;
+    if (tA == null){ f.alert = null; continue; }
+    const cand = (f.etaEst ? [tA - 30 * 60000, tA, tA + 30 * 60000] : [tA]).map(t => alertsAt(all, f.dst, t)).filter(Boolean);
+    const a = cand.sort((x, y) => repSev(x.name) - repSev(y.name))[0] || null;
     f.alert = a;
-    if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: f.eta ?? f.sta}, a));
+    if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: tA, est: !!f.etaEst}, a));
   }
   rows.sort((x, y) => repSev(x.name) - repSev(y.name) || x.t - y.t);
   return {P, rows};
@@ -395,8 +424,8 @@ function decorateFlights(){
       const th = document.querySelector(`#grid tr[data-icao="${ic}"] th.ap`); if (!th) continue;
       const L = list.slice().sort((a, b) => a.t - b.t);
       const show = L.slice(0, 3).map(r => {
-        const tip = `${r.f.fl} ${apIata(r.f.org)}-${apIata(r.f.dst)} · ${r.side === "CHEGADA" ? "chegada" : "partida"} ${hm(r.t)} · ${r.cond} · ${r.full}`;
-        return `<span class="k-${FLT_KEY[r.name] || "int"}" title="${esc(tip)}">${r.side === "CHEGADA" ? "↓" : "↑"} <b>${r.f.fl}</b> ${hm(r.t)} <i>${esc(r.name)}</i></span>`;
+        const tip = `${r.f.fl} ${apIata(r.f.org)}-${apIata(r.f.dst)} · chegada ${hmE(r.t, r.est)}${r.est ? " (estimada pelo tempo de voo)" : ""} · ${r.cond} · ${r.full}`;
+        return `<span class="k-${FLT_KEY[r.name] || "int"}" title="${esc(tip)}">${r.side === "CHEGADA" ? "↓" : "↑"} <b>${r.f.fl}</b> ${hmE(r.t, r.est)} <i>${esc(r.name)}</i></span>`;
       });
       if (L.length > 3) show.push(`<span>+${L.length - 3} voos</span>`);
       th.insertAdjacentHTML("beforeend", `<div class="ap-flt">${show.join("")}</div>`);
@@ -413,7 +442,7 @@ function postFlights(st){
     window.parent.postMessage({type: "taf-flights", has: !!(st && st.text), name: (st && st.name) || "", at: (st && st.at) || null,
       total: C ? C.P.flights.length : 0, restr: [...fl.values()].filter(v => v === 2).length, alert: [...fl.values()].filter(v => v === 1).length,
       outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0,
-      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, icao: r.ap, name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
+      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
   } catch(e){}
 }
 let fltLast = null;
@@ -437,14 +466,15 @@ function renderFlights(){
     html = `<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:10.5pt"><tr>${COLS.map(th).join("")}</tr>` + zs.map((r, k) => {
       const z = repZone(r.ap), zh = k === 0 || repZone(zs[k - 1].ap) !== z ? `<tr><td colspan="${COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : "";
       const f = r.f;
-      return zh + `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(hm(f.std))}${td(hm(f.sta))}${td(hm(f.etd))}${td(hm(f.eta), ";font-weight:bold")}${td(r.side + " " + apIata(r.ap))}${td(r.cond, ";font-family:Consolas,monospace")}${td(r.full, ";font-weight:bold")}</tr>`;
+      return zh + `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(hm(f.std))}${td(hm(f.sta))}${td(hm(f.etd))}${td(hmE(f.eta, f.etaEst), ";font-weight:bold")}${td(r.side + " " + apIata(r.ap))}${td(r.cond, ";font-family:Consolas,monospace")}${td(r.full, ";font-weight:bold")}</tr>`;
     }).join("") + `</table>`;
   } else html = P.flights.length ? `<p style="margin:0">Nenhum voo afetado pelos alertas atuais.</p>` : `<p class="hint" style="margin:0">Carregue o PDF da lista de voos.</p>`;
   $("#fltOut").innerHTML = html;
   $("#fltAll").innerHTML = P.flights.length ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "DESTINO À CHEGADA"].map(th).join("")}</tr>` +
-    P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(fmtDHZ(f.sta))}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? fmtDHZ(f.eta) : "")}${td(f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : "")}</tr>`).join("") + `</table>` : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
+    P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(f.sta ? fmtDHZ(f.sta) : "")}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? (f.etaEst ? "~" : "") + fmtDHZ(f.eta) + (f.etaEst && f.block ? " (voo ~" + Math.floor(f.block / 60) + "h" + pad(f.block % 60) + ")" : "") : f.etaEst ? "sem estimativa" : "")}${td(f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : "")}</tr>`).join("") + `</table>` +
+    (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo pela distância. O alerta no destino conta entre 30 min antes e 30 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
   fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
-    text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hm(r.f.eta), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
+    text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hmE(r.f.eta, r.f.etaEst), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
 }
 async function fltLoadFile(file){
   if (!file) return;

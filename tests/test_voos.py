@@ -135,3 +135,24 @@ def test_cruzamento_nao_depende_das_escolhas_do_relatorio(browser, server, mock)
     assert f.evaluate("repUI.cats.includes('cig')") is False and f.evaluate("cfg.destIcao") == 'EGLL'  # escolhas do Relatório intactas
     assert not errors
     ctx.close()
+
+
+def test_lista_do_sistema_de_operacoes_std_em_dia_hora_minuto(browser, server, mock):
+    """Formato da Flight List (Time/Team/User/AL/FLT/.../DEP/DEST/ACFT/STD/ETD/AIR/CTOT): sem hora de chegada,
+    STD/ETD em dia-hora-minuto, "TP" separado do número por vários espaços; a ETA é estimada pelo tempo de voo."""
+    ctx, page, errors, f = _frame_ready(browser, server, mock)
+    txt = ('ALL FLIGHT 22-NOV-2026 0600 22-NOV-2026 2359 User defined\n'
+           'Time Team User AL FLT ATC C/S Day DEP DEST ACFT STD ETD AIR CTOT Status\n'
+           '0550 -   LM   TP   016 TAP016   22   REC LIS       CSXXA 220850           0903   .... FP:3 B:0\n'
+           '0645 -   RM   TP 1527 TAP1527 22     LIS ACC       CSXXB 220935 220945E 0952     .... FP:3 B:0\n'
+           '1700 -   -    TP   646 TAP46RU 22    LIS BRU       CSXXC 222000           .... FP:0 B:0')
+    r = f.evaluate("""t => parseFlights(t).flights.map(x => [x.fl, x.org, x.dst, new Date(x.std).toISOString().slice(0, 16),
+        x.etd ? new Date(x.etd).toISOString().slice(11, 16) : '', x.etaEst, Math.round((x.eta - (x.etd || x.std)) / 60000)])""", txt)
+    assert [x[:5] for x in r] == [['TP16', 'SBRF', 'LPPT', '2026-11-22T08:50', ''],
+                                  ['TP1527', 'LPPT', 'DGAA', '2026-11-22T09:35', '09:45'],
+                                  ['TP646', 'LPPT', 'EBBR', '2026-11-22T20:00', '']]
+    assert all(x[5] for x in r)
+    assert 140 <= r[2][6] <= 185      # LIS-BRU: cerca de 2h40
+    assert 400 <= r[0][6] <= 480      # REC-LIS: cerca de 7h30
+    assert not errors
+    ctx.close()
