@@ -2666,23 +2666,28 @@ function blockMin(o, d){
   const de = ((B[1] - A[1] + 540) % 360) - 180, f = 1 + 0.06 * Math.max(-1, Math.min(1, -de / 30));
   return Math.round(43 + nm * f / 7.55);
 }
-/* tempos de bloco carregados no Início (Excel "block_times": voo, DEP, DEST, BLOCK em minutos), guardados só neste browser */
+/* tempos de bloco partilhados (Excel "block_times": voo, DEP, DEST, BLOCK em minutos), carregados por um Administrador
+   no Início e guardados nas definições do TAF do portal (Supabase, só utilizadores com sessão): valem para todos */
 let fltBlkCache = null;
 function fltBlocks(){
-  const B = store.get("tafmon.blocks", null);
+  const B = cfg && cfg.blocks;
   if (!B || !Array.isArray(B.rows)) return null;
   if (fltBlkCache && fltBlkCache.at === B.at) return fltBlkCache;
-  const byKey = {}, byRoute = {};
-  for (const [fl, o, d, m] of B.rows){ if (!(m > 0)) continue; byKey[fl + "|" + o + "|" + d] = m; (byRoute[o + "|" + d] = byRoute[o + "|" + d] || []).push(m); }
+  const byKey = {}, byRoute = {}, byFl = {};
+  for (const [fl, o, d, m] of B.rows){ if (!(m > 0)) continue; byKey[fl + "|" + o + "|" + d] = m; (byRoute[o + "|" + d] = byRoute[o + "|" + d] || []).push(m); (byFl[fl] = byFl[fl] || []).push(o + "→" + d); }
   for (const k in byRoute){ const L = byRoute[k].sort((a, b) => a - b); byRoute[k] = L[Math.floor(L.length / 2)]; }
-  return fltBlkCache = {at: B.at, byKey, byRoute, n: B.rows.length, name: B.name || ""};
+  return fltBlkCache = {at: B.at, byKey, byRoute, byFl, n: B.rows.length, name: B.name || ""};
 }
 /* tempo de voo: 1) o do voo na tabela de tempos de bloco; 2) o da rota na tabela; 3) estimado pela distância */
 function blockFor(fl, o, d){
   const T = fltBlocks(), oI = apIata(o), dI = apIata(d);
   if (T){
     if (T.byKey[fl + "|" + oI + "|" + dI]) return {min: T.byKey[fl + "|" + oI + "|" + dI], src: "tabela"};
-    if (T.byRoute[oI + "|" + dI]) return {min: T.byRoute[oI + "|" + dI], src: "rota"};
+    /* voo que não está na tabela com esta rota: extra, renumerado ou com outra rota */
+    const miss = {other: (T.byFl[fl] || []).join(", ")};
+    if (T.byRoute[oI + "|" + dI]) return {min: T.byRoute[oI + "|" + dI], src: "rota", miss};
+    const m = blockMin(o, d);
+    return {min: m, src: m != null ? "distância" : "", miss};
   }
   const m = blockMin(o, d);
   return {min: m, src: m != null ? "distância" : ""};
@@ -2731,7 +2736,7 @@ function parseFlights(txt){
       const sM = dhm.find(m => !m[4]) || dhm[0], eM = dhm.find(m => m[4] && m !== sM);
       const fl = "TP" + fm[2].toUpperCase(), std = mk(sM), etd = eM ? mk(eM) : null, bk = blockFor(fl, aps[0], aps[1]), bm = bk.min;
       const key = fl + "|" + aps[0] + "|" + std; if (seen.has(key)) continue; seen.add(key);
-      out.push({fl, org: aps[0], dst: aps[1], std, sta: null, etd, eta: bm != null ? (etd ?? std) + bm * 60000 : null, etaEst: true, block: bm, blockSrc: bk.src});
+      out.push({fl, org: aps[0], dst: aps[1], std, sta: null, etd, eta: bm != null ? (etd ?? std) + bm * 60000 : null, etaEst: true, block: bm, blockSrc: bk.src, miss: bk.miss || null});
       continue;
     }
     /* horas: primeiro as escritas com ":" (07:30); só sem essas se usam as de 4 algarismos (0730) */
@@ -2854,7 +2859,8 @@ function postFlights(st){
     if (C) C.rows.forEach(r => { const k = r.f.fl + "|" + r.f.std, w = FLT_RESTR.has(r.name) ? 2 : 1; fl.set(k, Math.max(fl.get(k) || 0, w)); });
     window.parent.postMessage({type: "taf-flights", has: !!(st && st.text), name: (st && st.name) || "", at: (st && st.at) || null,
       total: C ? C.P.flights.length : 0, restr: [...fl.values()].filter(v => v === 2).length, alert: [...fl.values()].filter(v => v === 1).length,
-      blocks: (fltBlocks() || {}).n || 0, blkSrc: C ? C.P.flights.reduce((o, f) => { if (f.blockSrc) o[f.blockSrc] = (o[f.blockSrc] || 0) + 1; return o; }, {}) : {},
+      blocks: (fltBlocks() || {}).n || 0,
+      missing: C && fltBlocks() ? C.P.flights.filter(f => f.miss).map(f => ({fl: f.fl, org: apIata(f.org), dst: apIata(f.dst), other: f.miss.other})) : [], blkSrc: C ? C.P.flights.reduce((o, f) => { if (f.blockSrc) o[f.blockSrc] = (o[f.blockSrc] || 0) + 1; return o; }, {}) : {},
       outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0, landed: C ? C.P.flights.filter(f => f.landed).length : 0,
       rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
   } catch(e){}
@@ -2869,6 +2875,7 @@ function renderFlights(){
   if (st && st.name) parts.push(esc(st.name) + (st.at ? " · carregado às " + hm(st.at) : ""));
   if (P.flights.length) parts.push(`${P.flights.length} voos lidos · ${P.flights.filter(f => f.landed).length} já aterraram · <b>${nAff} afetados</b>`);
   if (P.outside.length) parts.push(`fora da lista do TAF: ${esc(P.outside.join(", "))}`);
+  { const mi = P.flights.filter(f => f.miss); if (mi.length) parts.push(`<span style="color:#b26a00;font-weight:700">⚠ ${mi.length} ${mi.length === 1 ? "voo não está" : "voos não estão"} na tabela de tempos de bloco (extra ou renumerado): ${mi.map(f => esc(f.fl + " " + apIata(f.org) + "→" + apIata(f.dst)) + (f.miss.other ? " <small>(na tabela: " + esc(f.miss.other) + ")</small>" : "")).join(", ")}</span>`); }
   if (P.bad.length) parts.push(`${P.bad.length} linhas com voo não reconhecidas`);
   $("#fltInfo").innerHTML = parts.join(" · ");
   const COLS = ["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "ONDE", "CONDIÇÃO", "ALERTA"];
@@ -2886,7 +2893,7 @@ function renderFlights(){
   $("#fltOut").innerHTML = html;
   $("#fltAll").innerHTML = P.flights.length ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "DESTINO À CHEGADA"].map(th).join("")}</tr>` +
     P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(f.sta ? fmtDHZ(f.sta) : "")}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? (f.etaEst ? "~" : "") + fmtDHZ(f.eta) + (f.etaEst && f.block ? " (voo " + Math.floor(f.block / 60) + "h" + pad(f.block % 60) + " · " + (f.blockSrc || "") + ")" : "") : f.etaEst ? "sem estimativa" : "")}${td(f.landed ? "já aterrou" : f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : f.landed ? ";color:#888" : "")}</tr>`).join("") + `</table>` +
-    (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo (da tabela de tempos de bloco carregada no Início; sem ela, pela rota da tabela ou pela distância). O alerta no destino conta entre 59 min antes e 59 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
+    (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo (da tabela de tempos de bloco partilhada; voo que não está na tabela: tempo da rota ou pela distância). O alerta no destino conta entre 59 min antes e 59 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
   fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
     text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hmE(r.f.eta, r.f.etaEst), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
 }
@@ -2928,10 +2935,10 @@ window.addEventListener("message", e => {
   if (d.type === "taf-flights-file" && d.file) fltLoadFile(d.file);
   else if (d.type === "taf-flights-open") openFlights();
   else if (d.type === "taf-flights-clear"){ fltStore.set(null); $("#fltIn").value = ""; render(); }
-  else if (d.type === "taf-blocks"){ fltBlkCache = null; render(); }
+
 });
 /* outro separador ou janela mudou a lista: atualizar */
-window.addEventListener("storage", e => { if (e.key === "tafmon.voos"){ $("#fltIn").value = ""; render(); } if (e.key === "tafmon.blocks"){ fltBlkCache = null; render(); } });
+window.addEventListener("storage", e => { if (e.key === "tafmon.voos"){ $("#fltIn").value = ""; render(); } });
 function closeReport(){ $("#report").hidden = true; $("#btnReport").focus(); }
 const saveRep = () => store.set("tafmon.rep", repUI);
 $("#btnReport").addEventListener("click", openReport);
