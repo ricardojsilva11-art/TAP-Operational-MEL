@@ -399,7 +399,18 @@ const fltStore = {
    (destinos, cenários marcados, "só aeroportos visíveis na grelha") */
 function allAlertItems(){
   const keepCats = repUI.cats, keepVis = repUI.onlyVis, keepDest = cfg.destIcao;
-  try { repUI.cats = CATS.map(c => c.k); repUI.onlyVis = false; cfg.destIcao = ""; return reportItems().all; }
+  const run = dest => { cfg.destIcao = dest; return reportItems().all || []; };
+  try {
+    repUI.cats = CATS.map(c => c.k); repUI.onlyVis = false;
+    try { return run(""); }
+    catch(e){
+      /* se um aeroporto der erro, os outros continuam a contar */
+      console.warn("Voos: erro nos alertas, a calcular aeroporto a aeroporto", e);
+      const out = [];
+      for (const ic of Object.keys(AIRPORTS)){ try { out.push(...run(ic)); } catch(e2){ console.warn("Voos: alertas de " + ic + " ignorados", e2); } }
+      return out;
+    }
+  }
   finally { repUI.cats = keepCats; repUI.onlyVis = keepVis; cfg.destIcao = keepDest; }
 }
 function flightRows(txt){
@@ -434,7 +445,8 @@ function fltDetailHtml(icao){
 }
 function decorateFlights(){
   const st = fltStore.get();
-  fltCache = st && st.text ? flightRows(st.text) : null;
+  fltCache = null;
+  if (st && st.text){ try { fltCache = flightRows(st.text); } catch(e){ console.error("Voos:", e); postFlightsError("Erro ao analisar os voos: " + (e && e.message || e)); $("#fltInfo").textContent = "Erro ao analisar os voos: " + (e && e.message || e); return; } }
   if (fltCache){
     const by = {};
     fltCache.rows.forEach(r => (by[r.ap] = by[r.ap] || []).push(r));
@@ -502,7 +514,7 @@ async function fltLoadFile(file){
     if (!lines.some(l => /\S/.test(l))){ $("#fltInfo").textContent = "Este PDF não tem texto (parece uma imagem digitalizada)."; postFlightsError("Este PDF não tem texto (parece uma imagem digitalizada)."); return; }
     $("#fltIn").value = lines.join("\n");
     fltStore.set({text: $("#fltIn").value, name: file.name, at: Date.now()});
-    render();
+    try { render(); } catch(e){ console.error("Voos:", e); postFlights(fltStore.get()); }
   } catch(e){ $("#fltInfo").textContent = "Não foi possível ler o PDF: " + e.message; postFlightsError("Não foi possível ler o PDF: " + e.message); }
 }
 function postFlightsError(msg){ try { if (window.parent !== window) window.parent.postMessage({type: "taf-flights-error", error: msg}, location.origin); } catch(e){} }
