@@ -88,3 +88,45 @@ def test_sair_apaga_a_lista_de_voos(browser, server, mock):
     page.wait_for_timeout(800)
     assert page.evaluate("localStorage.getItem('tafmon.voos')") is None
     ctx.close()
+
+
+def _frame_ready(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    return ctx, page, errors, taf_frame(page)
+
+
+def test_leitura_de_datas_e_horas(browser, server, mock):
+    ctx, page, errors, f = _frame_ready(browser, server, mock)
+    r = f.evaluate("""() => {
+      const iso = t => new Date(t).toISOString().slice(0, 16);
+      const a = parseFlights('Daily flight list 22NOV26 (UTC)\\nTP1350  LIS  BRU  22:10  01:05\\nTP1352  23/11/2026  LIS  BRU  06:00  08:45');
+      const b = parseFlights('TP777 LIS BRU 2026 07:30 10:15');   // um ano solto não é hora
+      return {a: a.flights.map(x => [x.fl, iso(x.std), iso(x.sta)]), b: b.flights.map(x => [iso(x.std).slice(11), iso(x.sta).slice(11)])};
+    }""")
+    assert r['a'][0] == ['TP1350', '2026-11-22T22:10', '2026-11-23T01:05']   # data do cabeçalho; chegada no dia seguinte
+    assert r['a'][1] == ['TP1352', '2026-11-23T06:00', '2026-11-23T08:45']   # data na própria linha
+    assert r['b'] == [['07:30', '10:15']]
+    # sem data: um voo da madrugada seguinte não fica no passado
+    nxt = f.evaluate("""() => { const t = Date.now() + 14 * 3600e3, d = new Date(t), hh = String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+      const s = new Date(t - 2 * 3600e3), sh = String(s.getUTCHours()).padStart(2,'0') + ':' + String(s.getUTCMinutes()).padStart(2,'0');
+      return parseFlights(`TP9 LIS BRU ${sh} ${hh}`).flights[0].sta - Date.now(); }""")
+    assert 13 * 3600e3 < nxt < 15 * 3600e3
+    assert not errors
+    ctx.close()
+
+
+def test_cruzamento_nao_depende_das_escolhas_do_relatorio(browser, server, mock):
+    """Aeroporto fora dos destinos, cenário LVO desmarcado no Relatório e "só visíveis" ligado: o voo continua afetado."""
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, _taf_json)
+    f = taf_frame(page)
+    f.evaluate("()=>{repUI.cats=repUI.cats.filter(c=>c!=='cig');repUI.onlyVis=true;visibleIcaos=new Set(['EGLL']);window.__portalTafCfg=Object.assign({},window.__portalTafCfg||{},{destIcao:'EGLL'});cfg.destIcao='EGLL'}")
+    now = time.time()
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))",
+               f'TP1350  LHR  LIS  {_hhmm(now + 3600)}  {_hhmm(now + 3 * 3600)}')
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===1", timeout=20000)
+    assert 'LVO' in page.inner_text('#pFltList')
+    assert f.evaluate("repUI.cats.includes('cig')") is False and f.evaluate("cfg.destIcao") == 'EGLL'  # escolhas do Relatório intactas
+    assert not errors
+    ctx.close()
