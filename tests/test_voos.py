@@ -197,3 +197,16 @@ def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, moc
     assert 'VOOS · CHEGADAS (2, 2 COM ALERTA)' in f.inner_text('#detail').upper()
     assert not errors
     ctx.close()
+
+
+def test_vento_rajada_a_partir_de_35_kt(browser, server, mock):
+    ctx, page, errors, f = _frame_ready(browser, server, mock)
+    r = f.evaluate("""() => { const t = (ic, tok) => evaluate(apply(EMPTY, parseEl([tok])), ic).map(x => x.code).join(",") || "-";
+      return {wind: cfg.wind, g34: t('EGLL', '24020G34KT'), g35: t('EGLL', '24020G35KT'), w35: t('EGLL', '24035KT'), pdl26: t('LPPD', '24020G26KT'),
+              old: (() => { window.__portalTafCfg = {wind: 30}; return portalCfg().wind; })(), mine: (() => { window.__portalTafCfg = {wind: 40, windV: 3}; return portalCfg().wind; })()}; }""")
+    assert r['wind'] == 35
+    assert r['g34'] == '-' and r['g35'] != '-' and r['w35'] != '-'
+    assert r['pdl26'] != '-'                       # Açores/Madeira continuam acima de 25 kt
+    assert r['old'] == 35 and r['mine'] == 40      # definições antigas (30 kt) passam a 35; um valor escolhido depois mantém-se
+    assert not errors
+    ctx.close()

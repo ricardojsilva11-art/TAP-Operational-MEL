@@ -33,7 +33,10 @@ s = rep(s, 'let isAdmin = [ADMIN_HASH, ADMIN_HASH_FNV].includes(store.get("tafmo
         'let isAdmin = window.__portalRole === "admin"; // portal: Definições só para Administradores')
 # definições partilhadas pelo portal (Supabase): iguais para todos; só o modo (ao vivo/exemplo/manual) fica por navegador, e só para Administradores
 s = rep(s, 'if (SETTINGS_LOCKED && !isAdmin) cfg = Object.assign({}, DEFAULTS);\nasync function pinHash',
-        'function portalCfg(){ const c = Object.assign({}, DEFAULTS, window.__portalTafCfg || {}); c.mode = isAdmin ? store.get("tafmon.mode", DEFAULTS.mode) : DEFAULTS.mode; return c; }\n'
+        'function portalCfg(){ const c = Object.assign({}, DEFAULTS, window.__portalTafCfg || {}); c.mode = isAdmin ? store.get("tafmon.mode", DEFAULTS.mode) : DEFAULTS.mode;\n'
+        '  /* vento/rajada: o limite passou para 35 kt (definições gravadas antes com 30 kt passam a 35; PDL, TER e FNC continuam acima de 25 kt) */\n'
+        '  { const sh = window.__portalTafCfg || {}; if (sh.wind != null && (+sh.windV || 1) < 3 && (+sh.wind === 30 || +sh.wind === 25)) c.wind = 35; c.windV = 3; }\n'
+        '  return c; }\n'
         'cfg = portalCfg();\nasync function pinHash')
 s = rep(s, '  store.set("tafmon.cfg", cfg);\n  closeSettings(); selected = null; load();',
         '  store.set("tafmon.mode", cfg.mode);\n'
@@ -50,6 +53,9 @@ s = rep(s, '$("#btnSettings").addEventListener("click", () => { if (!SETTINGS_LO
         'function portalNotAdmin(){ const b = $("#banner"); b.innerHTML = "<b>Definições bloqueadas.</b> <span>Só um Administrador do portal pode alterar as definições do TAF.</span>"; b.className = "banner"; b.hidden = false; setTimeout(() => { if (b.textContent.startsWith("Definições bloqueadas")) b.hidden = true; }, 6000); }')
 s = rep(s, 'b.title = SETTINGS_LOCKED && !isAdmin ? "Bloqueado: precisa de PIN" : "Definições";',
         'b.title = SETTINGS_LOCKED && !isAdmin ? "Só Administradores do portal" : "Definições";')
+
+# 2a) vento/rajada: alerta a partir de 35 kt (PDL, TER e FNC continuam acima de 25 kt)
+s = rep(s, 'cig2: 400, wind: 30, windV: 2,', 'cig2: 400, wind: 35, windV: 3,')
 
 # 2b) TAF mais rápidos: o browser não guarda cópia (o Worker já guarda) e, por omissão, atualiza de 2 em 2 minutos
 s = rep(s, 'fetch(url, {signal: ctl.signal, headers: {Accept: "application/json, text/plain"}})', 'fetch(url, {signal: ctl.signal, cache: "no-store", headers: {Accept: "application/json, text/plain"}})')
