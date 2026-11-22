@@ -234,7 +234,7 @@ s = rep(s, '      <button class="btn ghost" id="btnReport" type="button">Relató
         '      <button class="btn ghost" id="btnReport" type="button">Relatório</button>\n      <button class="btn ghost" id="btnFlights" type="button">Voos</button>')
 s = rep(s, '<div class="modal" id="pinDlg" hidden>', """<div class="modal" id="flights" hidden>
   <div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="fltTitle">
-    <header><h2 id="fltTitle">Voos afetados pela meteorologia</h2><button class="d-close" style="display:block" type="button" id="fltClose" aria-label="Fechar">×</button></header>
+    <header><h2 id="fltTitle">Voos afetados pela meteorologia no destino</h2><button class="d-close" style="display:block" type="button" id="fltClose" aria-label="Fechar">×</button></header>
     <div class="body">
       <label class="flt-drop" id="fltDrop">
         <input type="file" id="fltFile" accept="application/pdf,.pdf" hidden>
@@ -242,6 +242,7 @@ s = rep(s, '<div class="modal" id="pinDlg" hidden>', """<div class="modal" id="f
       </label>
       <div class="rep-row flt-tools"><span class="hint" id="fltInfo"></span><button class="btn ghost" type="button" id="fltClear" style="margin-left:auto">Limpar voos</button></div>
       <div class="rep-prev" id="fltOut" aria-label="Voos afetados"></div>
+      <details class="flt-raw" id="fltAllBox"><summary>Todos os voos lidos (para conferir)</summary><div class="rep-prev" id="fltAll" style="min-height:0;max-height:40vh"></div></details>
       <details class="flt-raw"><summary>Texto lido do PDF (pode corrigir ou colar a lista à mão)</summary><textarea class="flt-in" id="fltIn" spellcheck="false" placeholder="TP1234   LIS   ZRH   06:15   09:00   06:40   09:25"></textarea><button class="btn ghost" type="button" id="fltGo">Analisar</button></details>
     </div>
     <footer><span class="rep-msg" id="fltMsg" role="status"></span><button class="btn" type="button" id="fltCopy">Copiar tabela</button></footer>
@@ -315,7 +316,8 @@ function parseFlights(txt){
     const fm = /\b(TP|TAP)\s?0*(\d{1,4}[A-Z]?)\b/i.exec(line);
     if (!fm){ if (dt) curDay = dt.day; continue; }
     const fDay = dt ? dt.day : curDay;
-    const rest = line.slice(0, fm.index) + " " + line.slice(fm.index + fm[0].length);
+    const num = fm[2].replace(/[A-Z]$/i, "");
+    const rest = (line.slice(0, fm.index) + " " + line.slice(fm.index + fm[0].length)).replace(new RegExp("(^|[^\\d:])0*" + num + "(?![\\d:])", "g"), "$1 ");
     const aps = [], unk = [];
     for (const t of rest.toUpperCase().split(/[^A-Z0-9]+/)){
       if (/^[A-Z]{4}$/.test(t) && AIRPORTS[t]) aps.push(t);
@@ -374,9 +376,9 @@ function flightRows(txt){
   const all = allAlertItems();
   const rows = [];
   for (const f of P.flights){
-    const a = alertsAt(all, f.dst, f.eta ?? f.sta), dp = alertsAt(all, f.org, f.etd ?? f.std);
+    const a = alertsAt(all, f.dst, f.eta ?? f.sta);
+    f.alert = a;
     if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: f.eta ?? f.sta}, a));
-    if (dp) rows.push(Object.assign({f, side: "PARTIDA", ap: f.org, t: f.etd ?? f.std}, dp));
   }
   rows.sort((x, y) => repSev(x.name) - repSev(y.name) || x.t - y.t);
   return {P, rows};
@@ -439,6 +441,8 @@ function renderFlights(){
     }).join("") + `</table>`;
   } else html = P.flights.length ? `<p style="margin:0">Nenhum voo afetado pelos alertas atuais.</p>` : `<p class="hint" style="margin:0">Carregue o PDF da lista de voos.</p>`;
   $("#fltOut").innerHTML = html;
+  $("#fltAll").innerHTML = P.flights.length ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "DESTINO À CHEGADA"].map(th).join("")}</tr>` +
+    P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(fmtDHZ(f.sta))}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? fmtDHZ(f.eta) : "")}${td(f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : "")}</tr>`).join("") + `</table>` : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
   fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
     text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hm(r.f.eta), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
 }

@@ -55,15 +55,15 @@ def test_voos_afetados_no_inicio_na_janela_e_na_grelha(browser, server, mock):
     f.evaluate("t=>{localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'lista.pdf',at:Date.now()}))}", lista)
     f.evaluate("parent.postMessage({type:'x'},location.origin)")
     page.evaluate("postTaf({type:'taf-refresh'})")
-    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===2", timeout=20000)
-    # Início: partida de LIS e chegada a LIS com LVO; o voo LHR-CDG não tem alerta
-    assert page.inner_text('#pFltRestr') == '2' and page.inner_text('#pFltAlert') == '0' and page.inner_text('#pFltTotal') == '3'
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===1", timeout=20000)
+    # Início: só conta o destino: chegada a LIS com LVO; a partida de LIS (TP1350) e o LHR-CDG não contam
+    assert page.inner_text('#pFltRestr') == '1' and page.inner_text('#pFltAlert') == '0' and page.inner_text('#pFltTotal') == '3'
     lst = page.inner_text('#pFltList')
-    assert 'TP1350' in lst and 'TP1351' in lst and 'LVO' in lst and 'TP2001' not in lst
-    assert '↑' in lst and '↓' in lst
-    # grelha do TAF: os voos por baixo de LPPT
+    assert 'TP1351' in lst and 'LVO' in lst and 'TP1350' not in lst and 'TP2001' not in lst
+    assert '↓' in lst and '↑' not in lst
+    # grelha do TAF: o voo por baixo de LPPT
     sub = f.inner_text('#grid tr[data-icao="LPPT"] .ap-flt')
-    assert 'TP1350' in sub and 'TP1351' in sub
+    assert 'TP1351' in sub and 'TP1350' not in sub
     # clicar num voo abre o aeroporto no TAF
     page.click('#pFltList [data-icao="LPPT"] >> nth=0')
     assert visible(page, '#tafView')
@@ -72,7 +72,10 @@ def test_voos_afetados_no_inicio_na_janela_e_na_grelha(browser, server, mock):
     page.click('#pFltOpen')
     f.wait_for_selector('#flights:not([hidden])')
     tab = f.inner_text('#fltOut')
-    assert 'TP1350' in tab and 'PARTIDA LIS' in tab and 'CHEGADA LIS' in tab
+    assert 'TP1351' in tab and 'CHEGADA LIS' in tab and 'PARTIDA' not in tab
+    f.click('#fltAllBox summary')
+    todos = f.inner_text('#fltAll')
+    assert 'TP1350' in todos and 'TP2001' in todos and 'sem alerta' in todos
     # limpar
     f.click('#fltClear')
     page.wait_for_function("fltSum&&!fltSum.has", timeout=10000)
@@ -101,11 +104,13 @@ def test_leitura_de_datas_e_horas(browser, server, mock):
       const iso = t => new Date(t).toISOString().slice(0, 16);
       const a = parseFlights('Daily flight list 22NOV26 (UTC)\\nTP1350  LIS  BRU  22:10  01:05\\nTP1352  23/11/2026  LIS  BRU  06:00  08:45');
       const b = parseFlights('TP777 LIS BRU 2026 07:30 10:15');   // um ano solto não é hora
-      return {a: a.flights.map(x => [x.fl, iso(x.std), iso(x.sta)]), b: b.flights.map(x => [iso(x.std).slice(11), iso(x.sta).slice(11)])};
+      const c = parseFlights('TP1703  1703  OPO  FNC  1430  1605');   // número do voo repetido noutra coluna não é hora
+      return {a: a.flights.map(x => [x.fl, iso(x.std), iso(x.sta)]), b: b.flights.map(x => [iso(x.std).slice(11), iso(x.sta).slice(11)]), c: c.flights.map(x => [iso(x.std).slice(11), iso(x.sta).slice(11)])};
     }""")
     assert r['a'][0] == ['TP1350', '2026-11-22T22:10', '2026-11-23T01:05']   # data do cabeçalho; chegada no dia seguinte
     assert r['a'][1] == ['TP1352', '2026-11-23T06:00', '2026-11-23T08:45']   # data na própria linha
     assert r['b'] == [['07:30', '10:15']]
+    assert r['c'] == [['14:30', '16:05']]
     # sem data: um voo da madrugada seguinte não fica no passado
     nxt = f.evaluate("""() => { const t = Date.now() + 14 * 3600e3, d = new Date(t), hh = String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
       const s = new Date(t - 2 * 3600e3), sh = String(s.getUTCHours()).padStart(2,'0') + ':' + String(s.getUTCMinutes()).padStart(2,'0');

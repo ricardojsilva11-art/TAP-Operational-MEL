@@ -326,7 +326,7 @@ th,td{padding-left:8px;padding-right:8px}.col-rs{display:none}#resetCols{display
 <button type="button" class="p-stat amb" data-fltopen title="Voos com trovoada, vento, teto baixo ou outro alerta"><span class="n" id="pFltAlert">—</span><span>Com alerta<small>trovoada · vento · teto baixo</small></span></button>
 <button type="button" class="p-stat nt" data-fltopen title="Voos lidos do PDF"><span class="n" id="pFltTotal">—</span><span>Voos lidos<small id="pFltOk">—</small></span></button>
 </div>
-<h4 class="p-h4row">Voos com meteorologia adversa <small>(chegada ↓ / partida ↑)</small><button type="button" class="p-link hidden" id="pFltCopy">Copiar tabela</button></h4>
+<h4 class="p-h4row">Voos com meteorologia adversa no destino <small>(à hora de chegada)</small><button type="button" class="p-link hidden" id="pFltCopy">Copiar tabela</button></h4>
 <div class="p-wx p-fltlist" id="pFltList"><p class="muted">Arraste o PDF da lista de voos para ver os voos afetados pelos alertas do TAF.</p></div>
 </section>
 <section class="card p-card p-melcard" id="pMel" aria-labelledby="pMelH">
@@ -721,7 +721,7 @@ const setThemeTitle=()=>{$('themeBtn').title=document.documentElement.dataset.th
 $('themeBtn').onclick=()=>{const d=document.documentElement;if(d.dataset.theme==='dark')delete d.dataset.theme;else d.dataset.theme='dark';try{localStorage.setItem('mel-theme',d.dataset.theme||'light')}catch(e){}setThemeTitle()};
 /* ---- Portal: Início (resumo TAF + MEL) e TAF Monitor (taf/, dentro de um iframe) ---- */
 let tafSum=null;
-function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader',favs:[...tafFavs]});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=9e8c85736d';$('tafWrap').appendChild(f)}
+function ensureTaf(){window.__portal=Object.assign(window.__portal||{},{role:profile?.role||'reader',favs:[...tafFavs]});if($('tafFrame'))return;const f=document.createElement('iframe');f.id='tafFrame';f.title='TAF Monitor';f.src='taf/?v=bd27cd19a1';$('tafWrap').appendChild(f)}
 function syncTafRole(){if(!window.__portal)return;const r=profile?.role||'reader';if(window.__portal.role===r)return;window.__portal.role=r;try{$('tafFrame')?.contentWindow.postMessage({type:'taf-role',role:r},location.origin)}catch(e){}}
 function tafSelect(icao){goNav('taf');markTafSeen(icao);try{$('tafFrame').contentWindow.postMessage({type:'taf-select',icao},location.origin)}catch(e){}}
 /* Definições do TAF partilhadas (Supabase, tabela taf_settings): só Administradores gravam; chegam a todos em tempo real */
