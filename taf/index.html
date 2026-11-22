@@ -2740,7 +2740,7 @@ function flightRows(txt){
   for (const f of P.flights){
     const tA = f.eta ?? f.sta;
     if (tA == null){ f.alert = null; continue; }
-    const cand = (f.etaEst ? [tA - 30 * 60000, tA, tA + 30 * 60000] : [tA]).map(t => alertsAt(all, f.dst, t)).filter(Boolean);
+    const cand = (f.etaEst ? [tA - 59 * 60000, tA - 30 * 60000, tA, tA + 30 * 60000, tA + 59 * 60000] : [tA]).map(t => alertsAt(all, f.dst, t)).filter(Boolean);
     const a = cand.sort((x, y) => repSev(x.name) - repSev(y.name))[0] || null;
     f.alert = a;
     if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: tA, est: !!f.etaEst}, a));
@@ -2808,7 +2808,7 @@ function renderFlights(){
   $("#fltOut").innerHTML = html;
   $("#fltAll").innerHTML = P.flights.length ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "DESTINO À CHEGADA"].map(th).join("")}</tr>` +
     P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(f.sta ? fmtDHZ(f.sta) : "")}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? (f.etaEst ? "~" : "") + fmtDHZ(f.eta) + (f.etaEst && f.block ? " (voo ~" + Math.floor(f.block / 60) + "h" + pad(f.block % 60) + ")" : "") : f.etaEst ? "sem estimativa" : "")}${td(f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : "")}</tr>`).join("") + `</table>` +
-    (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo pela distância. O alerta no destino conta entre 30 min antes e 30 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
+    (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo pela distância. O alerta no destino conta entre 59 min antes e 59 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
   fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
     text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hmE(r.f.eta, r.f.etaEst), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
 }

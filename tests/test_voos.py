@@ -156,3 +156,20 @@ def test_lista_do_sistema_de_operacoes_std_em_dia_hora_minuto(browser, server, m
     assert 400 <= r[0][6] <= 480      # REC-LIS: cerca de 7h30
     assert not errors
     ctx.close()
+
+
+def test_eta_estimada_conta_59_min_antes_e_depois(browser, server, mock):
+    ctx, page, errors, f = _frame_ready(browser, server, mock)
+    r = f.evaluate("""() => {
+      const t0 = Math.floor(Date.now() / HOUR) * HOUR + 5 * HOUR;
+      allAlertItems = () => [{icao: 'EBBR', start: t0, end: t0 + HOUR, code: 'CIG', cat: 'cig', raw: 'VV001', lab0: ''}];
+      const d = new Date(t0 - 162 * 60000 - 55 * 60000);   // ETA estimada 55 min antes do LVO
+      const dd = String(d.getUTCDate()).padStart(2,'0'), hh = String(d.getUTCHours()).padStart(2,'0'), mm = String(d.getUTCMinutes()).padStart(2,'0');
+      const in59 = flightRows(`TP646 22 LIS BRU CSXXC ${dd}${hh}${mm} ....`).rows.length;
+      const d2 = new Date(d.getTime() - 10 * 60000), dd2 = String(d2.getUTCDate()).padStart(2,'0'), h2 = String(d2.getUTCHours()).padStart(2,'0'), m2 = String(d2.getUTCMinutes()).padStart(2,'0');
+      const out = flightRows(`TP646 22 LIS BRU CSXXC ${dd2}${h2}${m2} ....`).rows.length;   // 65 min antes: fora
+      return [in59, out];
+    }""")
+    assert r == [1, 0]
+    assert not errors
+    ctx.close()
