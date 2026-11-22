@@ -227,6 +227,234 @@ s = rep(s, '''    h += `<div class="d-sec"><h3>TAF</h3><div class="raw">${raw}</
     h += `</div>`;''')
 s = rep(s, '.raw{font:400 13.5px/1.75 var(--f-mono);', '.raw .chg,.chg-hint .chg{background:rgba(64,170,255,.22);color:inherit;border-radius:3px;box-shadow:0 0 0 1px rgba(64,170,255,.65);padding:0 1px}.raw.prev{opacity:.78;font-size:12.5px;margin-top:4px}.prevlab{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 2px}.chg-hint{margin:6px 0 0;font-size:12px}.prevtog{margin-left:8px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0}.prevtog:hover{color:inherit}\\n.raw{font:400 13.5px/1.75 var(--f-mono);')
 
+# 3i) Voos: lista de voos tirada de um PDF (ou de texto colado), cruzada com o TAF do destino à chegada e da origem à partida.
+#     O PDF é lido só no browser (pdf.js em vendor/) e a lista fica guardada só neste browser (localStorage "tafmon.voos").
+#     Na grelha, por baixo de cada aeroporto, aparecem os voos afetados; o resumo vai para o cartão "Voos afetados" do Início.
+s = rep(s, '      <button class="btn ghost" id="btnReport" type="button">Relatório</button>',
+        '      <button class="btn ghost" id="btnReport" type="button">Relatório</button>\n      <button class="btn ghost" id="btnFlights" type="button">Voos</button>')
+s = rep(s, '<div class="modal" id="pinDlg" hidden>', """<div class="modal" id="flights" hidden>
+  <div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="fltTitle">
+    <header><h2 id="fltTitle">Voos afetados pela meteorologia</h2><button class="d-close" style="display:block" type="button" id="fltClose" aria-label="Fechar">×</button></header>
+    <div class="body">
+      <label class="flt-drop" id="fltDrop">
+        <input type="file" id="fltFile" accept="application/pdf,.pdf" hidden>
+        <b>Carregar PDF dos voos</b><span>ou arraste o ficheiro para aqui · o PDF é lido só neste browser e a lista fica só neste browser</span>
+      </label>
+      <div class="rep-row flt-tools"><span class="hint" id="fltInfo"></span><button class="btn ghost" type="button" id="fltClear" style="margin-left:auto">Limpar voos</button></div>
+      <div class="rep-prev" id="fltOut" aria-label="Voos afetados"></div>
+      <details class="flt-raw"><summary>Texto lido do PDF (pode corrigir ou colar a lista à mão)</summary><textarea class="flt-in" id="fltIn" spellcheck="false" placeholder="TP1234   LIS   ZRH   06:15   09:00   06:40   09:25"></textarea><button class="btn ghost" type="button" id="fltGo">Analisar</button></details>
+    </div>
+    <footer><span class="rep-msg" id="fltMsg" role="status"></span><button class="btn" type="button" id="fltCopy">Copiar tabela</button></footer>
+  </div>
+</div>
+
+<div class="modal" id="pinDlg" hidden>""")
+s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed var(--line);border-radius:10px;padding:18px;cursor:pointer;background:var(--panel2);text-align:center}
+.flt-drop:hover,.flt-drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.flt-drop b{font-size:16px;color:var(--accent)} .flt-drop span{font-size:13px;color:var(--muted)}
+.flt-in{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--ink);padding:8px 10px;font:12.5px/1.5 var(--f-mono);margin:8px 0}
+.flt-raw summary{cursor:pointer;color:var(--muted);font-size:13px}
+.flt-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#fltOut{min-height:24vh}
+.grid th.ap .ap-flt{display:flex;flex-direction:column;gap:1px;padding:0 0 5px 22px;margin-top:-4px}
+.grid th.ap .ap-flt span{font:500 11.5px/1.25 var(--f-mono);color:var(--muted);white-space:nowrap}
+.grid th.ap .ap-flt b{color:var(--ink);font-weight:700}
+.grid th.ap .ap-flt i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))}
+.rep-text{""")
+s = rep(s, '  $("#grid").innerHTML = h + "</tbody>";', '  $("#grid").innerHTML = h + "</tbody>";\n  try { decorateFlights(); } catch(e){}')
+FLT_JS = r"""/* ---------- Voos: PDF/texto da lista de voos cruzado com o TAF ---------- */
+const IATA2ICAO = Object.fromEntries(Object.entries(AIRPORTS).map(([ic, v]) => [v[0], ic]));
+const PDFJS_SRC = "../vendor/pdf.min.js", PDFJS_WORKER = "../vendor/pdf.worker.min.js";
+const FLT_RESTR = new Set(["OUT OF LIM", "LDG NOT ALLOWED", "BELOW MIN", "LVO", "RVAC"]);
+const FLT_KEY = {"LVO": "cig", "TS": "conv", "LOW CIG": "cig4", "WIND": "wind", "SNOW/ICE": "ice", "OUT OF LIM": "lim", "LDG NOT ALLOWED": "lim", "BELOW MIN": "bmin", "RVAC": "rvac", "WND NEAR LIM": "mar", "MIST": "obsc", "VA": "vis"};
+function loadPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = PDFJS_SRC; sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; ok(window.pdfjsLib); }; sc.onerror = () => ko(new Error("não foi possível carregar o leitor de PDF")); document.head.appendChild(sc); });
+}
+/* texto do PDF linha a linha: junta os pedaços com a mesma altura na página, da esquerda para a direita */
+async function pdfLines(file){
+  const lib = await loadPdfJs();
+  const doc = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+  const lines = [];
+  for (let p = 1; p <= doc.numPages; p++){
+    const tc = await (await doc.getPage(p)).getTextContent();
+    const rows = [];
+    for (const it of tc.items){
+      if (!it.str || !it.str.trim()) continue;
+      const y = it.transform[5], x = it.transform[4];
+      let r = rows.find(q => Math.abs(q.y - y) < 2.5);
+      if (!r){ r = {y, parts: []}; rows.push(r); }
+      r.parts.push({x, t: it.str.trim()});
+    }
+    rows.sort((a, b) => b.y - a.y).forEach(r => lines.push(r.parts.sort((a, b) => a.x - b.x).map(q => q.t).join("   ")));
+  }
+  return lines;
+}
+/* cada linha com um voo TP: origem e destino (IATA ou ICAO da lista), STD, STA e, se houver, ETD e ETA (UTC) */
+function parseFlights(txt){
+  const now = Date.now(), d = new Date(), day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const out = [], bad = [], outside = new Set(), seen = new Set();
+  for (const raw of String(txt || "").split(/\r?\n/)){
+    const line = raw.trim(); if (!line) continue;
+    const fm = /\b(TP|TAP)\s?0*(\d{1,4}[A-Z]?)\b/i.exec(line);
+    if (!fm) continue;
+    const rest = line.slice(0, fm.index) + " " + line.slice(fm.index + fm[0].length);
+    const aps = [], unk = [];
+    for (const t of rest.toUpperCase().split(/[^A-Z0-9]+/)){
+      if (/^[A-Z]{4}$/.test(t) && AIRPORTS[t]) aps.push(t);
+      else if (/^[A-Z]{3}$/.test(t) && IATA2ICAO[t]) aps.push(IATA2ICAO[t]);
+      else if (/^[A-Z]{3}$/.test(t)) unk.push(t);
+    }
+    const times = [...rest.matchAll(/(?:^|[^\d])([01]\d|2[0-3]):?([0-5]\d)(?:Z|UTC)?(?![\d])/g)].map(m => +m[1] * 60 + +m[2]);
+    const fl = "TP" + fm[2].toUpperCase();
+    if (aps.length < 2 || times.length < 2){ if (aps.length === 1 && unk.length) outside.add(fl); else bad.push(line); continue; }
+    const near = (min, ref) => { let t = day + min * 60000; while (t < ref - 12 * HOUR) t += 24 * HOUR; while (t > ref + 12 * HOUR) t -= 24 * HOUR; return t; };
+    const sta = near(times[1], now);
+    let std = near(times[0], sta); while (std > sta) std -= 24 * HOUR;
+    const etd = times.length >= 4 ? near(times[2], std) : null;
+    const eta = times.length >= 4 ? near(times[3], sta) : times.length === 3 ? near(times[2], sta) : null;
+    const key = fl + "|" + aps[0] + "|" + std; if (seen.has(key)) continue; seen.add(key);
+    out.push({fl, org: aps[0], dst: aps[1], std, sta, etd, eta});
+  }
+  return {flights: out, bad, outside: [...outside]};
+}
+/* o alerta mais grave nesse aeroporto a essa hora (mesmas regras do relatório) */
+function alertsAt(all, icao, t){
+  const its = all.filter(it => it.icao === icao && it.start <= t && t < it.end);
+  if (!its.length) return null;
+  const best = its.map(it => ({name: repCatName(it), cond: repCond(it)})).sort((a, b) => repSev(a.name) - repSev(b.name))[0];
+  const toks = its.filter(it => repCatName(it) === best.name).flatMap(it => repCond(it).split(/\s+\/\s+|\s+/)).filter(Boolean);
+  let cond = toks[0] || best.cond;
+  if (best.name === "LVO"){ let wr = Infinity;
+    for (const t of toks){ const v = /^VIS(\d{4})$/.exec(t), c = /^(BKN|OVC|VV)(\d{3}|\/\/\/)/.exec(t);
+      const r = v ? +v[1] / (cfg.vis || 850) : c ? (c[2] === "///" ? 0 : +c[2] * 100 / (cfg.cig || 250)) : null;
+      if (r != null && r < wr){ wr = r; cond = t; } } }
+  else if (best.name !== "TS") cond = [...new Set(toks)].slice(0, 2).join(" ");
+  return {name: best.name, cond, full: repFullName(best.name, [cond])};
+}
+const hm = t => t == null ? "" : pad(new Date(t).getUTCHours()) + pad(new Date(t).getUTCMinutes()) + "Z";
+const apIata = ic => iataOf(ic) || ic;
+const fltStore = {
+  get(){ return store.get("tafmon.voos", null); },
+  set(v){ try { if (v) store.set("tafmon.voos", v); else localStorage.removeItem("tafmon.voos"); } catch(e){} }
+};
+function flightRows(txt){
+  const P = parseFlights(txt);
+  const {all} = reportItems();
+  const rows = [];
+  for (const f of P.flights){
+    const a = alertsAt(all, f.dst, f.eta ?? f.sta), dp = alertsAt(all, f.org, f.etd ?? f.std);
+    if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: f.eta ?? f.sta}, a));
+    if (dp) rows.push(Object.assign({f, side: "PARTIDA", ap: f.org, t: f.etd ?? f.std}, dp));
+  }
+  rows.sort((x, y) => repSev(x.name) - repSev(y.name) || x.t - y.t);
+  return {P, rows};
+}
+let fltCache = null;
+/* por baixo de cada aeroporto na grelha: voos afetados (↓ chegada, ↑ partida), hora e alerta; e o resumo para o Início */
+function decorateFlights(){
+  const st = fltStore.get();
+  fltCache = st && st.text ? flightRows(st.text) : null;
+  if (fltCache){
+    const by = {};
+    fltCache.rows.forEach(r => (by[r.ap] = by[r.ap] || []).push(r));
+    for (const [ic, list] of Object.entries(by)){
+      const th = document.querySelector(`#grid tr[data-icao="${ic}"] th.ap`); if (!th) continue;
+      const L = list.slice().sort((a, b) => a.t - b.t);
+      const show = L.slice(0, 3).map(r => {
+        const tip = `${r.f.fl} ${apIata(r.f.org)}-${apIata(r.f.dst)} · ${r.side === "CHEGADA" ? "chegada" : "partida"} ${hm(r.t)} · ${r.cond} · ${r.full}`;
+        return `<span class="k-${FLT_KEY[r.name] || "int"}" title="${esc(tip)}">${r.side === "CHEGADA" ? "↓" : "↑"} <b>${r.f.fl}</b> ${hm(r.t)} <i>${esc(r.name)}</i></span>`;
+      });
+      if (L.length > 3) show.push(`<span>+${L.length - 3} voos</span>`);
+      th.insertAdjacentHTML("beforeend", `<div class="ap-flt">${show.join("")}</div>`);
+    }
+  }
+  postFlights(st);
+  if (!$("#flights").hidden) renderFlights();
+}
+function postFlights(st){
+  try {
+    if (window.parent === window) return;
+    const C = fltCache, fl = new Map();
+    if (C) C.rows.forEach(r => { const k = r.f.fl + "|" + r.f.std, w = FLT_RESTR.has(r.name) ? 2 : 1; fl.set(k, Math.max(fl.get(k) || 0, w)); });
+    window.parent.postMessage({type: "taf-flights", has: !!(st && st.text), name: (st && st.name) || "", at: (st && st.at) || null,
+      total: C ? C.P.flights.length : 0, restr: [...fl.values()].filter(v => v === 2).length, alert: [...fl.values()].filter(v => v === 1).length,
+      outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0,
+      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, icao: r.ap, name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
+  } catch(e){}
+}
+let fltLast = null;
+function renderFlights(){
+  const st = fltStore.get();
+  if (st && st.text && !$("#fltIn").value) $("#fltIn").value = st.text;
+  const {P, rows} = fltCache || {P: {flights: [], bad: [], outside: []}, rows: []};
+  const nAff = new Set(rows.map(r => r.f.fl + r.f.std)).size;
+  const parts = [];
+  if (st && st.name) parts.push(esc(st.name) + (st.at ? " · carregado às " + hm(st.at) : ""));
+  if (P.flights.length) parts.push(`${P.flights.length} voos lidos · <b>${nAff} afetados</b>`);
+  if (P.outside.length) parts.push(`fora da lista do TAF: ${esc(P.outside.join(", "))}`);
+  if (P.bad.length) parts.push(`${P.bad.length} linhas com voo não reconhecidas`);
+  $("#fltInfo").innerHTML = parts.join(" · ");
+  const COLS = ["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "ONDE", "CONDIÇÃO", "ALERTA"];
+  const th = h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`;
+  const td = (c, sty) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${sty || ""}">${esc(c)}</td>`;
+  const zs = rows.slice().sort((x, y) => repZone(x.ap) - repZone(y.ap) || repSev(x.name) - repSev(y.name) || x.t - y.t);
+  let html;
+  if (zs.length){
+    html = `<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:10.5pt"><tr>${COLS.map(th).join("")}</tr>` + zs.map((r, k) => {
+      const z = repZone(r.ap), zh = k === 0 || repZone(zs[k - 1].ap) !== z ? `<tr><td colspan="${COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : "";
+      const f = r.f;
+      return zh + `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(hm(f.std))}${td(hm(f.sta))}${td(hm(f.etd))}${td(hm(f.eta), ";font-weight:bold")}${td(r.side + " " + apIata(r.ap))}${td(r.cond, ";font-family:Consolas,monospace")}${td(r.full, ";font-weight:bold")}</tr>`;
+    }).join("") + `</table>`;
+  } else html = P.flights.length ? `<p style="margin:0">Nenhum voo afetado pelos alertas atuais.</p>` : `<p class="hint" style="margin:0">Carregue o PDF da lista de voos.</p>`;
+  $("#fltOut").innerHTML = html;
+  fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
+    text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hm(r.f.eta), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
+}
+async function fltLoadFile(file){
+  if (!file) return;
+  $("#fltInfo").textContent = "A ler " + file.name + "…";
+  try {
+    const lines = await pdfLines(file);
+    if (!lines.some(l => /\S/.test(l))){ $("#fltInfo").textContent = "Este PDF não tem texto (parece uma imagem digitalizada)."; postFlightsError("Este PDF não tem texto (parece uma imagem digitalizada)."); return; }
+    $("#fltIn").value = lines.join("\n");
+    fltStore.set({text: $("#fltIn").value, name: file.name, at: Date.now()});
+    render();
+  } catch(e){ $("#fltInfo").textContent = "Não foi possível ler o PDF: " + e.message; postFlightsError("Não foi possível ler o PDF: " + e.message); }
+}
+function postFlightsError(msg){ try { if (window.parent !== window) window.parent.postMessage({type: "taf-flights-error", error: msg}, location.origin); } catch(e){} }
+function openFlights(){ renderFlights(); $("#fltMsg").textContent = ""; $("#flights").hidden = false; }
+$("#btnFlights").addEventListener("click", openFlights);
+$("#fltClose").addEventListener("click", () => { $("#flights").hidden = true; $("#btnFlights").focus(); });
+$("#flights").addEventListener("click", e => { if (e.target.id === "flights") $("#flights").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#flights").hidden){ e.stopImmediatePropagation(); $("#flights").hidden = true; } }, true);
+$("#fltFile").addEventListener("change", e => { fltLoadFile(e.target.files[0]); e.target.value = ""; });
+const fltDropEl = $("#fltDrop");
+["dragenter", "dragover"].forEach(ev => fltDropEl.addEventListener(ev, e => { e.preventDefault(); fltDropEl.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => fltDropEl.addEventListener(ev, e => { e.preventDefault(); fltDropEl.classList.remove("over"); }));
+fltDropEl.addEventListener("drop", e => fltLoadFile(e.dataTransfer.files[0]));
+$("#fltGo").addEventListener("click", () => { const v = $("#fltIn").value; fltStore.set(v.trim() ? {text: v, name: (fltStore.get() || {}).name || "lista colada", at: Date.now()} : null); render(); });
+$("#fltClear").addEventListener("click", () => { fltStore.set(null); $("#fltIn").value = ""; render(); renderFlights(); });
+$("#fltCopy").addEventListener("click", () => {
+  if (!fltLast){ $("#fltMsg").textContent = "Não há voos afetados para copiar."; return; }
+  let done = false;
+  const onCopy = e => { try { e.clipboardData.setData("text/html", fltLast.html); e.clipboardData.setData("text/plain", fltLast.text); e.preventDefault(); done = true; } catch(err){} };
+  document.addEventListener("copy", onCopy, true); try { document.execCommand("copy"); } catch(err){} document.removeEventListener("copy", onCopy, true);
+  $("#fltMsg").textContent = done ? "Tabela copiada." : "Selecione a tabela e carregue em Ctrl+C.";
+});
+/* pedidos do Início: PDF arrastado para o cartão "Voos afetados", abrir a janela, limpar */
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin || !e.data) return;
+  const d = e.data;
+  if (d.type === "taf-flights-file" && d.file) fltLoadFile(d.file);
+  else if (d.type === "taf-flights-open") openFlights();
+  else if (d.type === "taf-flights-clear"){ fltStore.set(null); $("#fltIn").value = ""; render(); }
+});
+/* outro separador ou janela mudou a lista: atualizar */
+window.addEventListener("storage", e => { if (e.key === "tafmon.voos"){ $("#fltIn").value = ""; render(); } });
+function closeReport(){"""
+s = rep(s, 'function closeReport(){', FLT_JS)
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,
