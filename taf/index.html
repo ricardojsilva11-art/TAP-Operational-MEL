@@ -2474,8 +2474,24 @@ function repFullName(name, toks){
   }
   return REP_FULL[name] || name;
 }
-const REP_COLS = ["AEROPORTO", "PERÍODO (UTC)", "CONDIÇÃO", "ALERTA"];
-const repCells = r => [icIata(r.icao), r.per, r.cond, r.full];
+const REP_COLS_BASE = ["AEROPORTO", "PERÍODO (UTC)", "CONDIÇÃO", "ALERTA"];
+let REP_COLS = REP_COLS_BASE;
+const repCells = r => { const c = [icIata(r.icao), r.per, r.cond, r.full]; if (REP_COLS.length > 4) c.push(repFlights(r)); return c; };
+function fltData(){
+  const st = fltStore.get(); if (!st || !st.text) return null;
+  let C = fltCache; if (!C || C.text !== st.text){ try { C = flightRows(st.text); } catch(e){ return null; } }
+  return C;
+}
+/* voos que chegam a este aeroporto dentro do período do alerta (um por linha: TP1691 ~1713Z) */
+function repFlights(r){
+  const C = fltData(); if (!C) return "";
+  const M = 59 * 60000;
+  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null)
+    .map(f => ({f, t: f.eta ?? f.sta, m: f.etaEst ? M : 0}))
+    .filter(x => (r.wins || []).some(w => x.t + x.m >= w.s && x.t - x.m < w.e))
+    .sort((a, b) => a.t - b.t)
+    .map(x => x.f.fl + " " + hmE(x.t, x.f.etaEst)).join("\n");
+}
 /* "10-20UTC" no dia de hoje; "25/03-15UTC" noutro dia; "24/22-25/04UTC" quando passa a meia-noite */
 function fmtWin(s, e){
   // mostra a primeira e a última hora com alerta (horas inteiras): 04-12UTC = das 04:00 às 12:59
@@ -2492,6 +2508,7 @@ function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringif
 function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
 function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
 function reportText(){
+  { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat(["VOOS"]) : REP_COLS_BASE; }
   const T = reportTable();
   const B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur), first = !!B.cur;
   const now = new Date();

@@ -559,6 +559,29 @@ window.addEventListener("storage", e => { if (e.key === "tafmon.voos"){ $("#fltI
 function closeReport(){"""
 s = rep(s, 'function closeReport(){', FLT_JS)
 
+# 3j) Relatório: com uma lista de voos carregada, coluna VOOS na mesma linha do aeroporto (voos por aterrar cuja
+#     chegada cai no período do alerta; com ETA estimada conta de 59 min antes a 59 min depois)
+s = rep(s, 'const REP_COLS = ["AEROPORTO", "PERÍODO (UTC)", "CONDIÇÃO", "ALERTA"];\nconst repCells = r => [icIata(r.icao), r.per, r.cond, r.full];',
+        """const REP_COLS_BASE = ["AEROPORTO", "PERÍODO (UTC)", "CONDIÇÃO", "ALERTA"];
+let REP_COLS = REP_COLS_BASE;
+const repCells = r => { const c = [icIata(r.icao), r.per, r.cond, r.full]; if (REP_COLS.length > 4) c.push(repFlights(r)); return c; };
+function fltData(){
+  const st = fltStore.get(); if (!st || !st.text) return null;
+  let C = fltCache; if (!C || C.text !== st.text){ try { C = flightRows(st.text); } catch(e){ return null; } }
+  return C;
+}
+/* voos que chegam a este aeroporto dentro do período do alerta (um por linha: TP1691 ~1713Z) */
+function repFlights(r){
+  const C = fltData(); if (!C) return "";
+  const M = 59 * 60000;
+  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null)
+    .map(f => ({f, t: f.eta ?? f.sta, m: f.etaEst ? M : 0}))
+    .filter(x => (r.wins || []).some(w => x.t + x.m >= w.s && x.t - x.m < w.e))
+    .sort((a, b) => a.t - b.t)
+    .map(x => x.f.fl + " " + hmE(x.t, x.f.etaEst)).join("\\n");
+}""")
+s = rep(s, "function reportText(){", "function reportText(){\n  { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat([\"VOOS\"]) : REP_COLS_BASE; }")
+
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
 s = rep(s, main_end,

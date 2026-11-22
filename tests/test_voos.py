@@ -210,3 +210,25 @@ def test_vento_rajada_a_partir_de_35_kt(browser, server, mock):
     assert r['old'] == 35 and r['mine'] == 40      # definições antigas (30 kt) passam a 35; um valor escolhido depois mantém-se
     assert not errors
     ctx.close()
+
+
+def test_relatorio_mostra_os_voos_na_linha_do_aeroporto(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, _taf_json)
+    f = taf_frame(page)
+    now = time.time()
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))",
+               f'TP1353  LHR  LIS  {_hhmm(now + 3600)}  {_hhmm(now + 3 * 3600)}\nTP1355  LHR  LIS  {_hhmm(now + 2 * 3600)}  {_hhmm(now + 4 * 3600)}')
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===2", timeout=20000)
+    page.click('[data-nav="taf"]')
+    f.click('#btnReport')
+    f.click('#repBlk [data-blk="2"]')   # 24 H
+    txt = f.input_value('#repText')
+    assert 'VOOS' in txt
+    lis = [l for l in txt.splitlines() if l.startswith('LPPT/LIS')][0]
+    assert 'TP1353' in lis                                   # na mesma linha do aeroporto
+    assert 'TP1355' in txt and txt.index('TP1355') > txt.index('TP1353')
+    assert 'TP1353' in f.inner_text('#repPrev')              # tabela (Outlook/Teams)
+    assert not errors
+    ctx.close()
