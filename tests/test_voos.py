@@ -227,8 +227,16 @@ def test_relatorio_mostra_os_voos_na_linha_do_aeroporto(browser, server, mock):
     txt = f.input_value('#repText')
     assert 'VOOS' in txt
     lis = [l for l in txt.splitlines() if l.startswith('LPPT/LIS')][0]
-    assert 'TP1353' in lis                                   # na mesma linha do aeroporto
-    assert 'TP1355' in txt and txt.index('TP1355') > txt.index('TP1353')
+    assert lis.rstrip().endswith('TP1353, TP1355')           # na mesma linha do aeroporto, só o número do voo
     assert 'TP1353' in f.inner_text('#repPrev')              # tabela (Outlook/Teams)
+    # Personalizado: conta o voo cuja faixa horária apanha a faixa escolhida
+    h = lambda t: time.strftime('%H', time.gmtime(t))
+    f.click('#repBlk [data-blk="3"]')
+    ini = (int((now + 3 * 3600) // 3600) + 1) * 3600       # começa depois da chegada do TP1353 (STA real, sem margem)
+    f.fill('#repWinFrom', h(ini)); f.fill('#repWinTo', h(ini + 3 * 3600))
+    f.press('#repWinTo', 'Enter')
+    txt = f.input_value('#repText')
+    lis = [l for l in txt.splitlines() if l.startswith('LPPT/LIS')][0]
+    assert 'TP1355' in lis and 'TP1353' not in lis
     assert not errors
     ctx.close()

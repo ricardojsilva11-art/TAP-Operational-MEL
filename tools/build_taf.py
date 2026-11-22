@@ -570,7 +570,9 @@ function fltData(){
   let C = fltCache; if (!C || C.text !== st.text){ try { C = flightRows(st.text); } catch(e){ return null; } }
   return C;
 }
-/* voos que chegam a este aeroporto dentro do período do alerta (um por linha: TP1691 ~1713Z) */
+/* voos que chegam a este aeroporto quando há alerta: conta se a faixa horária do voo (chegada; com ETA estimada,
+   de 59 min antes a 59 min depois) apanhar o período do alerta dentro do turno, das 24 H ou da faixa Personalizada.
+   Só o número do voo, 4 por linha dentro da célula. */
 function repFlights(r){
   const C = fltData(); if (!C) return "";
   const M = 59 * 60000;
@@ -578,7 +580,8 @@ function repFlights(r){
     .map(f => ({f, t: f.eta ?? f.sta, m: f.etaEst ? M : 0}))
     .filter(x => (r.wins || []).some(w => x.t + x.m >= w.s && x.t - x.m < w.e))
     .sort((a, b) => a.t - b.t)
-    .map(x => x.f.fl + " " + hmE(x.t, x.f.etaEst)).join("\\n");
+    .map(x => x.f.fl).filter((v, k, A) => A.indexOf(v) === k)
+    .reduce((L, fl, k) => { if (k % 4 === 0) L.push([]); L[L.length - 1].push(fl); return L; }, []).map(g => g.join(", ")).join("\\n");
 }""")
 s = rep(s, "function reportText(){", "function reportText(){\n  { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat([\"VOOS\"]) : REP_COLS_BASE; }")
 
