@@ -173,3 +173,27 @@ def test_eta_estimada_conta_59_min_antes_e_depois(browser, server, mock):
     assert r == [1, 0]
     assert not errors
     ctx.close()
+
+
+def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, _taf_json)
+    f = taf_frame(page)
+    now = time.time()
+    lista = (f'TP1351  LHR  LIS  {_hhmm(now - 4 * 3600)}  {_hhmm(now - 3600)}\n'      # já aterrou
+             f'TP1353  LHR  LIS  {_hhmm(now + 3600)}  {_hhmm(now + 3 * 3600)}\n'
+             f'TP1355  LHR  LIS  {_hhmm(now + 2 * 3600)}  {_hhmm(now + 4 * 3600)}')
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))", lista)
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===2", timeout=20000)
+    lst = page.inner_text('#pFltList')
+    assert 'TP1353' in lst and 'TP1355' in lst and 'TP1351' not in lst
+    assert page.evaluate("fltSum.landed") == 1
+    # painel lateral de LPPT: as chegadas por aterrar, com o alerta
+    page.evaluate("tafSelect('LPPT')")
+    f.wait_for_selector('#detail .d-flt')
+    pan = f.inner_text('#detail .d-flt')
+    assert 'TP1353' in pan and 'TP1355' in pan and 'TP1351' not in pan and 'LVO' in pan
+    assert 'VOOS · CHEGADAS (2, 2 COM ALERTA)' in f.inner_text('#detail').upper()
+    assert not errors
+    ctx.close()

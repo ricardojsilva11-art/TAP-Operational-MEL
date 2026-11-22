@@ -257,12 +257,17 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .flt-raw summary{cursor:pointer;color:var(--muted);font-size:13px}
 .flt-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #fltOut{min-height:24vh}
+.d-flt{display:flex;flex-direction:column;gap:4px}
+.d-fltrow{display:grid;grid-template-columns:62px 82px 62px minmax(0,1fr);gap:8px;align-items:center;font:500 13px/1.3 var(--f-mono);padding:4px 8px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px}
+.d-fltrow.al{border-left-color:var(--kc,var(--c-red))}
+.d-fltrow .a i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))} .d-fltrow .a code{font-size:12px;color:var(--muted)} .d-fltrow .ok{color:var(--muted)}
 .grid th.ap .ap-flt{display:flex;flex-direction:column;gap:1px;padding:0 0 5px 22px;margin-top:-4px}
 .grid th.ap .ap-flt span{font:500 11.5px/1.25 var(--f-mono);color:var(--muted);white-space:nowrap}
 .grid th.ap .ap-flt b{color:var(--ink);font-weight:700}
 .grid th.ap .ap-flt i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))}
 .rep-text{""")
 s = rep(s, '  $("#grid").innerHTML = h + "</tbody>";', '  $("#grid").innerHTML = h + "</tbody>";\n  try { decorateFlights(); } catch(e){}')
+s = rep(s, '  if (LDG_LIMITS[r.icao]) h += limitsRoseHtml(r.icao, r);', '  try { h += fltDetailHtml(r.icao); } catch(e){}\n  if (LDG_LIMITS[r.icao]) h += limitsRoseHtml(r.icao, r);')
 FLT_JS = r"""/* ---------- Voos: PDF/texto da lista de voos cruzado com o TAF ---------- */
 const IATA2ICAO = Object.fromEntries(Object.entries(AIRPORTS).map(([ic, v]) => [v[0], ic]));
 const PDFJS_SRC = "../vendor/pdf.min.js", PDFJS_WORKER = "../vendor/pdf.worker.min.js";
@@ -404,16 +409,29 @@ function flightRows(txt){
   for (const f of P.flights){
     const tA = f.eta ?? f.sta;
     if (tA == null){ f.alert = null; continue; }
+    f.landed = tA < Date.now();
+    if (f.landed){ f.alert = null; continue; }   /* já aterrou: não conta */
     const cand = (f.etaEst ? [tA - 59 * 60000, tA - 30 * 60000, tA, tA + 30 * 60000, tA + 59 * 60000] : [tA]).map(t => alertsAt(all, f.dst, t)).filter(Boolean);
     const a = cand.sort((x, y) => repSev(x.name) - repSev(y.name))[0] || null;
     f.alert = a;
     if (a) rows.push(Object.assign({f, side: "CHEGADA", ap: f.dst, t: tA, est: !!f.etaEst}, a));
   }
   rows.sort((x, y) => repSev(x.name) - repSev(y.name) || x.t - y.t);
-  return {P, rows};
+  return {P, rows, text: txt};
 }
 let fltCache = null;
 /* por baixo de cada aeroporto na grelha: voos afetados (↓ chegada, ↑ partida), hora e alerta; e o resumo para o Início */
+function fltDetailHtml(icao){
+  const st = fltStore.get(); if (!st || !st.text) return "";
+  let C = fltCache; if (!C || C.text !== st.text){ try { C = flightRows(st.text); } catch(e){ return ""; } }
+  const list = C.P.flights.filter(f => f.dst === icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta));
+  if (!list.length) return `<div class="d-sec"><h3>Voos · chegadas</h3><p class="hint" style="margin:0">Nenhum voo da lista por aterrar em ${esc(apIata(icao))}.</p></div>`;
+  const nA = list.filter(f => f.alert).length;
+  return `<div class="d-sec"><h3>Voos · chegadas (${list.length}${nA ? ", " + nA + " com alerta" : ""})</h3><div class="d-flt">` + list.map(f => {
+    const a = f.alert, t = f.eta ?? f.sta;
+    return `<div class="d-fltrow${a ? " al k-" + (FLT_KEY[a.name] || "int") : ""}"><b>${esc(f.fl)}</b><span>${esc(apIata(f.org))}→${esc(apIata(f.dst))}</span><span class="t" title="${f.etaEst ? "ETA estimada pelo tempo de voo" : "STA/ETA"}">${hmE(t, f.etaEst)}</span><span class="a">${a ? `<i>${esc(a.full)}</i> <code>${esc(a.cond)}</code>` : `<span class="ok">sem alerta</span>`}</span></div>`;
+  }).join("") + `</div>${list.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada (alerta entre 59 min antes e 59 min depois).</p>` : ""}</div>`;
+}
 function decorateFlights(){
   const st = fltStore.get();
   fltCache = st && st.text ? flightRows(st.text) : null;
@@ -441,7 +459,7 @@ function postFlights(st){
     if (C) C.rows.forEach(r => { const k = r.f.fl + "|" + r.f.std, w = FLT_RESTR.has(r.name) ? 2 : 1; fl.set(k, Math.max(fl.get(k) || 0, w)); });
     window.parent.postMessage({type: "taf-flights", has: !!(st && st.text), name: (st && st.name) || "", at: (st && st.at) || null,
       total: C ? C.P.flights.length : 0, restr: [...fl.values()].filter(v => v === 2).length, alert: [...fl.values()].filter(v => v === 1).length,
-      outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0,
+      outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0, landed: C ? C.P.flights.filter(f => f.landed).length : 0,
       rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
   } catch(e){}
 }
@@ -453,7 +471,7 @@ function renderFlights(){
   const nAff = new Set(rows.map(r => r.f.fl + r.f.std)).size;
   const parts = [];
   if (st && st.name) parts.push(esc(st.name) + (st.at ? " · carregado às " + hm(st.at) : ""));
-  if (P.flights.length) parts.push(`${P.flights.length} voos lidos · <b>${nAff} afetados</b>`);
+  if (P.flights.length) parts.push(`${P.flights.length} voos lidos · ${P.flights.filter(f => f.landed).length} já aterraram · <b>${nAff} afetados</b>`);
   if (P.outside.length) parts.push(`fora da lista do TAF: ${esc(P.outside.join(", "))}`);
   if (P.bad.length) parts.push(`${P.bad.length} linhas com voo não reconhecidas`);
   $("#fltInfo").innerHTML = parts.join(" · ");
@@ -471,7 +489,7 @@ function renderFlights(){
   } else html = P.flights.length ? `<p style="margin:0">Nenhum voo afetado pelos alertas atuais.</p>` : `<p class="hint" style="margin:0">Carregue o PDF da lista de voos.</p>`;
   $("#fltOut").innerHTML = html;
   $("#fltAll").innerHTML = P.flights.length ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${["VOO", "ROTA", "STD", "STA", "ETD", "ETA", "DESTINO À CHEGADA"].map(th).join("")}</tr>` +
-    P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(f.sta ? fmtDHZ(f.sta) : "")}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? (f.etaEst ? "~" : "") + fmtDHZ(f.eta) + (f.etaEst && f.block ? " (voo ~" + Math.floor(f.block / 60) + "h" + pad(f.block % 60) + ")" : "") : f.etaEst ? "sem estimativa" : "")}${td(f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : "")}</tr>`).join("") + `</table>` +
+    P.flights.slice().sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).map(f => `<tr>${td(f.fl, ";font-weight:bold")}${td(apIata(f.org) + "→" + apIata(f.dst))}${td(fmtDHZ(f.std))}${td(f.sta ? fmtDHZ(f.sta) : "")}${td(f.etd ? fmtDHZ(f.etd) : "")}${td(f.eta ? (f.etaEst ? "~" : "") + fmtDHZ(f.eta) + (f.etaEst && f.block ? " (voo ~" + Math.floor(f.block / 60) + "h" + pad(f.block % 60) + ")" : "") : f.etaEst ? "sem estimativa" : "")}${td(f.landed ? "já aterrou" : f.alert ? f.alert.full + " · " + f.alert.cond : "sem alerta", f.alert ? ";font-weight:bold" : f.landed ? ";color:#888" : "")}</tr>`).join("") + `</table>` +
     (P.flights.some(f => f.etaEst) ? `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo pela distância. O alerta no destino conta entre 59 min antes e 59 min depois da ETA estimada.</p>` : "") : `<p class="hint" style="margin:0">Nenhum voo lido.</p>`;
   fltLast = zs.length ? {html: `<html><head><meta charset="utf-8"></head><body><!--StartFragment-->${html}<p style="margin:0">&nbsp;</p><!--EndFragment--></body></html>`,
     text: zs.map(r => [r.f.fl, apIata(r.f.org) + "-" + apIata(r.f.dst), hm(r.f.std), hm(r.f.sta), hm(r.f.etd), hmE(r.f.eta, r.f.etaEst), r.side + " " + apIata(r.ap), r.cond, r.full].join("\t")).join("\n")} : null;
