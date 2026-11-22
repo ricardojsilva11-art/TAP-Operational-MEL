@@ -240,3 +240,22 @@ def test_relatorio_mostra_os_voos_na_linha_do_aeroporto(browser, server, mock):
     assert 'TP1355' in lis and 'TP1353' not in lis
     assert not errors
     ctx.close()
+
+
+def test_tempos_de_bloco_do_excel(browser, server, mock):
+    """Excel dos tempos de bloco arrastado para o cartão: a ETA passa a usar o tempo do voo (ou da rota) da tabela."""
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null", timeout=15000)
+    assert 'sem tabela' in page.inner_text('#pFltBlk')
+    page.set_input_files('#pFltFile', os.path.join(os.path.dirname(__file__), 'fixtures', 'tempos-bloco-exemplo.xlsx'))
+    page.wait_for_function("localStorage.getItem('tafmon.blocks')", timeout=15000)
+    assert '3 voos' in page.inner_text('#pFltBlk')
+    page.wait_for_timeout(500)
+    r = f.evaluate("""() => { const P = parseFlights('TP   646 TAP46RU 22 LIS BRU CSXXC 222000   ....\\nTP 1527 TAP1527 22 LIS ACC CSXXB 220935 220945E 0952 ....\\nTP 9999 X 22 LIS OPO CSXXD 221000 ....');
+      return P.flights.map(x => [x.fl, x.block, x.blockSrc]); }""")
+    assert r == [['TP646', 170, 'tabela'], ['TP1527', 360, 'rota'], ['TP9999', f.evaluate("blockMin('LPPT','LPPR')"), 'distância']]
+    page.click('#pBlkClear')
+    page.wait_for_function("!localStorage.getItem('tafmon.blocks')")
+    assert not errors
+    ctx.close()
