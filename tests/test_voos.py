@@ -62,8 +62,9 @@ def test_voos_afetados_no_inicio_na_janela_e_na_grelha(browser, server, mock):
     assert 'TP1351' in lst and 'LVO' in lst and 'TP1350' not in lst and 'TP2001' not in lst
     assert '↓' in lst and '↑' not in lst
     # grelha do TAF: o voo por baixo de LPPT
-    sub = f.inner_text('#grid tr[data-icao="LPPT"] .ap-flt')
-    assert 'TP1351' in sub and 'TP1350' not in sub
+    sub = f.inner_text('#grid tr.fltrow[data-fltfor="LPPT"] .fltlane')
+    assert 'TP1351' in sub and 'LVO' in sub and 'TP1350' not in sub
+    assert f.locator('#grid tr.fltrow[data-fltfor="LPPT"] .fw').count() == 1     # caixa da hora seguinte à chegada
     # clicar num voo abre o aeroporto no TAF
     page.click('#pFltList [data-icao="LPPT"] >> nth=0')
     assert visible(page, '#tafView')
@@ -158,7 +159,7 @@ def test_lista_do_sistema_de_operacoes_std_em_dia_hora_minuto(browser, server, m
     ctx.close()
 
 
-def test_eta_estimada_conta_59_min_antes_e_depois(browser, server, mock):
+def test_alerta_conta_da_eta_ate_1_hora_depois(browser, server, mock):
     ctx, page, errors, f = _frame_ready(browser, server, mock)
     r = f.evaluate("""() => {
       const t0 = Math.floor(Date.now() / HOUR) * HOUR + 5 * HOUR;
@@ -168,9 +169,13 @@ def test_eta_estimada_conta_59_min_antes_e_depois(browser, server, mock):
       const in59 = flightRows(`TP646 22 LIS BRU CSXXC ${dd}${hh}${mm} ....`).rows.length;
       const d2 = new Date(d.getTime() - 10 * 60000), dd2 = String(d2.getUTCDate()).padStart(2,'0'), h2 = String(d2.getUTCHours()).padStart(2,'0'), m2 = String(d2.getUTCMinutes()).padStart(2,'0');
       const out = flightRows(`TP646 22 LIS BRU CSXXC ${dd2}${h2}${m2} ....`).rows.length;   // 65 min antes: fora
-      return [in59, out];
+      const d3 = new Date(t0 + HOUR + 20 * 60000 - 162 * 60000), dd3 = String(d3.getUTCDate()).padStart(2,'0'), h3 = String(d3.getUTCHours()).padStart(2,'0'), m3 = String(d3.getUTCMinutes()).padStart(2,'0');
+      const after = flightRows(`TP646 22 LIS BRU CSXXC ${dd3}${h3}${m3} ....`).rows.length;   // chega 20 min depois do fim do LVO: não conta
+      const d4 = new Date(t0 + 30 * 60000 - 162 * 60000), dd4 = String(d4.getUTCDate()).padStart(2,'0'), h4 = String(d4.getUTCHours()).padStart(2,'0'), m4 = String(d4.getUTCMinutes()).padStart(2,'0');
+      const R = flightRows(`TP646 22 LIS BRU CSXXC ${dd4}${h4}${m4} ....`).rows[0];   // chega a meio do LVO: afetado até ao fim do LVO
+      return [in59, out, after, R.to - R.from, R.to === t0 + HOUR];
     }""")
-    assert r == [1, 0]
+    assert r == [1, 0, 0, 30 * 60000, True]
     assert not errors
     ctx.close()
 
@@ -191,10 +196,14 @@ def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, moc
     assert page.evaluate("fltSum.landed") == 1
     # painel lateral de LPPT: as chegadas por aterrar, com o alerta
     page.evaluate("tafSelect('LPPT')")
-    f.wait_for_selector('#detail .d-flt')
-    pan = f.inner_text('#detail .d-flt')
+    f.wait_for_selector('#detail .d-pane[data-pane="flt"]')
+    pan = f.inner_text('#detail .d-pane[data-pane="flt"]')       # abre logo no separador Voos afetados
     assert 'TP1353' in pan and 'TP1355' in pan and 'TP1351' not in pan and 'LVO' in pan
-    assert 'VOOS · CHEGADAS (2, 2 COM ALERTA)' in f.inner_text('#detail').upper()
+    assert 'Voos afetados (2)' in f.inner_text('#detail .d-tabs')
+    assert f.locator('#detail .fraw u').count() >= 1 and 'TP1353' in f.inner_text('#detail .fraw')   # TAF sublinhado com o voo
+    assert f.locator('#detail .d-pane[data-pane="taf"]').is_hidden()
+    f.click('#detail [data-ptab="taf"]')
+    assert f.locator('#detail .d-pane[data-pane="taf"]').is_visible() and f.locator('#detail .d-pane[data-pane="flt"]').is_hidden()
     assert not errors
     ctx.close()
 
@@ -232,7 +241,7 @@ def test_relatorio_mostra_os_voos_na_linha_do_aeroporto(browser, server, mock):
     # Personalizado: conta o voo cuja faixa horária apanha a faixa escolhida
     h = lambda t: time.strftime('%H', time.gmtime(t))
     f.click('#repBlk [data-blk="3"]')
-    ini = (int((now + 3 * 3600) // 3600) + 1) * 3600       # começa depois da chegada do TP1353 (STA real, sem margem)
+    ini = (int((now + 3 * 3600) // 3600) + 2) * 3600       # começa depois da chegada do TP1353 + 1 h
     f.fill('#repWinFrom', h(ini)); f.fill('#repWinTo', h(ini + 3 * 3600))
     f.press('#repWinTo', 'Enter')
     txt = f.input_value('#repText')
