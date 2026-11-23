@@ -62,9 +62,9 @@ def test_voos_afetados_no_inicio_na_janela_e_na_grelha(browser, server, mock):
     assert 'TP1351' in lst and 'LVO' in lst and 'TP1350' not in lst and 'TP2001' not in lst
     assert '↓' in lst and '↑' not in lst
     # grelha do TAF: o voo por baixo de LPPT
-    sub = f.inner_text('#grid tr.fltrow[data-fltfor="LPPT"] .fltlane')
-    assert 'TP1351' in sub and 'LVO' in sub and 'TP1350' not in sub
-    assert f.locator('#grid tr.fltrow[data-fltfor="LPPT"] .fw').count() == 1     # caixa da hora seguinte à chegada
+    assert f.locator('#grid tr.row[data-icao="LPPT"] .fpl').count() == 1          # ✈ na hora em que o voo fica afetado
+    tip = f.evaluate("document.querySelector('#grid tr.row[data-icao=LPPT] .fpl').parentElement.title")
+    assert 'TP1351' in tip and 'LVO' in tip and 'TP1350' not in tip
     # clicar num voo abre o aeroporto no TAF
     page.click('#pFltList [data-icao="LPPT"] >> nth=0')
     assert visible(page, '#tafView')
@@ -296,19 +296,24 @@ def test_tempos_de_bloco_so_admin(browser, server, mock):
     ctx.close()
 
 
-def test_grelha_so_voos_com_alerta_e_no_maximo_3_linhas(browser, server, mock):
-    """Base com muitas chegadas: a linha da grelha só mostra voos com alerta, no máximo 3 linhas; os outros contam em +N."""
+def test_grelha_aviao_so_nos_voos_com_alerta(browser, server, mock):
+    """Base com muitas chegadas: o ✈ só aparece nos voos com alerta, na célula da hora em que ficam afetados, com o número de voos."""
     ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
     ctx.route(WORKER, _taf_json)
     f = taf_frame(page)
     now = time.time()
-    lis = '\n'.join(f'TP{1400 + k}  LHR  LIS  {_hhmm(now + 600)}  {_hhmm(now + 1800 + k * 60)}' for k in range(8))   # 8 chegadas a LIS com LVO
+    t = int(now // 3600 * 3600) + 2 * 3600 + 600                                     # todas a chegar na mesma hora
+    lis = '\n'.join(f'TP{1400 + k}  LHR  LIS  {_hhmm(now + 600)}  {_hhmm(t + k * 60)}' for k in range(8))   # 8 chegadas a LIS com LVO
     lhr = '\n'.join(f'TP{1500 + k}  LIS  LHR  {_hhmm(now + 600)}  {_hhmm(now + 3600 + k * 600)}' for k in range(5))   # LHR sem alerta
     f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))", lis + '\n' + lhr)
     page.evaluate("postTaf({type:'taf-refresh'})")
     page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===8", timeout=20000)
-    assert f.locator('#grid tr.fltrow[data-fltfor="EGLL"]').count() == 0          # sem alerta: não aparece na grelha
-    assert f.locator('#grid tr.fltrow[data-fltfor="LPPT"] .fltlane .fl').count() == 3      # 3 linhas
-    assert '+5' in f.inner_text('#grid tr.fltrow[data-fltfor="LPPT"] th')
+    assert f.locator('#grid tr.row[data-icao="EGLL"] .fpl').count() == 0            # sem alerta: sem ✈
+    assert f.locator('#grid tr.row[data-icao="LPPT"] .fpl').count() == 1
+    assert f.inner_text('#grid tr.row[data-icao="LPPT"] .fpl') == '✈8'
+    # carregar na célula abre o aeroporto com os voos afetados por baixo da grelha
+    f.evaluate("document.querySelector('#grid tr.row[data-icao=LPPT] .fpl').parentElement.click()")
+    f.wait_for_selector('#fltDock:not([hidden])')
+    assert '(8)' in f.inner_text('#fltDock .fd-head')
     assert not errors
     ctx.close()

@@ -267,18 +267,8 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .d-fltrow{display:grid;grid-template-columns:62px 82px 86px minmax(0,1fr);gap:8px;align-items:center;font:500 13px/1.3 var(--f-mono);padding:4px 8px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px}
 .d-fltrow.al{border-left-color:var(--kc,var(--c-red))}
 .d-fltrow .a i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))} .d-fltrow .a code{font-size:12px;color:var(--muted)} .d-fltrow .ok{color:var(--muted)}
-.grid tr.fltrow th.ap.fl{font-size:11.5px;color:var(--muted);padding-left:26px;font-weight:500;height:auto}
-.grid tr.fltrow .fmore{display:inline-block;margin-left:4px;background:var(--c-red);color:#fff;border-radius:8px;padding:0 6px;font-size:11px;line-height:16px}
-.grid td.fltl{padding:0;background:var(--panel2);border-radius:4px;cursor:pointer}
-.fltlane{position:relative;min-height:24px;overflow:hidden}
-.fltlane > *{position:absolute;box-sizing:border-box}
-.fltlane .fy{height:3px;border-radius:2px;background:var(--kc,#7d8da0);opacity:.85}
-.fltlane .fd{width:3px;height:13px;border-radius:2px;background:var(--kc,#7d8da0)}
-.fltlane .fw{height:17px;border:1.5px dashed var(--kc,#7d8da0);border-radius:3px;background:color-mix(in srgb,var(--kc,#7d8da0) 16%,transparent)}
-.fltlane .fe{width:3px;height:21px;border-radius:2px;background:var(--kc,#9fb0c2)}
-.fltlane .fl{white-space:nowrap;font:700 10.5px/15px var(--f-mono);padding:0 5px;border:1.5px solid var(--kc,#5d6f82);border-radius:4px;background:var(--kc,var(--panel));color:#fff}
-.fltlane .fl.na{background:var(--panel);color:var(--ink)}
-.fltlane .fc{font-size:12px;line-height:15px;color:var(--kc,#7d8da0)}
+.grid td.c{position:relative}
+.grid td.c .fpl{position:absolute;top:1px;right:1px;z-index:3;background:#fff;color:#0f1722;font:800 11px/16px var(--f-mono);border-radius:9px;padding:0 4px;min-width:16px;text-align:center;box-shadow:0 0 0 1.5px #0f1722,0 1px 3px #0008;pointer-events:none}
 .d-tabs{display:flex;gap:6px;margin:0 0 10px}
 .d-tabs button{border:1px solid var(--accent);background:none;color:var(--accent);border-radius:7px;padding:6px 12px;font-weight:600;font-size:13px;line-height:1;font-family:inherit;cursor:pointer}
 .d-tabs button.on{background:var(--accent);color:#fff}
@@ -592,38 +582,25 @@ function fltDock(r, slots){
   D.hidden = false;
   D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; });
 }
-/* grelha: por baixo de cada aeroporto com voos com alerta (no máximo 3 linhas; os outros contam em +N), uma linha alinhada com as horas: voo no ar (ETD → ETA),
-   a hora seguinte à chegada (caixa tracejada) e a etiqueta do voo na cor do alerta */
+/* grelha: um ✈ na célula da hora em que o voo fica afetado (com o número de voos se houver mais de um);
+   carregar abre o aeroporto: meteorologia ao lado e voos afetados por baixo da grelha */
 let fltSlots = null;
 function fltGridRows(slots){
   if (!fltCache || !slots || !slots.length) return;
-  const s0 = slots[0], N = slots.length, s1 = s0 + N * HOUR, by = {};
-  fltCache.P.flights.forEach(f => { const t = f.eta ?? f.sta; if (f.landed || !f.alert || t == null || t >= s1 || t + FLT_WIN <= s0) return; (by[f.dst] = by[f.dst] || []).push(f); });
-  for (const [ic, L] of Object.entries(by)){
+  const s0 = slots[0], N = slots.length, by = {};
+  fltCache.P.flights.forEach(f => {
+    const a = f.alert; if (f.landed || !a) return;
+    const k = Math.floor((a.from - s0) / HOUR); if (k < 0 || k >= N) return;
+    ((by[f.dst] = by[f.dst] || {})[k] = by[f.dst][k] || []).push(f);
+  });
+  for (const [ic, K] of Object.entries(by)){
     const tr = document.querySelector(`#grid tr.row[data-icao="${ic}"]`); if (!tr) continue;
-    tr.insertAdjacentHTML("afterend", `<tr class="fltrow" data-fltfor="${ic}"><th class="ap fl" scope="row">↓ chegadas</th><td class="fltl" colspan="${N}"><div class="fltlane"></div></td></tr>`);
-    const lane = tr.nextElementSibling.querySelector(".fltlane"), W = lane.clientWidth || N * 46;
-    const x = t => (t - s0) / (N * HOUR) * W, ends = [], MAXL = 3;
-    let h = "", more = 0;
-    L.sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).forEach(f => {
-      const tA = f.eta ?? f.sta, tD = fltEtd(f), a = f.alert, k = a ? "k-" + (FLT_KEY[a.name] || "int") : "";
-      const lab = `${f.fl} ${tD != null ? hhmm(tD) + "→" : ""}${hhmm(tA)}${a ? " · " + a.name : ""}`;
-      const tip = `${f.fl} ${apIata(f.org)}→${apIata(f.dst)} · ETD ${tD != null ? hm(tD) : "?"} · ETA ${hmE(tA, f.etaEst)}${a ? ` · ${a.full} ${a.cond} (${hhmm(a.from)}–${hhmm(a.to)}Z)` : " · sem alerta"}`;
-      const L0 = tD != null ? Math.max(0, x(tD)) : x(tA), R = x(tA + FLT_WIN) + 8 + lab.length * 6.6;
-      let ln = ends.findIndex(e => e < L0 - 4);
-      if (ln < 0){ if (ends.length >= MAXL){ more++; return; } ln = ends.length; ends.push(R); } else ends[ln] = R;
-      const top = 4 + ln * 22;
-      if (tD != null){
-        if (x(tD) < 0) h += `<span class="fc ${k}" style="left:1px;top:${top + 1}px">◂</span>`;
-        else h += `<span class="fd ${k}" style="left:${x(tD)}px;top:${top + 2}px"></span>`;
-        h += `<span class="fy ${k}" style="left:${Math.max(0, x(tD))}px;width:${Math.max(0, x(tA) - Math.max(0, x(tD)))}px;top:${top + 7}px"></span>`;
-      }
-      h += `<span class="fw ${k}" style="left:${x(tA)}px;width:${x(tA + FLT_WIN) - x(tA)}px;top:${top}px"></span>`;
-      h += `<span class="fe ${k}" style="left:${x(tA) - 1}px;top:${top - 2}px"></span>`;
-      h += `<span class="fl ${k || "na"}" style="left:${x(tA + FLT_WIN) + 4}px;top:${top + 1}px" title="${esc(tip)}">${esc(lab)}</span>`;
-    });
-    lane.style.height = (8 + ends.length * 22) + "px"; lane.innerHTML = h;
-    if (more) tr.nextElementSibling.querySelector("th").innerHTML = `↓ chegadas <b class="fmore" title="Mais voos com alerta: abrir o aeroporto">+${more}</b>`;
+    for (const [k, L] of Object.entries(K)){
+      const td = tr.querySelector(`td[data-k="${k}"]`); if (!td) continue;
+      const tip = L.map(f => `${f.fl} ${apIata(f.org)}→${apIata(f.dst)} · ETA ${hmE(f.eta ?? f.sta, f.etaEst)} · afetado ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z · ${f.alert.name} ${f.alert.cond}`).join("\n");
+      td.insertAdjacentHTML("beforeend", `<span class="fpl">✈${L.length > 1 ? L.length : ""}</span>`);
+      td.title = (td.title ? td.title + "\n" : "") + tip;
+    }
   }
 }
 function decorateFlights(slots){
@@ -635,11 +612,10 @@ function decorateFlights(slots){
   postFlights(st);
   if (!$("#flights").hidden) renderFlights();
 }
-/* carregar na linha de voos abre o aeroporto (meteorologia ao lado, voos afetados por baixo da grelha) */
+/* carregar num ✈ abre o aeroporto e mostra os voos afetados por baixo da grelha */
 $("#grid").addEventListener("click", e => {
-  const fr = e.target.closest("tr.fltrow"); if (!fr) return;
-  const tr = fr.previousElementSibling; if (!tr || !tr.dataset.icao) return;
-  tr.click(); const D = document.getElementById("fltDock"); if (D && !D.hidden) D.scrollIntoView({block: "nearest", behavior: "smooth"});
+  const td = e.target.closest("td.c"); if (!td || !td.querySelector(".fpl")) return;
+  setTimeout(() => { const D = document.getElementById("fltDock"); if (D && !D.hidden) D.scrollIntoView({block: "nearest", behavior: "smooth"}); }, 50);
 });
 function postFlights(st){
   try {
