@@ -784,7 +784,7 @@ if(typeof XLSX==='undefined')return err('A leitura de Excel não está disponív
 try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});let rows=null;
 for(const n of wb.SheetNames){const A=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});const hi=A.findIndex(r=>r.some(c=>/BLOCK/i.test(String(c))));if(hi<0)continue;const H=A[hi].map(c=>String(c).toUpperCase().replace(/\s+/g,' ').trim());
 const ci=re=>H.findIndex(h=>re.test(h)),cF=ci(/V[ÔO]O|FLT|FLIGHT|VOO/),cD=ci(/^DEP/),cA=ci(/^DEST|^ARR/),cB=ci(/BLOCK/);if([cF,cD,cA,cB].some(x=>x<0))continue;
-rows=A.slice(hi+1).map(r=>{const m=/(?:TP|TAP)?\s*0*(\d{1,4}[A-Z]?)/i.exec(String(r[cF]).trim());return m?['TP'+m[1].toUpperCase(),String(r[cD]).trim().toUpperCase(),String(r[cA]).trim().toUpperCase(),Math.round(+r[cB])]:null}).filter(r=>r&&/^[A-Z]{3}$/.test(r[1])&&/^[A-Z]{3}$/.test(r[2])&&r[3]>0&&r[3]<1200);break}
+rows=A.slice(hi+1).map(r=>{const m=/(?:TP|TAP)?\s*0*(\d{1,4}[A-Z]?)/i.exec(String(r[cF]).trim());return[m?'TP'+m[1].toUpperCase():'',String(r[cD]).trim().toUpperCase(),String(r[cA]).trim().toUpperCase(),Math.round(+r[cB])]}).filter(r=>/^[A-Z]{3}$/.test(r[1])&&/^[A-Z]{3}$/.test(r[2])&&r[3]>0&&r[3]<1200);break}
 if(!rows||!rows.length)throw new Error('não encontrei as colunas voo, DEP, DEST e BLOCK');
 const cur=Object.assign({},(window.__portal&&window.__portal.cfg)||{});cur.blocks={rows,name:f.name,at:Date.now(),by:profileName()};
 const {data,error}=await sb.from('taf_settings').update({cfg:cur}).eq('id',1).select('cfg,updated_at,updated_by_name');if(error)throw error;if(!data||!data.length)throw new Error('a linha de definições do TAF não existe (correr sql/014_definicoes_taf.sql)');

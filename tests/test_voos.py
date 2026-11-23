@@ -251,14 +251,15 @@ def test_tempos_de_bloco_do_excel(browser, server, mock):
     page.wait_for_function("tafSum!==null", timeout=15000)
     assert 'sem tabela' in page.inner_text('#pFltBlk')
     page.set_input_files('#pFltFile', os.path.join(os.path.dirname(__file__), 'fixtures', 'tempos-bloco-exemplo.xlsx'))
-    page.wait_for_function("document.getElementById('pFltBlk').innerText.includes('3 voos')", timeout=15000)
-    assert len(mock.taf_cfg['cfg']['blocks']['rows']) == 3          # guardado no servidor, não no browser
+    page.wait_for_function("document.getElementById('pFltBlk').innerText.includes('4 voos')", timeout=15000)
+    assert len(mock.taf_cfg['cfg']['blocks']['rows']) == 4          # guardado no servidor, não no browser
     assert page.evaluate("localStorage.getItem('tafmon.blocks')") is None
-    f.wait_for_function("fltBlocks() && fltBlocks().n === 3", timeout=15000)
+    f.wait_for_function("fltBlocks() && fltBlocks().n === 4", timeout=15000)
     r = f.evaluate("""() => { const P = parseFlights('TP   646 TAP46RU 22 LIS BRU CSXXC 222000   ....\\nTP 1527 TAP1527 22 LIS ACC CSXXB 220935 220945E 0952 ....\\nTP 9999 X 22 LIS OPO CSXXD 221000 ....');
       return P.flights.map(x => [x.fl, x.block, x.blockSrc, !!x.miss]); }""")
     assert r[0] == ['TP646', 170, 'tabela', False]
     assert r[1] == ['TP1527', 360, 'tabela', False]                  # número diferente, mesma rota LIS-ACC: usa a tabela
+    assert f.evaluate("blockFor('TP109','LPPT','SBFL').min") == 660   # linha da tabela sem número de voo conta pela rota
     assert r[2] == ['TP9999', f.evaluate("blockMin('LPPT','LPPR')"), 'distância', True]
     # aviso no Início ao carregar o PDF do dia
     now = time.time()
