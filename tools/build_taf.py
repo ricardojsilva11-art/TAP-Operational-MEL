@@ -282,15 +282,17 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .fraw .dim{opacity:.45}
 .fraw u{text-decoration:underline 3px var(--kc,var(--c-red));text-underline-offset:5px;font-weight:700}
 .fraw .ftag{display:inline-block;font-weight:700;font-size:11px;line-height:16px;background:var(--kc,var(--c-red));color:#fff;border-radius:4px;padding:0 6px;margin:0 2px 0 4px;vertical-align:1px;font-family:var(--f-mono)}
-.ftl{margin-top:10px}
-.ftl-row{position:relative;height:16px}
-.ftl-row > *{position:absolute;box-sizing:border-box}
-.ftl-a > span{top:2px;height:12px;border-radius:3px;background:var(--kc,var(--c-red))}
-.ftl-f .fy{top:7px;height:3px;border-radius:2px;background:var(--kc,#7d8da0)}
-.ftl-f .fw{top:0;height:16px;border:1.5px dashed var(--kc,#7d8da0);border-radius:3px}
-.ftl-f .fn{top:0;font:700 10.5px/16px var(--f-mono);color:var(--kc,var(--muted));white-space:nowrap;padding-left:4px}
-.ftl-x{position:relative;height:16px;font:11px var(--f-mono);color:var(--muted)}
-.ftl-x span{position:absolute;transform:translateX(-50%)}.ftl-x span:first-child{transform:none}
+.ftl2{display:grid;grid-template-columns:64px minmax(0,1fr);row-gap:5px;margin-top:14px;align-items:center}
+.ftl-lab{font:700 12px/22px var(--f-mono);color:var(--kc,var(--muted));white-space:nowrap;overflow:hidden}
+.ftl-trk{position:relative;height:24px;border-radius:4px;background-color:var(--panel2)}
+.ftl-trk > span{position:absolute;box-sizing:border-box}
+.ftl-ax{background:none;height:16px}.ftl-ax span{top:0;font:11px/16px var(--f-mono);color:var(--muted);transform:translateX(-50%)}.ftl-ax span:first-child{transform:none}
+.ftl-seg{top:2px;height:20px;border-radius:3px;background:var(--kc);color:#fff;font:700 10.5px/20px var(--f-mono);padding:0 5px;overflow:hidden;white-space:nowrap}
+.ftl-fy{top:10px;height:4px;border-radius:2px;background:var(--kc,#7d8da0)}
+.ftl-fd{top:5px;width:3px;height:14px;border-radius:2px;background:var(--kc,#7d8da0)}
+.ftl-fw{top:2px;height:20px;border:2px solid var(--kc,#7d8da0);border-radius:3px;background:color-mix(in srgb,var(--kc,#7d8da0) 40%,transparent)}
+.ftl-ft{top:0;font:700 11px/24px var(--f-mono);color:var(--kc,var(--ink));white-space:nowrap}
+.ftl-now{top:-2px;bottom:-2px;width:2px;background:var(--accent);z-index:2}
 .rep-text{""")
 s = rep(s, '  $("#grid").innerHTML = h + "</tbody>";', '  $("#grid").innerHTML = h + "</tbody>";\n  try { decorateFlights(slots); } catch(e){ console.error("Voos:", e); }')
 s = rep(s, '  el.innerHTML = h;\n', '  el.innerHTML = h;\n  try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }\n')
@@ -512,51 +514,63 @@ function fltGroupSpan(T, g){
 }
 const fltTokMatch = (t, k) => { k = String(k).replace(/\+$/, ""); if (!k) return false; if (t === k) return true;
   const v = /^VIS(\d{4})$/.exec(k); if (v) return t === v[1]; return k.length >= 3 && /\d/.test(k) && /[A-Z]/.test(k) && t.includes(k); };
+/* categoria de alerta de um token do TAF (a mesma cor que o painel lateral dá a esse token) */
+function fltTokCat(T, g, t){ try { return rvacTok(T, g, t) || tokenCat(t, T.icao) || null; } catch(e){ return null; } }
 /* TAF com o que afeta cada voo sublinhado e a etiqueta do voo e da hora */
 function fltTafHtml(r, hit){
   const T = r.T; if (!T || T.error || !T.toks) return "";
-  const marks = new Map();
+  const marks = new Map(), tags = {};
   for (const f of hit){
     const a = f.alert, k = FLT_KEY[a.name] || "int", keys = a.toks || [];
     let last = -1;
     for (const g of T.groups){
       const [gs, ge] = fltGroupSpan(T, g); if (gs == null || ge == null || !(gs < a.to && ge > a.from)) continue;
-      const idx = []; T.toks.forEach((tk, i) => { if (tk.g === g && tk.role === "el" && keys.some(kk => fltTokMatch(tk.t, kk))) idx.push(i); });
+      const idx = []; T.toks.forEach((tk, i) => { if (tk.g === g && tk.role === "el" && (keys.some(kk => fltTokMatch(tk.t, kk)) || fltTokCat(T, g, tk.t) === k)) idx.push(i); });
       if (!idx.length) continue;
-      for (let i = idx[0]; i <= idx[idx.length - 1]; i++) if (T.toks[i].g === g && !marks.has(i)) marks.set(i, {k, tags: []});
-      last = Math.max(last, idx[idx.length - 1]);
+      for (const i of idx) if (!marks.has(i)) marks.set(i, {k});
+      let gEnd = idx[idx.length - 1]; while (gEnd + 1 < T.toks.length && T.toks[gEnd + 1].g === g && T.toks[gEnd + 1].role !== "kw") gEnd++;
+      last = Math.max(last, gEnd);
     }
-    if (last >= 0) marks.get(last).tags.push(`${f.fl} ${hhmm(a.from)}–${hhmm(a.to)}Z`);
+    if (last >= 0) (tags[last] = tags[last] || []).push({k, t: `${f.fl} ${hhmm(a.from)}–${hhmm(a.to)}Z`});
   }
   const used = new Set([...marks.keys()].map(i => T.toks[i].g));
   let h = "";
   T.toks.forEach((tk, i) => {
     const starts = tk.role === "kw" && tk.g && tk.g.type !== "BASE" && (tk.t.startsWith("FM") || tk.t === "BECMG" || tk.t.startsWith("PROB") || tk.t === "TEMPO");
     if (starts && i) h += "<br>";
-    const m = marks.get(i), dim = used.size && tk.g && !used.has(tk.g);
-    const nx = marks.get(i + 1);
+    const m = marks.get(i), dim = used.size && tk.g && !used.has(tk.g), tg = tags[i] || [];
+    const nx = marks.get(i + 1) && !tg.length && T.toks[i + 1].g === tk.g;
     let t = esc(tk.t);
-    if (m) t = `<u class="k-${m.k}">${t}${nx && !m.tags.length && T.toks[i + 1].g === tk.g ? " " : ""}</u>` + m.tags.map(x => `<span class="ftag k-${m.k}">${esc(x)}</span>`).join("");
-    h += (dim ? `<span class="dim">${t}</span>` : t) + (m && nx && !m.tags.length ? "" : " ");
+    if (m) t = `<u class="k-${m.k}">${t}${nx ? " " : ""}</u>`;
+    t += tg.map(x => `<span class="ftag k-${x.k}">${esc(x.t)}</span>`).join("");
+    h += (dim ? `<span class="dim">${t}</span>` : t) + (m && nx ? "" : " ");
   });
   return `<h4 class="fd-h">TAF · a sublinhado o que afeta cada voo</h4><div class="raw fraw">${h}</div>`;
 }
-/* linha do tempo do aeroporto: alertas do TAF, voo no ar (ETD → ETA) e a hora seguinte à chegada */
+/* linha do tempo do aeroporto: alertas do TAF (com nome e horas) e, por voo, o voo no ar (ETD → ETA) e a hora seguinte à chegada */
 function fltTimelineHtml(r, list, slots){
   if (!slots || !slots.length || !fltCache) return "";
-  const s0 = slots[0], s1 = s0 + slots.length * HOUR, cl = t => Math.min(s1, Math.max(s0, t));
-  const x = t => ((cl(t) - s0) / (s1 - s0) * 100).toFixed(2) + "%", w = (a, b) => ((cl(b) - cl(a)) / (s1 - s0) * 100).toFixed(2) + "%";
+  const N = slots.length, s0 = slots[0], s1 = s0 + N * HOUR, cl = t => Math.min(s1, Math.max(s0, t));
+  const pc = t => (cl(t) - s0) / (s1 - s0) * 100, x = t => pc(t).toFixed(2) + "%", w = (a, b) => (pc(b) - pc(a)).toFixed(2) + "%";
   const its = (fltCache.all || []).filter(it => it.icao === r.icao && !FLT_SKIP.has(repCatName(it)));
-  const segs = []; slots.forEach(t => { const a = alertOf(its.filter(it => it.start <= t && t < it.end)); const k = a ? FLT_KEY[a.name] || "int" : "";
-    const l = segs[segs.length - 1]; if (l && l.k === k) l.e = t + HOUR; else segs.push({k, s: t, e: t + HOUR}); });
-  let h = `<div class="ftl"><div class="ftl-row ftl-a">${segs.filter(g => g.k).map(g => `<span class="k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}"></span>`).join("")}</div>`;
+  const segs = []; slots.forEach(t => { const a = alertOf(its.filter(it => it.start <= t && t < it.end)); const n = a ? a.name : "";
+    const l = segs[segs.length - 1]; if (l && l.n === n) l.e = t + HOUR; else segs.push({n, k: a ? FLT_KEY[a.name] || "int" : "", s: t, e: t + HOUR}); });
+  const grid = `background-image:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px calc(100% / ${N / 3}))`;
+  const now = Date.now() >= s0 && Date.now() < s1 ? `<span class="ftl-now" style="left:${x(Date.now())}"></span>` : "";
+  let h = `<div class="ftl2"><div class="ftl-lab"></div><div class="ftl-trk ftl-ax">${slots.map((t, i) => i % 3 ? "" : `<span style="left:${x(t)}">${pad(new Date(t).getUTCHours())}Z</span>`).join("")}</div>`;
+  h += `<div class="ftl-lab">TAF</div><div class="ftl-trk" style="${grid}">${segs.filter(g => g.k).map(g => `<span class="ftl-seg k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}" title="${esc(g.n)} ${hhmm(g.s)}–${hhmm(g.e)}Z">${pc(g.e) - pc(g.s) > 9 ? esc(g.n) + " " + pad(new Date(g.s).getUTCHours()) + "–" + pad(new Date(g.e).getUTCHours()) + "Z" : ""}</span>`).join("")}${now}</div>`;
   for (const f of list){
-    const tA = f.eta ?? f.sta, tD = fltEtd(f), k = f.alert ? " k-" + (FLT_KEY[f.alert.name] || "int") : "";
+    const tA = f.eta ?? f.sta, tD = fltEtd(f), k = f.alert ? "k-" + (FLT_KEY[f.alert.name] || "int") : "";
     if (tA + FLT_WIN <= s0 || (tD ?? tA) >= s1) continue;
-    h += `<div class="ftl-row ftl-f">${tD != null ? `<span class="fy${k}" style="left:${x(tD)};width:${w(tD, tA)}"></span>` : ""}<span class="fw${k}" style="left:${x(tA)};width:${w(tA, tA + FLT_WIN)}"></span><span class="fn${k}" style="left:${x(tA + FLT_WIN)}">${esc(f.fl)}</span></div>`;
+    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
+    const right = pc(tA + FLT_WIN) > 62;
+    h += `<div class="ftl-lab ${k}">${esc(f.fl)}</div><div class="ftl-trk ${k}" style="${grid}">`
+      + (tD != null ? `<span class="ftl-fy" style="left:${x(tD)};width:${w(tD, tA)}"></span>` + (tD >= s0 ? `<span class="ftl-fd" style="left:${x(tD)}"></span>` : "") : "")
+      + `<span class="ftl-fw" style="left:${x(tA)};width:${w(tA, tA + FLT_WIN)}"></span>`
+      + (right ? `<span class="ftl-ft" style="right:${(100 - pc(tD != null ? tD : tA)).toFixed(2)}%;padding-right:6px">${esc(txt)}</span>` : `<span class="ftl-ft" style="left:${x(tA + FLT_WIN)};padding-left:6px">${esc(txt)}</span>`)
+      + now + `</div>`;
   }
-  h += `<div class="ftl-x">${slots.map((t, i) => i % 3 ? "" : `<span style="left:${x(t)}">${pad(new Date(t).getUTCHours())}</span>`).join("")}</div></div>`;
-  return h + `<p class="hint" style="margin:4px 0 0">Blocos = alertas do TAF · traço = voo no ar (ETD → ETA) · caixa tracejada = 1 h depois da chegada.</p>`;
+  return h + `</div><p class="hint" style="margin:6px 0 0">TAF = alertas por hora · linha = voo no ar (ETD → ETA) · caixa = 1 h depois da chegada (o que conta para o alerta)${now ? " · linha azul = agora" : ""}.</p>`;
 }
 function fltPaneHtml(r, list, hit, slots){
   const route = f => `${esc(apIata(f.org))}→${esc(apIata(f.dst))}`;
