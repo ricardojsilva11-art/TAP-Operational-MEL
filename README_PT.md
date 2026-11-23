@@ -147,4 +147,4 @@ A pasta `tests/` tem testes que abrem a app num browser com um Supabase simulado
 
 ### TAF em janela no Início
 
-No Início, carregar num aeroporto de "TAF novos ou emendas com alerta" ou de "Meteorologia nos destinos – resumo" abre o TAF numa janela (sem sair do Início): janelas de alerta e o TAF com a condição sublinhada na cor do alerta. "Abrir no TAF Monitor" leva ao painel desse aeroporto. Abrir a janela conta como TAF visto.
+No Início, carregar num aeroporto de "TAF novos ou emendas com alerta" ou de "Meteorologia nos destinos – resumo" abre o TAF numa janela (sem sair do Início): o TAF com a condição sublinhada na cor do alerta. "Abrir no TAF Monitor" leva ao painel desse aeroporto. Abrir a janela conta como TAF visto.
