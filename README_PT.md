@@ -144,3 +144,7 @@ A pasta `tests/` tem testes que abrem a app num browser com um Supabase simulado
 - O Supabase JS está alojado no próprio repositório (`vendor/`, versão 2.119.0 fixa, com verificação `integrity`). O SheetJS vem de `cdn.sheetjs.com`, a fonte oficial, fixado na versão 0.20.3.
 - Os nomes apresentados vêm do nome dado no registo; o administrador pode corrigi-los na página **Utilizadores** (lápis ao lado do nome). As MEL já gravadas mantêm o nome que estava em uso quando foram alteradas.
 - Antes de uso em produção: revisão de segurança, backups e reposição, monitorização, política de retenção e validação documental/operacional com a TAP.
+
+### TAF em janela no Início
+
+No Início, carregar num aeroporto de "TAF novos ou emendas com alerta" ou de "Meteorologia nos destinos – resumo" abre o TAF numa janela (sem sair do Início): janelas de alerta e o TAF com a condição sublinhada na cor do alerta. "Abrir no TAF Monitor" leva ao painel desse aeroporto. Abrir a janela conta como TAF visto.

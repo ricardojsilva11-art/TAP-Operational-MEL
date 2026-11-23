@@ -72,13 +72,20 @@ def test_resumo_taf_no_inicio_e_alerta_no_separador(browser, server, mock):
     ctx.close()
 
 
-def test_clicar_aeroporto_abre_painel_no_taf(browser, server, mock):
+def test_clicar_aeroporto_abre_o_taf_numa_janela(browser, server, mock):
+    """No Início, os destinos em alerta e os TAF novos abrem o TAF numa janela; "Abrir no TAF Monitor" leva ao painel."""
     ctx, page, _ = open_app(browser, server, mock, logged_in(), view='portal')
     f = taf_frame(page)
     f.evaluate("window.__sel=[];addEventListener('message',e=>{if(e.data&&e.data.type==='taf-select')__sel.push(e.data.icao)})")
     f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY)
     page.wait_for_selector('#pAlertList [data-icao="LPPT"]')
     page.click('#pAlertList [data-icao="LPPT"]')
+    page.wait_for_selector('#tafPop.show')
+    assert not visible(page, '#tafView')
+    page.wait_for_function("document.getElementById('tafPopTitle').textContent.startsWith('LPPT')")
+    page.wait_for_function("!/A carregar/.test(document.getElementById('tafPopBody').textContent)", timeout=8000)
+    page.click('#tafPopOpen')
+    assert not page.evaluate("document.getElementById('tafPop').classList.contains('show')")
     assert visible(page, '#tafView')
     page.wait_for_timeout(300)
     assert f.evaluate('__sel') == ['LPPT']
@@ -166,7 +173,8 @@ def test_ver_um_taf_so_limpa_esse(browser, server, mock):
     assert page.inner_text('#tafBadge') == '2'
     # abrir LPFR (no Início) limpa só LPFR
     page.click('#pNewList [data-icao="LPFR"]')
-    page.click('[data-nav="portal"]')
+    page.wait_for_selector('#tafPop.show')                         # abre o TAF numa janela e conta como visto
+    page.click('#tafPopClose')
     assert page.inner_text('#tafBadge') == '1' and page.inner_text('#pNew') == '1'
     lst = page.inner_text('#pNewList')
     assert 'LPFR' not in lst and 'LEMD' in lst
@@ -405,8 +413,8 @@ def test_carregar_no_alerta_do_inicio_faz_desaparecer(browser, server, mock):
     page.wait_for_selector('#pNewList [data-icao="LPFR"]')
     page.evaluate("document.querySelectorAll('.taf-toast').forEach(x=>x.remove())")
     page.click('#pNewList [data-icao="LPFR"]')
-    assert visible(page, '#tafView')
-    page.click('[data-nav="portal"]')
+    page.wait_for_selector('#tafPop.show')                         # o TAF abre numa janela
+    page.click('#tafPopClose')
     assert page.evaluate("[...document.querySelectorAll('#pNewList [data-icao]')].map(e=>e.dataset.icao)") == ['LEMD']
     assert page.inner_text('#pNew') == '1' and page.inner_text('#tafBadge') == '1'
     page.reload()  # e continua assim depois de recarregar
@@ -453,7 +461,7 @@ def test_mesmo_taf_nao_volta_a_ser_novo(browser, server, mock):
     page.wait_for_function("document.getElementById('tafBadge').textContent==='1'")
     assert '101700Z' in page.inner_text('#pNewList')
     page.click('#pNewList [data-icao="LPPD"]')
-    page.click('[data-nav="portal"]')
+    page.click('#tafPopClose')
     f.evaluate("parent.postMessage({type:'taf-summary',total:1,now:[],nextWin:[],alerts:[],newTafs:[{icao:'LPPD',name:'Ponta Delgada',amd:false,at:999999,issue:Date.UTC(2026,10,10,17),level:'green',alert:true}]},location.origin)")
     page.wait_for_timeout(400)
     assert not visible(page, '#tafBadge') and page.inner_text('#pNew') == '0'

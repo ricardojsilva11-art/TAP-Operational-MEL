@@ -2021,34 +2021,8 @@ function renderDetail(slots){
     h += wins.length ? `<ul class="wins">${wins.map(w => `<li class="${w.lvl}${w.cat ? " k-" + w.cat : ""}"><span class="t"><span class="sw"></span>${winLabel(w.start, w.end)}</span><span>${esc([...w.txt].join(" · "))} <span class="hint">· ${esc(w.srcs.join(", "))}</span></span></li>`).join("")}</ul>` : `<p class="hint" style="margin:0">Sem alertas no período mostrado.</p>`;
     h += `</div>`;
 
-    // TAF com destaque
-    let raw = "", open = false;
-    const TP = tafChanged[T.icao] && tafChanged[T.icao].prevRaw, tCnt = {};
-    if (TP) String(TP).split(/\s+/).forEach(t => tCnt[t] = (tCnt[t] || 0) + 1);
-    const tChg = t => { if (!TP || /^\d{6}Z$/.test(t)) return false; if (tCnt[t]){ tCnt[t]--; return false; } return true; };
-    T.toks.forEach((tk, i) => {
-      const startsGroup = tk.role === "kw" && tk.g && (tk.g.type !== "BASE") && (tk.t.startsWith("FM") || tk.t === "BECMG" || tk.t.startsWith("PROB") || tk.t === "TEMPO");
-      if (startsGroup){ if (open) raw += "</span>"; raw += `<span class="gl">`; open = true; }
-      else if (i === 0){ raw += `<span class="gl">`; open = true; }
-      let cls = "";
-      if (tk.role === "kw" || tk.role === "kw2") cls = "kw";
-      else if (tk.role === "el"){
-        const ignored = tk.g && (tk.g.type === "TEMPO" || tk.g.type === "PROB");
-        const kc = tokenCat(tk.t, T.icao);
-        if (ignored && isTsTok(tk.t) && (cfg.phen || []).includes("TS")) cls = "hit k-conv";
-        else if (ignored && vrbHit(parseEl([tk.t]).wind, T.icao)) cls = "hit k-wind";
-        else if (ignored && cfg.intensity && isWx(tk.t) && /^[+-]/.test(tk.t) && !LIGHT_RAIN.has(tk.t)) cls = "hit k-" + (tokenCat(tk.t, T.icao) || "int");
-        else if (ignored && parseEl([tk.t]).wind && windHit(parseEl([tk.t]).wind, T.icao) && !ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-wind";
-        else if (ignored && /^\d{4}$/.test(tk.t) && +tk.t < cfg.vis) cls = "hit k-cig";
-        else if (tk.g && tk.g.type !== "BASE" && RWY_MINIMA[T.icao] && rvacTok(T, tk.g, tk.t)) cls = "hit k-" + rvacTok(T, tk.g, tk.t);
-        else if (ignored && /SM$/.test(tk.t) && (parseEl([tk.t]).vis ?? 99999) < cfg.vis) cls = "hit k-vis";
-        else if (ignored && ceilAlways(parseEl([tk.t]).clouds)) cls = "hit k-" + catOfCode(ceilAlways(parseEl([tk.t]).clouds).code);
-        else if (ignored && LDG_LIMITS[T.icao] && parseEl([tk.t]).wind && ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-" + catOfCode(ldgCheck(T.icao, parseEl([tk.t]).wind).code);
-        else if (kc) cls = ignored ? "ign" : "hit k-" + kc;
-      }
-      { const ch = tChg(tk.t); raw += (ch ? '<mark class="chg">' : "") + (cls ? `<span class="${cls}">${esc(tk.t)}</span>` : esc(tk.t)) + (ch ? "</mark>" : "") + " "; }
-    });
-    if (open) raw += "</span>";
+    let raw = tafRawHtml(T);
+    const TP = tafChanged[T.icao] && tafChanged[T.icao].prevRaw;
     h += `<div class="d-sec"><h3>TAF</h3><div class="raw">${raw}</div>`;
     if (TP && showPrev()) h += `<div class="prevlab">TAF anterior</div><div class="raw prev">${(() => { const tpn = String(TP).replace(/\s+/g, " ").trim(), dd = diffIdx(tpn, T.raw); return tpn.split(" ").map((t, ix) => dd.has(ix) ? `<mark class="chg">${esc(t)}</mark>` : esc(t)).join(" "); })()}</div>`;
     if (TP) h += `<p class="hint chg-hint"><mark class="chg">assinalado</mark> = o que mudou em relação ao TAF anterior ${prevTog()}</p>`;
@@ -3102,6 +3076,55 @@ window.addEventListener("message", e => {
 });
 /* outro separador ou janela mudou a lista: atualizar */
 window.addEventListener("storage", e => { if (e.key === "tafmon.voos"){ $("#fltIn").value = ""; render(); } });
+function tafRawHtml(T){
+    let raw = "", open = false;
+    const TP = tafChanged[T.icao] && tafChanged[T.icao].prevRaw, tCnt = {};
+    if (TP) String(TP).split(/\s+/).forEach(t => tCnt[t] = (tCnt[t] || 0) + 1);
+    const tChg = t => { if (!TP || /^\d{6}Z$/.test(t)) return false; if (tCnt[t]){ tCnt[t]--; return false; } return true; };
+    T.toks.forEach((tk, i) => {
+      const startsGroup = tk.role === "kw" && tk.g && (tk.g.type !== "BASE") && (tk.t.startsWith("FM") || tk.t === "BECMG" || tk.t.startsWith("PROB") || tk.t === "TEMPO");
+      if (startsGroup){ if (open) raw += "</span>"; raw += `<span class="gl">`; open = true; }
+      else if (i === 0){ raw += `<span class="gl">`; open = true; }
+      let cls = "";
+      if (tk.role === "kw" || tk.role === "kw2") cls = "kw";
+      else if (tk.role === "el"){
+        const ignored = tk.g && (tk.g.type === "TEMPO" || tk.g.type === "PROB");
+        const kc = tokenCat(tk.t, T.icao);
+        if (ignored && isTsTok(tk.t) && (cfg.phen || []).includes("TS")) cls = "hit k-conv";
+        else if (ignored && vrbHit(parseEl([tk.t]).wind, T.icao)) cls = "hit k-wind";
+        else if (ignored && cfg.intensity && isWx(tk.t) && /^[+-]/.test(tk.t) && !LIGHT_RAIN.has(tk.t)) cls = "hit k-" + (tokenCat(tk.t, T.icao) || "int");
+        else if (ignored && parseEl([tk.t]).wind && windHit(parseEl([tk.t]).wind, T.icao) && !ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-wind";
+        else if (ignored && /^\d{4}$/.test(tk.t) && +tk.t < cfg.vis) cls = "hit k-cig";
+        else if (tk.g && tk.g.type !== "BASE" && RWY_MINIMA[T.icao] && rvacTok(T, tk.g, tk.t)) cls = "hit k-" + rvacTok(T, tk.g, tk.t);
+        else if (ignored && /SM$/.test(tk.t) && (parseEl([tk.t]).vis ?? 99999) < cfg.vis) cls = "hit k-vis";
+        else if (ignored && ceilAlways(parseEl([tk.t]).clouds)) cls = "hit k-" + catOfCode(ceilAlways(parseEl([tk.t]).clouds).code);
+        else if (ignored && LDG_LIMITS[T.icao] && parseEl([tk.t]).wind && ldgCheck(T.icao, parseEl([tk.t]).wind)) cls = "hit k-" + catOfCode(ldgCheck(T.icao, parseEl([tk.t]).wind).code);
+        else if (kc) cls = ignored ? "ign" : "hit k-" + kc;
+      }
+      { const ch = tChg(tk.t); raw += (ch ? '<mark class="chg">' : "") + (cls ? `<span class="${cls}">${esc(tk.t)}</span>` : esc(tk.t)) + (ch ? "</mark>" : "") + " "; }
+    });
+    if (open) raw += "</span>";
+  return raw;
+}
+
+/* TAF de um aeroporto para a janela do Início: cores dos alertas passadas para estilos (o portal não tem as classes) */
+function tafPopupHtml(icao){
+  const r = rowsCache.find(x => x.icao === icao);
+  if (!r || !r.T) return {title: icao, html: `<p class="muted">Sem TAF para ${esc(icao)}.</p>`};
+  const T = r.T, t0 = Math.floor(Date.now() / HOUR) * HOUR;
+  const slots = fltSlots && fltSlots.length ? fltSlots : Array.from({length: 30}, (_, i) => t0 + i * HOUR);
+  let h = `<div class="tp-meta">${nameOf(icao) ? `<b>${esc(nameOf(icao))}</b> · ` : ""}${esc(r.region || "")}${T.issue ? ` · emitido ${fmtDHZ(T.issue)}` : ""}${T.amd ? ` · <b>AMD</b>` : ""}${r.isNew ? ` · <b>${T.amd ? "emendado" : "novo"}</b>` : ""}</div>`;
+  if (T.error) h += `<p class="muted">Não foi possível analisar: ${esc(T.error)}.</p><div class="tp-raw">${esc(T.raw)}</div>`;
+  else {
+    const wins = windowsOf(r, slots);
+    h += `<h4 class="tp-h">Janelas de alerta</h4>` + (wins.length ? `<ul class="tp-wins">${wins.map(w => `<li class="${w.cat ? "k-" + w.cat : ""}"><span class="sw"></span><b>${winLabel(w.start, w.end)}</b> <span>${esc([...w.txt].join(" · "))}</span></li>`).join("")}</ul>` : `<p class="muted">Sem alertas no período mostrado.</p>`);
+    h += `<h4 class="tp-h">TAF · a sublinhado a condição</h4><div class="tp-raw">${tafRawHtml(T)}</div>`;
+  }
+  const box = document.createElement("div"); box.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden"; box.innerHTML = h; document.body.appendChild(box);
+  box.querySelectorAll('[class*="k-"]').forEach(el => { const c = getComputedStyle(el).getPropertyValue("--kc").trim(); if (c) el.style.setProperty("--kc", c); });
+  const html = box.innerHTML; box.remove();
+  return {title: icao + (iataOf(icao) ? " / " + iataOf(icao) : ""), html};
+}
 function closeReport(){ $("#report").hidden = true; $("#btnReport").focus(); }
 const saveRep = () => store.set("tafmon.rep", repUI);
 $("#btnReport").addEventListener("click", openReport);
@@ -3202,6 +3225,9 @@ window.addEventListener("message", e => {
     let tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`);
     if (!tr){ ui.filter = "all"; ui.area = ""; ui.list = ""; ui.cat = ""; ui.q = ""; saveUI(); render(); tr = document.querySelector(`#grid tr[data-icao="${d.icao}"]`); }
     if (tr){ tr.click(); tr.scrollIntoView({block: "center"}); }
+  } else if (d.type === "taf-popup" && d.icao){
+    const P = tafPopupHtml(d.icao);
+    try { window.parent.postMessage({type: "taf-popup", icao: d.icao, title: P.title, html: P.html}, location.origin); } catch(e){}
   } else if (d.type === "taf-favs"){
     window.__portalFavs = d.list || []; render();
   } else if (d.type === "taf-filter"){

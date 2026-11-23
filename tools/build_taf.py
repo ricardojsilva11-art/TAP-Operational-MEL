@@ -838,6 +838,35 @@ gate = r'''<script>
 })();
 </script>
 '''
+
+# 3k. TAF em janela (Início): o TAF com destaque do painel passa a ser uma função reutilizável (tafRawHtml)
+#     e o TAF Monitor responde a pedidos "taf-popup" do portal com o TAF do aeroporto, janelas de alerta e a condição sublinhada
+_i = s.index('    // TAF com destaque\n'); _j = s.index('    if (open) raw += "</span>";\n', _i) + len('    if (open) raw += "</span>";\n')
+_block = s[_i:_j]
+s = s[:_i] + '    let raw = tafRawHtml(T);\n    const TP = tafChanged[T.icao] && tafChanged[T.icao].prevRaw;\n' + s[_j:]
+_fn = 'function tafRawHtml(T){\n' + _block.replace('    // TAF com destaque\n', '') + '  return raw;\n}\n' + r"""
+/* TAF de um aeroporto para a janela do Início: cores dos alertas passadas para estilos (o portal não tem as classes) */
+function tafPopupHtml(icao){
+  const r = rowsCache.find(x => x.icao === icao);
+  if (!r || !r.T) return {title: icao, html: `<p class="muted">Sem TAF para ${esc(icao)}.</p>`};
+  const T = r.T, t0 = Math.floor(Date.now() / HOUR) * HOUR;
+  const slots = fltSlots && fltSlots.length ? fltSlots : Array.from({length: 30}, (_, i) => t0 + i * HOUR);
+  let h = `<div class="tp-meta">${nameOf(icao) ? `<b>${esc(nameOf(icao))}</b> · ` : ""}${esc(r.region || "")}${T.issue ? ` · emitido ${fmtDHZ(T.issue)}` : ""}${T.amd ? ` · <b>AMD</b>` : ""}${r.isNew ? ` · <b>${T.amd ? "emendado" : "novo"}</b>` : ""}</div>`;
+  if (T.error) h += `<p class="muted">Não foi possível analisar: ${esc(T.error)}.</p><div class="tp-raw">${esc(T.raw)}</div>`;
+  else {
+    const wins = windowsOf(r, slots);
+    h += `<h4 class="tp-h">Janelas de alerta</h4>` + (wins.length ? `<ul class="tp-wins">${wins.map(w => `<li class="${w.cat ? "k-" + w.cat : ""}"><span class="sw"></span><b>${winLabel(w.start, w.end)}</b> <span>${esc([...w.txt].join(" · "))}</span></li>`).join("")}</ul>` : `<p class="muted">Sem alertas no período mostrado.</p>`);
+    h += `<h4 class="tp-h">TAF · a sublinhado a condição</h4><div class="tp-raw">${tafRawHtml(T)}</div>`;
+  }
+  const box = document.createElement("div"); box.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden"; box.innerHTML = h; document.body.appendChild(box);
+  box.querySelectorAll('[class*="k-"]').forEach(el => { const c = getComputedStyle(el).getPropertyValue("--kc").trim(); if (c) el.style.setProperty("--kc", c); });
+  const html = box.innerHTML; box.remove();
+  return {title: icao + (iataOf(icao) ? " / " + iataOf(icao) : ""), html};
+}
+"""
+s = rep(s, 'function closeReport(){', _fn + 'function closeReport(){')
+s = rep(s, '  } else if (d.type === "taf-favs"){\n', '  } else if (d.type === "taf-popup" && d.icao){\n    const P = tafPopupHtml(d.icao);\n    try { window.parent.postMessage({type: "taf-popup", icao: d.icao, title: P.title, html: P.html}, location.origin); } catch(e){}\n  } else if (d.type === "taf-favs"){\n')
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 
