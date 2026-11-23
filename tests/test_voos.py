@@ -202,7 +202,22 @@ def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, moc
     assert 'Voos afetados · LPPT' in pan and '(2)' in pan
     assert f.locator('#fltDock .fraw u').count() >= 1 and 'TP1353' in f.inner_text('#fltDock .fraw')   # TAF sublinhado com o voo
     assert f.locator('#detail .d-tabs').count() == 0 and 'Voos afetados' not in f.inner_text('#detail')   # o painel lateral fica só com a meteorologia
+    # fechar o painel lateral não fecha o quadro de baixo
+    f.click('#dClose')
+    assert f.locator('#fltDock').is_visible() and 'Voos afetados · LPPT' in f.inner_text('#fltDock')
+    # altura do quadro: arrastar a pega para cima aumenta
+    h0 = f.evaluate("document.getElementById('fltDock').getBoundingClientRect().height")
+    box = f.locator('#fltDockResize').bounding_box()
+    page.mouse.move(box['x'] + box['width'] / 2, box['y'] + 5); page.mouse.down()
+    page.mouse.move(box['x'] + box['width'] / 2, box['y'] - 60, steps=5); page.mouse.up()
+    h1 = f.evaluate("document.getElementById('fltDock').getBoundingClientRect().height")
+    assert h1 > h0 + 40
+    # fechar o quadro de baixo não fecha o painel lateral e não volta a abrir na atualização
+    page.evaluate("tafSelect('LPPT')")
+    f.wait_for_selector('#detail .d-head')
     f.click('#fltDockClose')
+    assert f.locator('#fltDock').is_hidden() and f.locator('#detail .d-head').is_visible()
+    f.evaluate("render()")
     assert f.locator('#fltDock').is_hidden()
     assert not errors
     ctx.close()

@@ -294,10 +294,9 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .rep-text{""")
 s = rep(s, '  $("#grid").innerHTML = h + "</tbody>";', '  $("#grid").innerHTML = h + "</tbody>";\n  try { decorateFlights(slots); } catch(e){ console.error("Voos:", e); }')
 s = rep(s, '  el.innerHTML = h;\n', '  el.innerHTML = h;\n  try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }\n')
-s = rep(s, '  if (!r){ el.innerHTML = ""; el.classList.add("closed");', '  if (!r){ try { fltDock(null); } catch(e){} el.innerHTML = ""; el.classList.add("closed");')
-s = rep(s, '  $("#detail").classList.add("closed");\n', '  $("#detail").classList.add("closed");\n  try { fltDock(null); } catch(e){}\n')
+s = rep(s, '  if (!r){ el.innerHTML = ""; el.classList.add("closed");', '  if (!r){ try { fltDock(null, slots); } catch(e){} el.innerHTML = ""; el.classList.add("closed");')
 s = rep(s, '<div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>', '<div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>\n    <section class="fltdock" id="fltDock" hidden></section>')
-s = rep(s, '@media (max-width:1100px){.d-resize{display:none}', '.fltdock{grid-row:2;grid-column:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;min-width:0}\n.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 500px);min-height:300px}\n.layout:has(.fltdock:not([hidden])) .detail,.layout:has(.fltdock:not([hidden])) .d-resize{grid-row:1 / span 2}\n.layout:has(.fltdock:not([hidden])){grid-template-rows:auto 1fr}.fltdock{align-self:start}\n@media (max-width:1100px){.fltdock{grid-column:auto;grid-row:auto}.layout:has(.fltdock:not([hidden])) .detail{grid-row:auto}.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 230px)}}\n@media (max-width:1100px){.d-resize{display:none}')
+s = rep(s, '@media (max-width:1100px){.d-resize{display:none}', '.fltdock{grid-row:2;grid-column:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 16px 12px;min-width:0;height:var(--dock-h,380px);overflow:auto;position:relative}\n.fd-resize{position:sticky;top:0;z-index:4;height:12px;margin:0 -16px 2px;cursor:row-resize;display:flex;justify-content:center;align-items:center;background:var(--panel);touch-action:none}\n.fd-resize::before{content:"";width:44px;height:4px;border-radius:2px;background:var(--line)}\n.fd-resize:hover::before,.fd-resize.drag::before{background:var(--accent)}\nbody.resizing-v{cursor:row-resize;user-select:none}\n.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 140px - var(--dock-h,380px));min-height:180px}\n.layout:has(.fltdock:not([hidden])) .detail,.layout:has(.fltdock:not([hidden])) .d-resize{grid-row:1 / span 2}\n.layout:has(.fltdock:not([hidden])){grid-template-rows:auto 1fr}.fltdock{align-self:start}\n@media (max-width:1100px){.fltdock{grid-column:auto;grid-row:auto;height:auto}.fd-resize{display:none}.layout:has(.fltdock:not([hidden])) .detail{grid-row:auto}.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 230px)}}\n@media (max-width:1100px){.d-resize{display:none}')
 FLT_JS = r"""/* ---------- Voos: PDF/texto da lista de voos cruzado com o TAF ---------- */
 const IATA2ICAO = Object.fromEntries(Object.entries(AIRPORTS).map(([ic, v]) => [v[0], ic]));
 const PDFJS_SRC = "../vendor/pdf.min.js", PDFJS_WORKER = "../vendor/pdf.worker.min.js";
@@ -572,16 +571,33 @@ function fltPaneHtml(r, list, hit, slots){
   return h + `</div><div class="fd-c">` + fltTafHtml(r, hit) + fltTimelineHtml(r, hit, slots) + `</div></div>`;
 }
 /* por baixo da grelha: voos afetados do aeroporto selecionado (o painel lateral fica só com a meteorologia) */
+/* quadro de baixo: fecha e muda de altura independentemente do painel lateral; fica com o aeroporto que mostrava
+   quando o painel lateral é fechado; depois de fechado só volta a abrir ao escolher um aeroporto */
+let fltDockIc = null, fltDockShut = null;
 function fltDock(r, slots){
   const D = document.getElementById("fltDock"); if (!D) return;
+  if (!r){ if (D.hidden || !fltDockIc) return; r = rowsCache.find(x => x.icao === fltDockIc); if (!r){ D.hidden = true; return; } }
+  if (fltDockShut === r.icao){ D.hidden = true; return; }
+  fltDockIc = r.icao;
   const C = fltCache;
   const list = r && C ? C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)) : [];
   const hit = list.filter(f => f.alert);
   if (!hit.length){ D.hidden = true; D.innerHTML = ""; return; }
-  D.innerHTML = `<div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, list, hit, slots);
+  D.innerHTML = `<div class="fd-resize" id="fltDockResize" role="separator" aria-orientation="horizontal" aria-label="Arrastar para mudar a altura" title="Arraste para mudar a altura · duplo clique repõe"></div><div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, list, hit, slots);
   D.hidden = false;
-  D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; });
+  D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; fltDockShut = fltDockIc; });
+  const hd = D.querySelector("#fltDockResize"), lay = document.querySelector(".layout");
+  const setH = h => { h = Math.round(Math.min(window.innerHeight * 0.8, Math.max(160, h))); lay.style.setProperty("--dock-h", h + "px"); return h; };
+  let st = null;
+  hd.addEventListener("pointerdown", e => { st = {y: e.clientY, h: D.getBoundingClientRect().height}; hd.setPointerCapture(e.pointerId); hd.classList.add("drag"); document.body.classList.add("resizing-v"); e.preventDefault(); });
+  hd.addEventListener("pointermove", e => { if (st) ui.dockH = setH(st.h - (e.clientY - st.y)); });
+  const end = () => { if (!st) return; st = null; hd.classList.remove("drag"); document.body.classList.remove("resizing-v"); saveUI(); };
+  hd.addEventListener("pointerup", end); hd.addEventListener("pointercancel", end);
+  hd.addEventListener("dblclick", () => { ui.dockH = null; lay.style.removeProperty("--dock-h"); saveUI(); });
 }
+try { if (ui.dockH) document.querySelector(".layout").style.setProperty("--dock-h", ui.dockH + "px"); } catch(e){}
+/* escolher um aeroporto na grelha volta a permitir o quadro de baixo */
+$("#grid").addEventListener("click", e => { if (e.target.closest("tr[data-icao]")) fltDockShut = null; }, true);
 /* grelha: um ✈ na célula da hora em que o voo fica afetado (com o número de voos se houver mais de um);
    carregar abre o aeroporto: meteorologia ao lado e voos afetados por baixo da grelha */
 let fltSlots = null;
