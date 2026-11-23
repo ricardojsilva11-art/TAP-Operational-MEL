@@ -196,14 +196,14 @@ def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, moc
     assert page.evaluate("fltSum.landed") == 1
     # painel lateral de LPPT: as chegadas por aterrar, com o alerta
     page.evaluate("tafSelect('LPPT')")
-    f.wait_for_selector('#detail .d-pane[data-pane="flt"]')
-    pan = f.inner_text('#detail .d-pane[data-pane="flt"]')       # abre logo no separador Voos afetados
+    f.wait_for_selector('#fltDock:not([hidden])')
+    pan = f.inner_text('#fltDock')                                 # voos afetados por baixo da grelha
     assert 'TP1353' in pan and 'TP1355' in pan and 'TP1351' not in pan and 'LVO' in pan
-    assert 'Voos afetados (2)' in f.inner_text('#detail .d-tabs')
-    assert f.locator('#detail .fraw u').count() >= 1 and 'TP1353' in f.inner_text('#detail .fraw')   # TAF sublinhado com o voo
-    assert f.locator('#detail .d-pane[data-pane="taf"]').is_hidden()
-    f.click('#detail [data-ptab="taf"]')
-    assert f.locator('#detail .d-pane[data-pane="taf"]').is_visible() and f.locator('#detail .d-pane[data-pane="flt"]').is_hidden()
+    assert 'Voos afetados · LPPT' in pan and '(2)' in pan
+    assert f.locator('#fltDock .fraw u').count() >= 1 and 'TP1353' in f.inner_text('#fltDock .fraw')   # TAF sublinhado com o voo
+    assert f.locator('#detail .d-tabs').count() == 0 and 'Voos afetados' not in f.inner_text('#detail')   # o painel lateral fica só com a meteorologia
+    f.click('#fltDockClose')
+    assert f.locator('#fltDock').is_hidden()
     assert not errors
     ctx.close()
 

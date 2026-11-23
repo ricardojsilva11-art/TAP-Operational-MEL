@@ -335,7 +335,11 @@ th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--lin
 .d-tabs{display:flex;gap:6px;margin:0 0 10px}
 .d-tabs button{border:1px solid var(--accent);background:none;color:var(--accent);border-radius:7px;padding:6px 12px;font-weight:600;font-size:13px;line-height:1;font-family:inherit;cursor:pointer}
 .d-tabs button.on{background:var(--accent);color:#fff}
-.fltab{font-size:12.5px}.fltab td{vertical-align:middle;white-space:nowrap}.fltab td small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.fltab td small b{color:var(--ink)}
+.fd-head{display:flex;align-items:center;gap:10px;margin:0 0 8px}.fd-head h3{margin:0;font-size:15px}.fd-head h3 span{color:var(--muted);font-weight:500}.fd-head .d-close{margin-left:auto}
+.fd-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:1100px){.fd-cols{grid-template-columns:minmax(0,1fr)}}
+.fd-h{margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fltab{font-size:13px;width:100%}.fltab td{vertical-align:middle;white-space:nowrap}.fltab td small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.fltab td small b{color:var(--ink)}
 .fchip{display:inline-block;background:var(--kc,var(--c-red));color:#fff;font-weight:700;font-size:11.5px;padding:1px 7px;border-radius:5px}
 .fraw{font:13px/2.15 var(--f-mono)}
 .fraw .dim{opacity:.45}
@@ -380,6 +384,11 @@ h1{font-size:22px}
 .d-resize::before{content:"";width:4px;height:56px;border-radius:3px;background:var(--line);transition:background .15s}
 .d-resize:hover::before,.d-resize.drag::before{background:var(--accent)}
 .layout.nodetail .d-resize{display:none}
+.fltdock{grid-row:2;grid-column:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;min-width:0}
+.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 500px);min-height:300px}
+.layout:has(.fltdock:not([hidden])) .detail,.layout:has(.fltdock:not([hidden])) .d-resize{grid-row:1 / span 2}
+.layout:has(.fltdock:not([hidden])){grid-template-rows:auto 1fr}.fltdock{align-self:start}
+@media (max-width:1100px){.fltdock{grid-column:auto;grid-row:auto}.layout:has(.fltdock:not([hidden])) .detail{grid-row:auto}.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 230px)}}
 @media (max-width:1100px){.d-resize{display:none}.detail,.gridwrap{grid-column:auto;grid-row:auto}}
 body.resizing{cursor:col-resize;user-select:none}
 .grid thead tr.days th{font-size:15px;height:26px}
@@ -547,6 +556,7 @@ body.resizing{cursor:col-resize;user-select:none}
   <div class="layout">
     <!-- carregue num aeroporto para abrir o painel; × ou Esc fecha -->
     <div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>
+    <section class="fltdock" id="fltDock" hidden></section>
     <div class="d-resize" id="dResize" role="separator" aria-orientation="vertical" aria-label="Arrastar para mudar a largura do painel" title="Arraste para mudar a largura · duplo clique repõe" tabindex="0"></div>
     <aside class="detail" id="detail" aria-live="polite"></aside>
   </div>
@@ -1963,7 +1973,7 @@ function tokenHit(t, cond){
 function renderDetail(slots){
   const el = $("#detail");
   const r = rowsCache.find(x => x.icao === selected);
-  if (!r){ el.innerHTML = ""; el.classList.add("closed"); $(".layout").classList.add("nodetail"); return; }
+  if (!r){ try { fltDock(null); } catch(e){} el.innerHTML = ""; el.classList.add("closed"); $(".layout").classList.add("nodetail"); return; }
   const T = r.T;
   const now0 = r.res[0];
   const lab = {red: "Alerta", amber: "Possível", ok: "Dentro dos mínimos", none: "Sem TAF"};
@@ -2073,7 +2083,7 @@ function renderDetail(slots){
     h += `<div class="d-sec"><h3>Grupos</h3><div class="gtabwrap"><table class="gtab"><thead><tr><th>Grupo</th><th>Período</th><th>Vis</th><th>Teto</th><th>Tempo</th><th>Avaliação</th></tr></thead><tbody>${rowsG}</tbody></table></div></div>`;
   }
   el.innerHTML = h;
-  try { fltPanelTabs(el, r, slots); } catch(e){ console.error("Voos:", e); }
+  try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }
   // secções do painel abrem e fecham ao carregar no título; a escolha fica guardada
   ui.secClosed = ui.secClosed || {};
   el.querySelectorAll(".d-sec").forEach(sec => {
@@ -2136,6 +2146,7 @@ function closeDetail(){
   selected = null;
   document.querySelectorAll("#grid tr.sel").forEach(x => x.classList.remove("sel"));
   $("#detail").classList.add("closed");
+  try { fltDock(null); } catch(e){}
   $(".layout").classList.add("nodetail");
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#settings").hidden && $("#report").hidden && !ui.detailClosed) closeDetail(); });
@@ -2894,7 +2905,7 @@ function fltTafHtml(r, hit){
     if (m) t = `<u class="k-${m.k}">${t}${nx && !m.tags.length && T.toks[i + 1].g === tk.g ? " " : ""}</u>` + m.tags.map(x => `<span class="ftag k-${m.k}">${esc(x)}</span>`).join("");
     h += (dim ? `<span class="dim">${t}</span>` : t) + (m && nx && !m.tags.length ? "" : " ");
   });
-  return `<div class="d-sec"><h3>TAF · a sublinhado o que afeta cada voo</h3><div class="raw fraw">${h}</div></div>`;
+  return `<h4 class="fd-h">TAF · a sublinhado o que afeta cada voo</h4><div class="raw fraw">${h}</div>`;
 }
 /* linha do tempo do aeroporto: alertas do TAF, voo no ar (ETD → ETA) e a hora seguinte à chegada */
 function fltTimelineHtml(r, list, slots){
@@ -2915,34 +2926,26 @@ function fltTimelineHtml(r, list, slots){
 }
 function fltPaneHtml(r, list, hit, slots){
   const route = f => `${esc(apIata(f.org))}→${esc(apIata(f.dst))}`;
-  let h = `<div class="d-sec"><h3>Voos afetados · chegadas</h3>`;
-  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th></tr></thead><tbody>${hit.map(f => {
+  let h = `<div class="fd-cols"><div class="fd-c">`;
+  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}"><td><b>${esc(f.fl)}</b><small>${route(f)}</small></td><td class="m">${tD != null ? hm(tD) + " →" : ""}<small><b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></small></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.name)}</span><small class="m">${esc(a.cond)}</small></td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.full || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
   if (list.some(f => f.etaEst)) h += `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo. Afetado = parte da hora seguinte à chegada em que o TAF tem o alerta.</p>`;
-  return h + `</div>` + fltTafHtml(r, hit) + (hit.length ? fltTimelineHtml(r, hit, slots) : "");
+  return h + `</div><div class="fd-c">` + fltTafHtml(r, hit) + fltTimelineHtml(r, hit, slots) + `</div></div>`;
 }
-/* painel do aeroporto: separadores TAF / Voos afetados (abre em Voos afetados quando há voos com alerta) */
-let fltTab = {icao: null, tab: null};
-function fltPanelTabs(el, r, slots){
-  const C = fltCache; if (!C) return;
-  const list = C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta));
-  if (!list.length) return;
+/* por baixo da grelha: voos afetados do aeroporto selecionado (o painel lateral fica só com a meteorologia) */
+function fltDock(r, slots){
+  const D = document.getElementById("fltDock"); if (!D) return;
+  const C = fltCache;
+  const list = r && C ? C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)) : [];
   const hit = list.filter(f => f.alert);
-  if (fltTab.icao !== r.icao) fltTab = {icao: r.icao, tab: hit.length ? "flt" : "taf"};
-  const head = el.querySelector(".d-head"); if (!head) return;
-  const pane = document.createElement("div"); pane.className = "d-pane"; pane.dataset.pane = "taf";
-  while (head.nextSibling) pane.appendChild(head.nextSibling);
-  const fp = document.createElement("div"); fp.className = "d-pane"; fp.dataset.pane = "flt"; fp.innerHTML = fltPaneHtml(r, list, hit, slots);
-  const tabs = document.createElement("div"); tabs.className = "d-tabs";
-  tabs.innerHTML = `<button type="button" data-ptab="taf">TAF</button><button type="button" data-ptab="flt">Voos afetados (${hit.length})</button>`;
-  head.after(tabs, pane, fp);
-  const show = t => { fltTab.tab = t; tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.ptab === t)); pane.hidden = t !== "taf"; fp.hidden = t !== "flt"; };
-  tabs.addEventListener("click", e => { const b = e.target.closest("[data-ptab]"); if (b) show(b.dataset.ptab); });
-  show(fltTab.tab);
+  if (!hit.length){ D.hidden = true; D.innerHTML = ""; return; }
+  D.innerHTML = `<div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, list, hit, slots);
+  D.hidden = false;
+  D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; });
 }
 /* grelha: por baixo de cada aeroporto com voos com alerta (no máximo 3 linhas; os outros contam em +N), uma linha alinhada com as horas: voo no ar (ETD → ETA),
    a hora seguinte à chegada (caixa tracejada) e a etiqueta do voo na cor do alerta */
@@ -2987,11 +2990,11 @@ function decorateFlights(slots){
   postFlights(st);
   if (!$("#flights").hidden) renderFlights();
 }
-/* carregar na linha de voos abre o aeroporto no separador Voos afetados */
+/* carregar na linha de voos abre o aeroporto (meteorologia ao lado, voos afetados por baixo da grelha) */
 $("#grid").addEventListener("click", e => {
   const fr = e.target.closest("tr.fltrow"); if (!fr) return;
   const tr = fr.previousElementSibling; if (!tr || !tr.dataset.icao) return;
-  fltTab = {icao: tr.dataset.icao, tab: "flt"}; tr.click();
+  tr.click(); const D = document.getElementById("fltDock"); if (D && !D.hidden) D.scrollIntoView({block: "nearest", behavior: "smooth"});
 });
 function postFlights(st){
   try {
