@@ -268,6 +268,7 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .d-fltrow.al{border-left-color:var(--kc,var(--c-red))}
 .d-fltrow .a i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))} .d-fltrow .a code{font-size:12px;color:var(--muted)} .d-fltrow .ok{color:var(--muted)}
 .grid tr.fltrow th.ap.fl{font-size:11.5px;color:var(--muted);padding-left:26px;font-weight:500;height:auto}
+.grid tr.fltrow .fmore{display:inline-block;margin-left:4px;background:var(--c-red);color:#fff;border-radius:8px;padding:0 6px;font-size:11px;line-height:16px}
 .grid td.fltl{padding:0;background:var(--panel2);border-radius:4px;cursor:pointer}
 .fltlane{position:relative;min-height:24px;overflow:hidden}
 .fltlane > *{position:absolute;box-sizing:border-box}
@@ -568,9 +569,9 @@ function fltPaneHtml(r, list, hit, slots){
       return `<tr class="k-${FLT_KEY[a.name] || "int"}"><td><b>${esc(f.fl)}</b><small>${route(f)}</small></td><td class="m">${tD != null ? hm(tD) + " →" : ""}<small><b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></small></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.name)}</span><small class="m">${esc(a.cond)}</small></td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
-  if (ok.length) h += `<p class="hint" style="margin:8px 0 0">Sem alerta: ${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</p>`;
+  if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
   if (list.some(f => f.etaEst)) h += `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo. Afetado = parte da hora seguinte à chegada em que o TAF tem o alerta.</p>`;
-  return h + `</div>` + fltTafHtml(r, hit) + fltTimelineHtml(r, list, slots);
+  return h + `</div>` + fltTafHtml(r, hit) + (hit.length ? fltTimelineHtml(r, hit, slots) : "");
 }
 /* painel do aeroporto: separadores TAF / Voos afetados (abre em Voos afetados quando há voos com alerta) */
 let fltTab = {icao: null, tab: null};
@@ -591,25 +592,26 @@ function fltPanelTabs(el, r, slots){
   tabs.addEventListener("click", e => { const b = e.target.closest("[data-ptab]"); if (b) show(b.dataset.ptab); });
   show(fltTab.tab);
 }
-/* grelha: por baixo de cada aeroporto com voos, uma linha alinhada com as horas: voo no ar (ETD → ETA),
+/* grelha: por baixo de cada aeroporto com voos com alerta (no máximo 3 linhas; os outros contam em +N), uma linha alinhada com as horas: voo no ar (ETD → ETA),
    a hora seguinte à chegada (caixa tracejada) e a etiqueta do voo na cor do alerta */
 let fltSlots = null;
 function fltGridRows(slots){
   if (!fltCache || !slots || !slots.length) return;
   const s0 = slots[0], N = slots.length, s1 = s0 + N * HOUR, by = {};
-  fltCache.P.flights.forEach(f => { const t = f.eta ?? f.sta; if (f.landed || t == null || t >= s1 || t + FLT_WIN <= s0) return; (by[f.dst] = by[f.dst] || []).push(f); });
+  fltCache.P.flights.forEach(f => { const t = f.eta ?? f.sta; if (f.landed || !f.alert || t == null || t >= s1 || t + FLT_WIN <= s0) return; (by[f.dst] = by[f.dst] || []).push(f); });
   for (const [ic, L] of Object.entries(by)){
     const tr = document.querySelector(`#grid tr.row[data-icao="${ic}"]`); if (!tr) continue;
     tr.insertAdjacentHTML("afterend", `<tr class="fltrow" data-fltfor="${ic}"><th class="ap fl" scope="row">↓ chegadas</th><td class="fltl" colspan="${N}"><div class="fltlane"></div></td></tr>`);
     const lane = tr.nextElementSibling.querySelector(".fltlane"), W = lane.clientWidth || N * 46;
-    const x = t => (t - s0) / (N * HOUR) * W, ends = [];
-    let h = "";
+    const x = t => (t - s0) / (N * HOUR) * W, ends = [], MAXL = 3;
+    let h = "", more = 0;
     L.sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).forEach(f => {
       const tA = f.eta ?? f.sta, tD = fltEtd(f), a = f.alert, k = a ? "k-" + (FLT_KEY[a.name] || "int") : "";
       const lab = `${f.fl} ${tD != null ? hhmm(tD) + "→" : ""}${hhmm(tA)}${a ? " · " + a.name : ""}`;
       const tip = `${f.fl} ${apIata(f.org)}→${apIata(f.dst)} · ETD ${tD != null ? hm(tD) : "?"} · ETA ${hmE(tA, f.etaEst)}${a ? ` · ${a.full} ${a.cond} (${hhmm(a.from)}–${hhmm(a.to)}Z)` : " · sem alerta"}`;
       const L0 = tD != null ? Math.max(0, x(tD)) : x(tA), R = x(tA + FLT_WIN) + 8 + lab.length * 6.6;
-      let ln = ends.findIndex(e => e < L0 - 4); if (ln < 0){ ln = ends.length; ends.push(R); } else ends[ln] = R;
+      let ln = ends.findIndex(e => e < L0 - 4);
+      if (ln < 0){ if (ends.length >= MAXL){ more++; return; } ln = ends.length; ends.push(R); } else ends[ln] = R;
       const top = 4 + ln * 22;
       if (tD != null){
         if (x(tD) < 0) h += `<span class="fc ${k}" style="left:1px;top:${top + 1}px">◂</span>`;
@@ -621,6 +623,7 @@ function fltGridRows(slots){
       h += `<span class="fl ${k || "na"}" style="left:${x(tA + FLT_WIN) + 4}px;top:${top + 1}px" title="${esc(tip)}">${esc(lab)}</span>`;
     });
     lane.style.height = (8 + ends.length * 22) + "px"; lane.innerHTML = h;
+    if (more) tr.nextElementSibling.querySelector("th").innerHTML = `↓ chegadas <b class="fmore" title="Mais voos com alerta: abrir o aeroporto">+${more}</b>`;
   }
 }
 function decorateFlights(slots){
