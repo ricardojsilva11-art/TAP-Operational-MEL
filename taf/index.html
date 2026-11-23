@@ -317,7 +317,7 @@ th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--lin
 .flt-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #fltOut{min-height:24vh}
 .d-flt{display:flex;flex-direction:column;gap:4px}
-.d-fltrow{display:grid;grid-template-columns:62px 82px 62px minmax(0,1fr);gap:8px;align-items:center;font:500 13px/1.3 var(--f-mono);padding:4px 8px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px}
+.d-fltrow{display:grid;grid-template-columns:62px 82px 86px minmax(0,1fr);gap:8px;align-items:center;font:500 13px/1.3 var(--f-mono);padding:4px 8px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px}
 .d-fltrow.al{border-left-color:var(--kc,var(--c-red))}
 .d-fltrow .a i{font-style:normal;font-weight:700;color:var(--kc,var(--t-red))} .d-fltrow .a code{font-size:12px;color:var(--muted)} .d-fltrow .ok{color:var(--muted)}
 .grid th.ap .ap-flt{display:flex;flex-direction:column;gap:1px;padding:0 0 5px 22px;margin-top:-4px}
@@ -2775,7 +2775,8 @@ function alertsAt(all, icao, t){
 /* voos por zona (Portugal, Europa, América do Norte, América do Sul, África) e, em cada zona, por hora de chegada */
 const FLT_ZONE_ORDER = [0, 1, 3, 2, 4, 5];
 const fltZone = ic => { const z = FLT_ZONE_ORDER.indexOf(repZone(ic)); return z < 0 ? 9 : z; };
-const hm = t => t == null ? "" : pad(new Date(t).getUTCHours()) + pad(new Date(t).getUTCMinutes()) + "Z";
+/* hora dos voos com o dia (UTC): 24/1030Z */
+const hm = t => t == null ? "" : pad(new Date(t).getUTCDate()) + "/" + pad(new Date(t).getUTCHours()) + pad(new Date(t).getUTCMinutes()) + "Z";
 const hmE = (t, est) => t == null ? "" : (est ? "~" : "") + hm(t);
 const apIata = ic => iataOf(ic) || ic;
 const fltStore = {
