@@ -276,6 +276,8 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .fd-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:1100px){.fd-cols{grid-template-columns:minmax(0,1fr)}}
 .fd-h{margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fltab tbody tr{cursor:pointer}.fltab tbody tr:hover td{background:var(--panel2)}.fltab tbody tr.fsel td{background:color-mix(in srgb,var(--kc,var(--accent)) 18%,transparent)}.fltab tbody tr.fsel td:first-child{box-shadow:inset 4px 0 0 var(--kc,var(--accent))}
+.fd-sw{font-size:12.5px;color:var(--muted);margin:0 0 8px}.fd-sw button{border:0;background:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
 .fltab{font-size:13px;width:100%}.fltab td{vertical-align:middle;white-space:nowrap}.fltab td small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.fltab td small b{color:var(--ink)}
 .fchip{display:inline-block;background:var(--kc,var(--c-red));color:#fff;font-weight:700;font-size:11.5px;padding:1px 7px;border-radius:5px}
 .fraw{font:13px/2.15 var(--f-mono)}
@@ -572,17 +574,23 @@ function fltTimelineHtml(r, list, slots){
   }
   return h + `</div><p class="hint" style="margin:6px 0 0">TAF = alertas por hora · linha = voo no ar (ETD → ETA) · caixa = 1 h depois da chegada (o que conta para o alerta)${now ? " · linha azul = agora" : ""}.</p>`;
 }
+/* voo escolhido no quadro de baixo: o TAF e a linha do tempo mostram só esse voo ("todos" mostra todos) */
+let fltSel = {icao: null, key: null};
+const fltKey = f => f.fl + "|" + f.std;
 function fltPaneHtml(r, list, hit, slots){
   const route = f => `${esc(apIata(f.org))}→${esc(apIata(f.dst))}`;
+  if (fltSel.icao !== r.icao || (fltSel.key !== "*" && !hit.some(f => fltKey(f) === fltSel.key))) fltSel = {icao: r.icao, key: hit.length ? fltKey(hit[0]) : null};
+  const shown = fltSel.key === "*" ? hit : hit.filter(f => fltKey(f) === fltSel.key), one = fltSel.key !== "*" ? shown[0] : null;
   let h = `<div class="fd-cols"><div class="fd-c">`;
   h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.full || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.full || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
   if (list.some(f => f.etaEst)) h += `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo. Afetado = parte da hora seguinte à chegada em que o TAF tem o alerta.</p>`;
-  return h + `</div><div class="fd-c">` + fltTafHtml(r, hit) + fltTimelineHtml(r, hit, slots) + `</div></div>`;
+  const sw = hit.length > 1 ? `<div class="fd-sw">${one ? `A mostrar <b>${esc(one.fl)}</b> · <button type="button" data-fsel="*">ver todos (${hit.length})</button>` : `A mostrar todos · escolha um voo na tabela para ver só esse`}</div>` : "";
+  return h + `</div><div class="fd-c">` + sw + fltTafHtml(r, shown) + fltTimelineHtml(r, shown, slots) + `</div></div>`;
 }
 /* por baixo da grelha: voos afetados do aeroporto selecionado (o painel lateral fica só com a meteorologia) */
 /* quadro de baixo: fecha e muda de altura independentemente do painel lateral; fica com o aeroporto que mostrava
@@ -600,6 +608,7 @@ function fltDock(r, slots){
   D.innerHTML = `<div class="fd-resize" id="fltDockResize" role="separator" aria-orientation="horizontal" aria-label="Arrastar para mudar a altura" title="Arraste para mudar a altura · duplo clique repõe"></div><div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, list, hit, slots);
   D.hidden = false;
   D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; fltDockShut = fltDockIc; });
+  D.querySelectorAll("[data-fsel]").forEach(el => el.addEventListener("click", () => { fltSel = {icao: r.icao, key: el.dataset.fsel}; const sc = D.scrollTop; fltDock(r, slots); D.scrollTop = sc; }));
   const hd = D.querySelector("#fltDockResize"), lay = document.querySelector(".layout");
   const setH = h => { h = Math.round(Math.min(window.innerHeight * 0.8, Math.max(160, h))); lay.style.setProperty("--dock-h", h + "px"); return h; };
   let st = null;

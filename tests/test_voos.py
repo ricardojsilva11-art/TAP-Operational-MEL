@@ -200,8 +200,15 @@ def test_voos_ja_aterrados_saem_e_painel_mostra_as_chegadas(browser, server, moc
     pan = f.inner_text('#fltDock')                                 # voos afetados por baixo da grelha
     assert 'TP1353' in pan and 'TP1355' in pan and 'TP1351' not in pan and 'LVO' in pan
     assert 'Voos afetados · LPPT' in pan and '(2)' in pan
-    assert f.locator('#fltDock .fraw u').count() >= 1 and 'TP1353' in f.inner_text('#fltDock .fraw')   # TAF sublinhado com o voo
+    assert f.locator('#fltDock .fraw u').count() >= 1                                       # TAF sublinhado
     assert f.locator('#detail .d-tabs').count() == 0 and 'Voos afetados' not in f.inner_text('#detail')   # o painel lateral fica só com a meteorologia
+    # um voo de cada vez: por omissão o primeiro; escolher outro mostra só esse no TAF e na linha do tempo
+    assert 'TP1353' in f.inner_text('#fltDock .fraw') and 'TP1355' not in f.inner_text('#fltDock .fraw')
+    f.click('#fltDock tr[data-fsel^="TP1355"]')
+    assert 'TP1355' in f.inner_text('#fltDock .fraw') and 'TP1353' not in f.inner_text('#fltDock .fraw')
+    assert f.locator('#fltDock .ftl-lab', has_text='TP13').count() == 1
+    f.click('#fltDock [data-fsel="*"]')
+    assert 'TP1353' in f.inner_text('#fltDock .fraw') and 'TP1355' in f.inner_text('#fltDock .fraw')
     # fechar o painel lateral não fecha o quadro de baixo
     f.click('#dClose')
     assert f.locator('#fltDock').is_visible() and 'Voos afetados · LPPT' in f.inner_text('#fltDock')
