@@ -361,3 +361,24 @@ def test_filtro_com_voos(browser, server, mock):
     assert f.locator('#grid tr.row[data-icao="LPPT"]').count() == 1
     assert not errors
     ctx.close()
+
+
+def test_minimos_de_aproximacao_partilhados(browser, server, mock):
+    """Administrador carrega o ficheiro de mínimos (.json): ficam nas definições partilhadas, aparecem no painel do
+    aeroporto e o BELOW MIN/RVAC passa a usar esses valores; um operador não pode carregar."""
+    mock.profile['role'] = 'admin'
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null", timeout=15000)
+    page.set_input_files('#pFltFile', os.path.join(os.path.dirname(__file__), 'fixtures', 'minimos-exemplo.json'))
+    page.wait_for_function("document.getElementById('pFltBlk').innerText.includes('Mínimos de aproximação')", timeout=15000)
+    assert mock.taf_cfg['cfg']['minima']['ap']['LPPT']['02']['bv'] == 200
+    f.wait_for_function("RWY_BELOW.LPPT && RWY_BELOW.LPPT['02'][1] === 200", timeout=15000)
+    assert f.evaluate("[RWY_MINIMA.LPPT['02'], RWY_MINIMA.LPPT['20']]") == [[400, 1750], [400, 1550]]
+    assert f.evaluate("rvacCheck('LPPT', {wind: {dir: 20, spd: 10}, vis: 150, clouds: []}).code") == 'BMIN'
+    assert f.evaluate("rvacCheck('LPPT', {wind: {dir: 20, spd: 10}, vis: 1500, clouds: []}).code") == 'RVAC'
+    page.evaluate("tafSelect('LPPT')")
+    f.wait_for_selector('#detail .mintab')
+    assert 'ILS CAT IIIA' in f.inner_text('#detail .mintab')
+    assert not errors
+    ctx.close()

@@ -152,3 +152,7 @@ No Início, carregar num aeroporto de "TAF novos ou emendas com alerta" ou de "M
 Nas listas do Início (TAF novos/AMD e destinos em alerta), a bola tem a cor da condição mais penalizante que o TAF prevê e as listas vêm ordenadas por gravidade (fora dos limites/abaixo dos mínimos, LVO, trovoada, teto baixo/RVAC, neve/gelo, vento…); nos destinos, os favoritos ficam primeiro.
 
 Filtro **✈ Com voos** (junto a Todos / Com alertas / Alerta agora): mostra só os aeroportos com voos afetados, com o número entre parênteses; só aparece quando há lista de voos carregada.
+
+### Mínimos de aproximação (cartas Lido)
+
+Um Administrador arrasta o ficheiro de mínimos (`.json`, preparado a partir das cartas Lido, categoria C) para o cartão "Voos afetados" do Início; fica nas definições do TAF no Supabase (`taf_settings.cfg.minima`, só utilizadores com sessão) e vale para todos. Por pista: **BELOW MIN** abaixo do DH/MDH ou do RVR/VIS da melhor aproximação (sem LPV); **RVAC** até ao CAT I + 200 ft / + 1000 m (pista sem ILS: a melhor aproximação); o **LVO** mantém os limites das Definições (fuel policy). A pista é a estimada pelo vento. Os aeroportos que não estão no ficheiro mantêm os mínimos de origem. O painel lateral mostra a tabela dos mínimos de cada pista.
