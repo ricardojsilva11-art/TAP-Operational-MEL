@@ -382,3 +382,16 @@ def test_minimos_de_aproximacao_partilhados(browser, server, mock):
     assert 'ILS CAT IIIA' in f.inner_text('#detail .mintab')
     assert not errors
     ctx.close()
+
+
+def test_minimos_incluidos_sem_carregar(browser, server, mock):
+    """Sem nada carregado, os mínimos das cartas já estão em vigor para todos (LIS em CAT IIIB, FNC por circling)."""
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null", timeout=15000)
+    assert 'incluídos no site' in page.inner_text('#pFltBlk')
+    f.wait_for_function("RWY_BELOW.LPPT && RWY_BELOW.LPPT['02'][1] === 75", timeout=15000)
+    assert f.evaluate("[RWY_BELOW.LPMA['23'], RWY_MINIMA.LPMA['23'], RWY_BELOW.LPPD['12'], RWY_MINIMA.LPPD['12']]") == [[1200, 7000], [1400, 8000], [520, 2100], [720, 3100]]
+    assert not errors
+    ctx.close()
+
