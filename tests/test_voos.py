@@ -422,6 +422,6 @@ def test_resumo_dos_destinos_com_as_horas_do_taf(browser, server, mock):
     assert a['now'] and a['from'] == (t0 - 2 * H) * 1000 and a['to'] == (t0 + 2 * H) * 1000
     page.wait_for_selector('#pAlertList [data-icao="DGAA"]')
     txt = page.inner_text('#pAlertList [data-icao="DGAA"]')
-    assert f'{g(t0 - 2 * H)}/{g(t0 + 2 * H)}' in txt and 'agora' in txt
+    assert f'{g(t0 - 2 * H)}/{g(t0 + 2 * H)}' in txt and 'AGORA' in txt
     assert not errors
     ctx.close()
