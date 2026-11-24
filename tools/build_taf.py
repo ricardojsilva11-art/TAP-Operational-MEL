@@ -913,6 +913,15 @@ s = rep(s, '  try { fltGridRows(fltSlots); } catch(e){ console.error("Voos (grel
     if (ui.filter === "flt" && key !== fltFilterKey){ fltFilterKey = key; setTimeout(render, 0); } else fltFilterKey = key; }
 """)
 
+
+# 3o. mínimos de aproximação das cartas Lido (definições partilhadas: cfg.minima, carregados por um Administrador)
+#     por pista: melhor aproximação (sem LPV) -> BELOW MIN abaixo de DH/RVR; ILS CAT I + 200 ft / + 1000 m -> RVAC
+s = rep(s, 'function render(){\n', 'function render(){\n  try { applyMinima(); } catch(e){ console.error("Mínimos:", e); }\n')
+_pistas = '    h += `<div class="d-sec"><h3>Pistas</h3><div class="rwys">${RW.map(x => `<span class="rwy"><b>${esc(x[0])}</b>${x[1] ? ` ${x[1]} m` : ""}</span>`).join("")}</div>`;\n'
+s = rep(s, _pistas, _pistas + '    try { h += minimaHtml(r.icao); } catch(e){}\n')
+s = rep(s, 'function closeReport(){', open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'minima.js'), encoding='utf-8').read() + 'function closeReport(){')
+s = rep(s, ".fltab{font-size:13px;width:100%}", ".minima{margin-top:10px}.mintab{font-size:12.5px;width:100%}.mintab td{vertical-align:top}.mintab td small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}\n.fltab{font-size:13px;width:100%}")
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 

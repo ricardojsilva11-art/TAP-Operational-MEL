@@ -331,6 +331,7 @@ th.ap .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--lin
 .fd-h{margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .fltab tbody tr{cursor:pointer}.fltab tbody tr:hover td{background:var(--panel2)}.fltab tbody tr.fsel td{background:color-mix(in srgb,var(--kc,var(--accent)) 18%,transparent)}.fltab tbody tr.fsel td:first-child{box-shadow:inset 4px 0 0 var(--kc,var(--accent))}
 .fd-sw{font-size:12.5px;color:var(--muted);margin:0 0 8px}.fd-sw button{border:0;background:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+.minima{margin-top:10px}.mintab{font-size:12.5px;width:100%}.mintab td{vertical-align:top}.mintab td small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
 .fltab{font-size:13px;width:100%}.fltab td{vertical-align:middle;white-space:nowrap}.fltab td small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.fltab td small b{color:var(--ink)}
 .fchip{display:inline-block;background:var(--kc,var(--c-red));color:#fff;font-weight:700;font-size:11.5px;padding:1px 7px;border-radius:5px}
 .fraw{font:13px/2.15 var(--f-mono)}
@@ -1756,6 +1757,7 @@ function buildRows(slots){
 }
 
 function render(){
+  try { applyMinima(); } catch(e){ console.error("Mínimos:", e); }
   const now = Date.now();
   const t0 = Math.floor(now / HOUR) * HOUR;
   lastHour = t0;
@@ -1993,6 +1995,7 @@ function renderDetail(slots){
   const RW = RUNWAYS[r.icao];
   if (RW && RW.length){
     h += `<div class="d-sec"><h3>Pistas</h3><div class="rwys">${RW.map(x => `<span class="rwy"><b>${esc(x[0])}</b>${x[1] ? ` ${x[1]} m` : ""}</span>`).join("")}</div>`;
+    try { h += minimaHtml(r.icao); } catch(e){}
     // pista em uso estimada: agora pelo METAR (ou TAF) e sequência prevista pelo TAF
     const M = metars[r.icao];
     let nowWind = null, nowSrc = "";
@@ -3149,6 +3152,27 @@ function tafPopupHtml(icao){
   box.querySelectorAll('[class*="k-"]').forEach(el => { const c = getComputedStyle(el).getPropertyValue("--kc").trim(); if (c) el.style.setProperty("--kc", c); });
   const html = box.innerHTML; box.remove();
   return {title: icao + (iataOf(icao) ? " / " + iataOf(icao) : ""), html};
+}
+/* mínimos partilhados (cfg.minima.ap[ICAO][pista] = {best, bd, bv, c1d, c1v}) aplicados sobre os de origem do TAF Monitor */
+let MIN_ORIG = null, MIN_KEY = null;
+function applyMinima(){
+  if (!MIN_ORIG) MIN_ORIG = {m: JSON.parse(JSON.stringify(RWY_MINIMA)), b: JSON.parse(JSON.stringify(RWY_BELOW))};
+  const M = (cfg && cfg.minima && cfg.minima.ap) || {}, key = JSON.stringify(M);
+  if (key === MIN_KEY) return; MIN_KEY = key;
+  for (const k of Object.keys(RWY_MINIMA)) delete RWY_MINIMA[k];
+  for (const k of Object.keys(RWY_BELOW)) delete RWY_BELOW[k];
+  Object.assign(RWY_MINIMA, JSON.parse(JSON.stringify(MIN_ORIG.m))); Object.assign(RWY_BELOW, JSON.parse(JSON.stringify(MIN_ORIG.b)));
+  for (const [ic, R] of Object.entries(M)){
+    RWY_MINIMA[ic] = {}; RWY_BELOW[ic] = {};
+    for (const [rw, x] of Object.entries(R)){ RWY_MINIMA[ic][rw] = [x.c1d + 200, x.c1v + 1000]; RWY_BELOW[ic][rw] = [x.bd, x.bv]; }
+  }
+}
+/* painel: tabela dos mínimos da carta por pista */
+function minimaHtml(icao){
+  const R = cfg && cfg.minima && cfg.minima.ap && cfg.minima.ap[icao]; if (!R) return "";
+  const rows = Object.entries(R).sort((a, b) => a[0].localeCompare(b[0])).map(([rw, x]) => `<tr><td><b>${esc(rw)}</b></td><td>${esc(x.best)}<small>${x.bd ? x.bd + " ft" : "sem DH"} / ${x.bv} m</small></td><td>${x.bd ? "&lt; " + x.bd + " ft<br>" : ""}&lt; ${x.bv} m</td><td>≤ ${x.c1d + 200} ft<br>≤ ${x.c1v + 1000} m<small>CAT I ${x.c1d} ft / ${x.c1v} m</small></td></tr>`).join("");
+  const m = cfg.minima, src = [m.src, m.cat ? "Cat " + m.cat : ""].filter(Boolean).join(" · ");
+  return `<div class="minima"><span class="rwy-tag">Mínimos de aproximação${src ? " · " + esc(src) : ""}</span><div class="gtabwrap"><table class="gtab mintab"><thead><tr><th>Pista</th><th>Melhor aproximação</th><th>BELOW MIN</th><th>RVAC</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint" style="margin:4px 0 0">BELOW MIN: abaixo da melhor aproximação (sem LPV). RVAC: até ao CAT I + 200 ft / + 1000 m. LVO segue a fuel policy.</p></div>`;
 }
 function closeReport(){ $("#report").hidden = true; $("#btnReport").focus(); }
 const saveRep = () => store.set("tafmon.rep", repUI);
