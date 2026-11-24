@@ -791,7 +791,7 @@ $('pWxAll').textContent=`Ver no TAF (${al.length})`;$('pWxAll').classList.toggle
 /* ---- Início: Voos afetados (o PDF é lido pelo TAF Monitor, no browser; a lista fica só neste browser) ---- */
 let fltSum=null,fltPending=null,fltPendTimer=null,fltWatch=null;
 const FLT_LAB={'LVO':'LVO','TS':'Thunderstorm','LOW CIG':'Low ceiling','WIND':'Wind / gust','OUT OF LIM':'Out of limits','LDG NOT ALLOWED':'Landing not allowed','BELOW MIN':'Below minima','RVAC':'RVAC','SNOW/ICE':'Snow / ice','WND NEAR LIM':'Wind near the limits','MIST':'MIST','VA':'Volcanic ash','INTENSITY':'Intensidade'};
-function fltBusy(on,what){if(!on)clearTimeout(fltWatch);$('pFltDrop').classList.toggle('busy',!!on);$('pFltDropTxt').innerHTML=on?'<b>A ler '+(what||'o PDF')+'…</b>':'<b>Arraste o PDF dos voos para aqui</b> ou carregue para escolher'+(fltSum&&fltSum.has?' · substitui a lista atual':'')+' · <span class="muted">também aceita o Excel dos tempos de bloco</span>';paintBlocks()}
+function fltBusy(on,what){if(!on)clearTimeout(fltWatch);$('pFltDrop').classList.toggle('busy',!!on);$('pFltDropTxt').innerHTML=on?'<b>A ler '+(what||'o PDF')+'…</b>':'<b>Arraste o PDF dos voos para aqui</b> ou carregue para escolher'+(fltSum&&fltSum.has?' · substitui a lista atual':'')+' · <span class="muted">também aceita o Excel dos tempos de bloco e o ficheiro dos mínimos (.json)</span>';paintBlocks()}
 /* tempos de bloco partilhados (Excel com voo, DEP, DEST e BLOCK em minutos): um Administrador carrega uma vez e
    ficam nas definições do TAF do portal (Supabase, tabela taf_settings, campo blocks) para todos os utilizadores */
 function sharedBlocks(){const c=window.__portal&&window.__portal.cfg;return c&&c.blocks&&Array.isArray(c.blocks.rows)?c.blocks:null}
