@@ -1,9 +1,12 @@
 /* layout v2: código curto da categoria para as células e etiquetas */
 const CAT_CODE = {lim: "LIM", cig: "LVO", bmin: "BMIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SN", wind: "WND", mar: "WND", cig4: "CIG", obsc: "BR", int: "INT", capt: "CAPT"};
-const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|LDG NOT ALLOWED|CAPT)$/;
-function cellCodeHtml(cat, labs){
+const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|OUT OF|LIM|LDG NOT ALLOWED|LDG|NOT ALLOWED|CAPT)$/;
+function cellCodeHtml(cat, labs, hard){
   let code = CAT_CODE[cat] || (labs[0] || "").slice(0, 5);
-  const rest = labs.filter(s => !CODE_WORDS.test(s) && s !== code).map(s => s.replace(/^WND\s+/, ""));
+  if (cat === "lim"){ const z = (hard || []).find(r => r.code === "LIM"), m = z && /(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT/.exec(z.txt);
+    if (/NOT ALLOWED|LDG/.test(labs.join(" "))) code = "LDG NA";
+    return `<span class="cc">${esc(code)}</span>` + (m ? `<span class="cd">${m[1]}${m[2] ? "G" + m[2] : ""}KT</span>` : ""); }
+  const rest = labs.filter(s => !CODE_WORDS.test(s) && s !== code && !/^(OUT OF|LIM)$/.test(s)).map(s => s.replace(/^WND\s+/, ""));
   if (cat === "ice" && rest[0] && !/SN/.test(rest[0])) code = "ICE";
   let det = rest[0] || "";
   if (code === det) det = rest[1] || "";

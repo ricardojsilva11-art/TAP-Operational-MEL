@@ -1,9 +1,9 @@
 /* ===== layout v2: paleta (BMIN vermelho = o mais limitativo; LIM magenta; RVAC amarelo; teto baixo oliva; perto do limite verde-azulado claro) ===== */
-:root{--k-bmin:#d32f2f;--k-bmin-i:#ffffff;--k-lim:#b0177e;--k-lim-i:#ffffff;--k-rvac:#f2c230;--k-rvac-i:#2b2100;
+:root{--k-bmin:#d32f2f;--k-bmin-i:#ffffff;--k-lim:#d32f2f;--k-lim-i:#ffffff;--k-rvac:#f2c230;--k-rvac-i:#2b2100;
   --k-cig4:#8a9a2b;--k-cig4-i:#ffffff;--k-mar:#4fb3b0;--k-mar-i:#03201e;--k-vis:#6d4c41;--k-vis-i:#ffffff}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#e5323b;--k-lim-i:#ffffff;
   --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}}
-:root[data-theme="dark"]{--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+:root[data-theme="dark"]{--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#e5323b;--k-lim-i:#ffffff;
   --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}
 /* células: código curto (BMIN, LVO, RVAC…) e, por baixo, a pista ou a condição */
 .grid td.c span.cc{font-weight:800;font-size:10.5px;letter-spacing:.02em}

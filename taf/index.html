@@ -489,11 +489,11 @@ body.resizing{cursor:col-resize;user-select:none}
   .grid td.c:hover{filter:brightness(1.12)}
 }
 /* ===== layout v2: paleta (BMIN vermelho = o mais limitativo; LIM magenta; RVAC amarelo; teto baixo oliva; perto do limite verde-azulado claro) ===== */
-:root{--k-bmin:#d32f2f;--k-bmin-i:#ffffff;--k-lim:#b0177e;--k-lim-i:#ffffff;--k-rvac:#f2c230;--k-rvac-i:#2b2100;
+:root{--k-bmin:#d32f2f;--k-bmin-i:#ffffff;--k-lim:#d32f2f;--k-lim-i:#ffffff;--k-rvac:#f2c230;--k-rvac-i:#2b2100;
   --k-cig4:#8a9a2b;--k-cig4-i:#ffffff;--k-mar:#4fb3b0;--k-mar-i:#03201e;--k-vis:#6d4c41;--k-vis-i:#ffffff}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#e5323b;--k-lim-i:#ffffff;
   --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}}
-:root[data-theme="dark"]{--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+:root[data-theme="dark"]{--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#e5323b;--k-lim-i:#ffffff;
   --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}
 /* células: código curto (BMIN, LVO, RVAC…) e, por baixo, a pista ou a condição */
 .grid td.c span.cc{font-weight:800;font-size:10.5px;letter-spacing:.02em}
@@ -1924,7 +1924,7 @@ function render(){
       const labs = x.level === "red" ? cellLabels(x.hard) : [];
       const isEnd = !!keys[k] && winEnd[k] === k && k < keys.length - 1;
       const win = keys[k] ? ` · janela ${fmtHZ(slots[winStart[k]])}–${fmtHZ(slots[winEnd[k]])} (até ${pad(new Date(slots[winEnd[k]]).getUTCHours())}:59Z)` : "";
-      const g = labs.length ? cellCodeHtml(x.cat, labs) : "";
+      const g = labs.length ? cellCodeHtml(x.cat, labs, x.hard) : "";
       const lab = x.level === "red" ? "Alerta" : x.level === "ok" ? "OK" : "Sem TAF";
       const det = x.level === "red" ? x.hard.map(z => z.txt).join(", ") : "";
       return `<td class="c ${x.level}${x.cat ? " k-" + x.cat : ""}${dstart.has(k) ? " dstart" : ""}${isEnd ? " wend" : ""}" data-k="${k}" title="${r.icao} ${pad(new Date(slots[k]).getUTCHours())}:00–${pad(new Date(slots[k]).getUTCHours())}:59Z — ${lab}${det ? ": " + esc(det) : ""}${win}">${g}</td>`;
@@ -3240,10 +3240,13 @@ function minimaHtml(icao){
 }
 /* layout v2: código curto da categoria para as células e etiquetas */
 const CAT_CODE = {lim: "LIM", cig: "LVO", bmin: "BMIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SN", wind: "WND", mar: "WND", cig4: "CIG", obsc: "BR", int: "INT", capt: "CAPT"};
-const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|LDG NOT ALLOWED|CAPT)$/;
-function cellCodeHtml(cat, labs){
+const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|OUT OF|LIM|LDG NOT ALLOWED|LDG|NOT ALLOWED|CAPT)$/;
+function cellCodeHtml(cat, labs, hard){
   let code = CAT_CODE[cat] || (labs[0] || "").slice(0, 5);
-  const rest = labs.filter(s => !CODE_WORDS.test(s) && s !== code).map(s => s.replace(/^WND\s+/, ""));
+  if (cat === "lim"){ const z = (hard || []).find(r => r.code === "LIM"), m = z && /(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT/.exec(z.txt);
+    if (/NOT ALLOWED|LDG/.test(labs.join(" "))) code = "LDG NA";
+    return `<span class="cc">${esc(code)}</span>` + (m ? `<span class="cd">${m[1]}${m[2] ? "G" + m[2] : ""}KT</span>` : ""); }
+  const rest = labs.filter(s => !CODE_WORDS.test(s) && s !== code && !/^(OUT OF|LIM)$/.test(s)).map(s => s.replace(/^WND\s+/, ""));
   if (cat === "ice" && rest[0] && !/SN/.test(rest[0])) code = "ICE";
   let det = rest[0] || "";
   if (code === det) det = rest[1] || "";

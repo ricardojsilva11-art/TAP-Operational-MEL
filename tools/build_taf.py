@@ -939,7 +939,7 @@ _D = os.path.dirname(os.path.abspath(__file__))
 _k = s.index('</style>', s.index('--k-conv:'))
 s = s[:_k] + open(os.path.join(_D, 'layout_v2.css'), encoding='utf-8').read() + s[_k:]
 s = rep(s, '      const g = labs.length ? `<span>${esc(labs[0])}</span>` + (labs[1] ? `<span>${esc(labs[1])}${labs.length > 2 ? "+" : ""}</span>` : "") : "";',
-           '      const g = labs.length ? cellCodeHtml(x.cat, labs) : "";')
+           '      const g = labs.length ? cellCodeHtml(x.cat, labs, x.hard) : "";')
 s = rep(s, 'function closeReport(){', open(os.path.join(_D, 'layout_v2.js'), encoding='utf-8').read() + 'function closeReport(){')
 
 
