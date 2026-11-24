@@ -893,6 +893,10 @@ function repColgroup(){
 }
 function reportText(){""")
 
+
+# 3m. intensidade fraca no relatório: LIGHT (ex.: LIGHT RAIN AND SNOW) em vez de LOW
+s = rep(s, 'const inten = m[1] === "-" ? "LOW" : m[1] === "+" ? "HEAVY" : "";', 'const inten = m[1] === "-" ? "LIGHT" : m[1] === "+" ? "HEAVY" : "";')
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 

@@ -2213,7 +2213,7 @@ const WX_WORDS = {RA: "RAIN", DZ: "DRIZZLE", SN: "SNOW", SG: "SNOW GRAINS", PL: 
 const DESC_WORDS = {SH: "SHOWERS", FZ: "FREEZING", BL: "BLOWING", DR: "LOW DRIFTING", MI: "SHALLOW", BC: "PATCHES OF", PR: "PARTIAL"};
 function wxDesc(w){
   const m = /^(\+|-|VC)?(MI|BC|PR|DR|BL|SH|TS|FZ)?((?:[A-Z]{2})*)$/.exec(w); if (!m) return "";
-  const inten = m[1] === "-" ? "LOW" : m[1] === "+" ? "HEAVY" : "";
+  const inten = m[1] === "-" ? "LIGHT" : m[1] === "+" ? "HEAVY" : "";
   const vc = m[1] === "VC" ? " IN VICINITY" : "";
   const ph = (m[3].match(/[A-Z]{2}/g) || []).map(c => WX_WORDS[c] || c);
   const phs = ph.join(" AND ");
