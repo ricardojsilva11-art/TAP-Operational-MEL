@@ -150,3 +150,5 @@ A pasta `tests/` tem testes que abrem a app num browser com um Supabase simulado
 No Início, carregar num aeroporto de "TAF novos ou emendas com alerta" ou de "Meteorologia nos destinos – resumo" abre o TAF numa janela (sem sair do Início): o TAF com a condição sublinhada na cor do alerta. "Abrir no TAF Monitor" leva ao painel desse aeroporto. Abrir a janela conta como TAF visto.
 
 Nas listas do Início (TAF novos/AMD e destinos em alerta), a bola tem a cor da condição mais penalizante que o TAF prevê e as listas vêm ordenadas por gravidade (fora dos limites/abaixo dos mínimos, LVO, trovoada, teto baixo/RVAC, neve/gelo, vento…); nos destinos, os favoritos ficam primeiro.
+
+Filtro **✈ Com voos** (junto a Todos / Com alertas / Alerta agora): mostra só os aeroportos com voos afetados, com o número entre parênteses; só aparece quando há lista de voos carregada.

@@ -339,3 +339,25 @@ def test_grelha_aviao_so_nos_voos_com_alerta(browser, server, mock):
     assert '(8)' in f.inner_text('#fltDock .fd-head')
     assert not errors
     ctx.close()
+
+
+def test_filtro_com_voos(browser, server, mock):
+    """Filtro "✈ Com voos": só os aeroportos com voos afetados; sem voos carregados o botão não aparece."""
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, _taf_json)
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null", timeout=15000)
+    assert f.locator('#fFlt').is_hidden()
+    now = time.time()
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))",
+               f'TP1351  LHR  LIS  {_hhmm(now + 600)}  {_hhmm(now + 3 * 3600)}\nTP1352  LIS  LHR  {_hhmm(now + 600)}  {_hhmm(now + 3 * 3600)}')
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has", timeout=20000)
+    page.click('[data-nav="taf"]')
+    f.wait_for_selector('#fFlt:not([hidden])')
+    assert '(1)' in f.inner_text('#fFlt')
+    f.click('#fFlt')
+    f.wait_for_function("document.querySelectorAll('#grid tr.row').length === 1")
+    assert f.locator('#grid tr.row[data-icao="LPPT"]').count() == 1
+    assert not errors
+    ctx.close()

@@ -538,6 +538,7 @@ body.resizing{cursor:col-resize;user-select:none}
       <button type="button" data-f="all">Todos</button>
       <button type="button" data-f="alert">Com alertas</button>
       <button type="button" data-f="now">Alerta agora</button>
+      <button type="button" data-f="flt" id="fFlt" hidden title="Só aeroportos com voos afetados (✈)">✈ Com voos</button>
     </div>
     <input class="search" id="q" type="search" placeholder="ICAO / IATA" aria-label="Procurar ICAO ou IATA" maxlength="4">
     <label class="chk"><input type="checkbox" id="sortAlert"> Alertas primeiro</label>
@@ -1845,6 +1846,7 @@ function render(){
     if (ui.filter === "notaf") return !r.T || !!r.T.error;
     if (ui.filter === "metar") return r.mWorse.length > 0;
     if (ui.filter === "new") return r.isNew;
+    if (ui.filter === "flt") return fltIcaos().has(r.icao);
     return true;
   });
 
@@ -2980,12 +2982,20 @@ function fltGridRows(slots){
     }
   }
 }
+/* aeroportos com voos afetados (da última análise dos voos) */
+let fltFilterKey = "";
+function fltIcaos(){ return new Set(fltCache ? fltCache.P.flights.filter(f => f.alert && !f.landed).map(f => f.dst) : []); }
 function decorateFlights(slots){
   if (slots) fltSlots = slots;
   const st = fltStore.get();
   fltCache = null;
   if (st && st.text){ try { fltCache = flightRows(st.text); } catch(e){ console.error("Voos:", e); postFlightsError("Erro ao analisar os voos: " + (e && e.message || e)); $("#fltInfo").textContent = "Erro ao analisar os voos: " + (e && e.message || e); return; } }
   try { fltGridRows(fltSlots); } catch(e){ console.error("Voos (grelha):", e); }
+  { const set = fltIcaos(), b = document.getElementById("fFlt");
+    if (b){ b.hidden = !fltCache; b.textContent = `✈ Com voos (${set.size})`; }
+    if (!fltCache && ui.filter === "flt"){ ui.filter = "all"; saveUI(); setTimeout(render, 0); }
+    const key = [...set].sort().join(",");
+    if (ui.filter === "flt" && key !== fltFilterKey){ fltFilterKey = key; setTimeout(render, 0); } else fltFilterKey = key; }
   postFlights(st);
   if (!$("#flights").hidden) renderFlights();
 }

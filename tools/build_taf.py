@@ -897,6 +897,22 @@ function reportText(){""")
 # 3m. intensidade fraca no relatório: LIGHT (ex.: LIGHT RAIN AND SNOW) em vez de LOW
 s = rep(s, 'const inten = m[1] === "-" ? "LOW" : m[1] === "+" ? "HEAVY" : "";', 'const inten = m[1] === "-" ? "LIGHT" : m[1] === "+" ? "HEAVY" : "";')
 
+
+# 3n. filtro "✈ Com voos": só os aeroportos com voos afetados (os do ✈ na grelha)
+s = rep(s, '      <button type="button" data-f="now">Alerta agora</button>\n', '      <button type="button" data-f="now">Alerta agora</button>\n      <button type="button" data-f="flt" id="fFlt" hidden title="Só aeroportos com voos afetados (✈)">✈ Com voos</button>\n')
+s = rep(s, '    if (ui.filter === "new") return r.isNew;\n', '    if (ui.filter === "new") return r.isNew;\n    if (ui.filter === "flt") return fltIcaos().has(r.icao);\n')
+s = rep(s, 'function decorateFlights(slots){', """/* aeroportos com voos afetados (da última análise dos voos) */
+let fltFilterKey = "";
+function fltIcaos(){ return new Set(fltCache ? fltCache.P.flights.filter(f => f.alert && !f.landed).map(f => f.dst) : []); }
+function decorateFlights(slots){""")
+s = rep(s, '  try { fltGridRows(fltSlots); } catch(e){ console.error("Voos (grelha):", e); }\n', """  try { fltGridRows(fltSlots); } catch(e){ console.error("Voos (grelha):", e); }
+  { const set = fltIcaos(), b = document.getElementById("fFlt");
+    if (b){ b.hidden = !fltCache; b.textContent = `✈ Com voos (${set.size})`; }
+    if (!fltCache && ui.filter === "flt"){ ui.filter = "all"; saveUI(); setTimeout(render, 0); }
+    const key = [...set].sort().join(",");
+    if (ui.filter === "flt" && key !== fltFilterKey){ fltFilterKey = key; setTimeout(render, 0); } else fltFilterKey = key; }
+""")
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 
