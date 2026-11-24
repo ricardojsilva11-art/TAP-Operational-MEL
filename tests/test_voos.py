@@ -398,3 +398,30 @@ def test_minimos_incluidos_sem_carregar(browser, server, mock):
     assert not errors
     ctx.close()
 
+
+
+def test_resumo_dos_destinos_com_as_horas_do_taf(browser, server, mock):
+    """Alerta em curso: o resumo do Início mostra o início real (antes de agora) e o fim como a última hora (igual ao TAF)."""
+    H = 3600
+    t0 = int(time.time() // H * H)
+    g = lambda t: time.strftime('%d%H', time.gmtime(t))
+
+    def tafs(route):
+        if 'type=metar' in route.request.url:
+            return route.fulfill(status=200, content_type='application/json', body='[]')
+        iss = time.strftime('%d%H%MZ', time.gmtime(t0 - 4 * H))
+        raw = f'TAF DGAA {iss} {g(t0 - 4 * H)}/{g(t0 + 24 * H)} 18013KT 9999 SCT020 PROB30 TEMPO {g(t0 - 2 * H)}/{g(t0 + 2 * H)} 7000 -TSRA BKN010CB'
+        return route.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'},
+                             body=json.dumps([{'icaoId': 'DGAA', 'issueTime': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t0 - 4 * H)), 'rawTAF': raw}]))
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, tafs)
+    taf_frame(page)
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("tafSum && (tafSum.alerts||[]).some(a=>a.icao==='DGAA')", timeout=20000)
+    a = page.evaluate("tafSum.alerts.find(a=>a.icao==='DGAA')")
+    assert a['now'] and a['from'] == (t0 - 2 * H) * 1000 and a['to'] == (t0 + 2 * H) * 1000
+    page.wait_for_selector('#pAlertList [data-icao="DGAA"]')
+    txt = page.inner_text('#pAlertList [data-icao="DGAA"]')
+    assert f'{g(t0 - 2 * H)}/{g(t0 + 2 * H)}' in txt and 'agora' in txt
+    assert not errors
+    ctx.close()
