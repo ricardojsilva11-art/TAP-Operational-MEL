@@ -942,6 +942,11 @@ s = rep(s, '      const g = labs.length ? `<span>${esc(labs[0])}</span>` + (labs
            '      const g = labs.length ? cellCodeHtml(x.cat, labs) : "";')
 s = rep(s, 'function closeReport(){', open(os.path.join(_D, 'layout_v2.js'), encoding='utf-8').read() + 'function closeReport(){')
 
+
+# 3r. rosa dos ventos: setores e OUT OF LIM a vermelho; seta azul (normal), amarela (a 5 kt ou menos do limite), vermelha (acima)
+s = rep(s, 'const col = hit && hit.code === "LIM" ? "var(--k-lim)" : hit && hit.code === "MRG" ? "var(--k-mar)" : "var(--accent)";',
+           'const col = hit && hit.code === "LIM" ? "var(--rose-lim)" : hit && hit.code === "MRG" ? "var(--rose-mrg)" : "var(--rose-ok)";')
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 

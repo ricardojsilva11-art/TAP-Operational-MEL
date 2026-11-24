@@ -65,14 +65,15 @@ function v2Summary(r, slots){
 function v2Panel(el, r, slots){
   const head = el.querySelector(".d-head"); if (!head) return;
   const secs = [...el.querySelectorAll(":scope > .d-sec")], key = s => ((s.querySelector(":scope > h3") || {}).textContent || "").split(/\s[·(]/)[0].trim().toUpperCase();
-  const ORDER = ["PISTAS", "TAF", "AGORA", "METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"];
+  const ORDER = ["LIMITAÇÕES DE VENTO", "PISTAS", "TAF", "AGORA", "METAR", "JANELAS DE ALERTA", "GRUPOS"];
   const rank = s => { const k = key(s); const i = ORDER.findIndex(o => k.startsWith(o)); return i < 0 ? ORDER.length : i; };
   let after = head;
   const sm = v2Summary(r, slots);
   if (sm){ const d = document.createElement("div"); d.className = "v2sum"; d.innerHTML = sm; head.after(d); after = d; }
   secs.slice().sort((a, b) => rank(a) - rank(b)).forEach(s => { after.after(s); after = s; });
   ui.secClosed = ui.secClosed || {};
-  if (!ui.v2sec){ ui.v2sec = 1; for (const k of ["METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"]) if (!(k in ui.secClosed)) ui.secClosed[k] = true; saveUI(); }
+  if (!ui.v2sec){ ui.v2sec = 1; for (const k of ["METAR", "JANELAS DE ALERTA", "GRUPOS"]) if (!(k in ui.secClosed)) ui.secClosed[k] = true; saveUI(); }
+  if (!ui.v2rose){ ui.v2rose = 1; delete ui.secClosed["LIMITAÇÕES DE VENTO"]; saveUI(); }
 }
 /* layout v2 — telemóvel: em vez da grelha, cartões dos aeroportos (os mesmos da grelha, pela mesma ordem) com o
    código do alerta, uma barra das próximas horas, o período, a condição e os voos afetados; tocar abre o aeroporto */

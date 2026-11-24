@@ -537,6 +537,9 @@ body.resizing{cursor:col-resize;user-select:none}
 }
 @media (max-width:700px){.mcards .mall{width:100%;margin-top:4px}}
 @media (max-width:700px){.strip.v2bar .summary{flex-wrap:wrap}.strip.v2bar .stat{padding:4px 10px 4px 6px}}
+/* rosa dos ventos a vermelho; seta azul / amarela / vermelha */
+.rose-wrap{--k-lim:#e5323b;--rose-lim:#e5323b;--rose-mrg:#f2c230;--rose-ok:#3d8bfd}
+.d-sec:has(.rose-wrap){--k-lim:#e5323b;--k-mar:#e0a800}
 </style>
 
 <header class="bar">
@@ -1265,7 +1268,7 @@ function limitsRoseHtml(icao, row){
   { const w = ww && ww.wind; if (ww) wSrc = ww.src;
     if (w){ wTxt = w.tok; const m = /^(\d{3})/.exec(w.tok);
       if (m){ const d = +m[1]; const [x1, y1] = pt(d, R + 2), [x2, y2] = pt(d, 22); const hit = ldgCheck(icao, w);
-        const col = hit && hit.code === "LIM" ? "var(--k-lim)" : hit && hit.code === "MRG" ? "var(--k-mar)" : "var(--accent)";
+        const col = hit && hit.code === "LIM" ? "var(--rose-lim)" : hit && hit.code === "MRG" ? "var(--rose-mrg)" : "var(--rose-ok)";
         svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col}" stroke-width="3.5" marker-end="url(#ah-${icao})"/>`;
         svg += `<defs><marker id="ah-${icao}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="${col}"/></marker></defs>`; } } }
   svg += labs + `</svg>`;
@@ -3302,14 +3305,15 @@ function v2Summary(r, slots){
 function v2Panel(el, r, slots){
   const head = el.querySelector(".d-head"); if (!head) return;
   const secs = [...el.querySelectorAll(":scope > .d-sec")], key = s => ((s.querySelector(":scope > h3") || {}).textContent || "").split(/\s[·(]/)[0].trim().toUpperCase();
-  const ORDER = ["PISTAS", "TAF", "AGORA", "METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"];
+  const ORDER = ["LIMITAÇÕES DE VENTO", "PISTAS", "TAF", "AGORA", "METAR", "JANELAS DE ALERTA", "GRUPOS"];
   const rank = s => { const k = key(s); const i = ORDER.findIndex(o => k.startsWith(o)); return i < 0 ? ORDER.length : i; };
   let after = head;
   const sm = v2Summary(r, slots);
   if (sm){ const d = document.createElement("div"); d.className = "v2sum"; d.innerHTML = sm; head.after(d); after = d; }
   secs.slice().sort((a, b) => rank(a) - rank(b)).forEach(s => { after.after(s); after = s; });
   ui.secClosed = ui.secClosed || {};
-  if (!ui.v2sec){ ui.v2sec = 1; for (const k of ["METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"]) if (!(k in ui.secClosed)) ui.secClosed[k] = true; saveUI(); }
+  if (!ui.v2sec){ ui.v2sec = 1; for (const k of ["METAR", "JANELAS DE ALERTA", "GRUPOS"]) if (!(k in ui.secClosed)) ui.secClosed[k] = true; saveUI(); }
+  if (!ui.v2rose){ ui.v2rose = 1; delete ui.secClosed["LIMITAÇÕES DE VENTO"]; saveUI(); }
 }
 /* layout v2 — telemóvel: em vez da grelha, cartões dos aeroportos (os mesmos da grelha, pela mesma ordem) com o
    código do alerta, uma barra das próximas horas, o período, a condição e os voos afetados; tocar abre o aeroporto */

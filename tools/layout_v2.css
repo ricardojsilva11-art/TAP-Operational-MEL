@@ -47,3 +47,6 @@
 }
 @media (max-width:700px){.mcards .mall{width:100%;margin-top:4px}}
 @media (max-width:700px){.strip.v2bar .summary{flex-wrap:wrap}.strip.v2bar .stat{padding:4px 10px 4px 6px}}
+/* rosa dos ventos a vermelho; seta azul / amarela / vermelha */
+.rose-wrap{--k-lim:#e5323b;--rose-lim:#e5323b;--rose-mrg:#f2c230;--rose-ok:#3d8bfd}
+.d-sec:has(.rose-wrap){--k-lim:#e5323b;--k-mar:#e0a800}
