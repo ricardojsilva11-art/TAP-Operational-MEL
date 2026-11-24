@@ -1,7 +1,13 @@
 /* layout v2: código curto da categoria para as células e etiquetas */
 const CAT_CODE = {lim: "LIM", cig: "LVO", bmin: "BMIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SN", wind: "WND", mar: "WND", cig4: "CIG", obsc: "BR", int: "INT", capt: "CAPT"};
 const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|OUT OF|LIM|LDG NOT ALLOWED|LDG|NOT ALLOWED|CAPT)$/;
+/* código a mostrar: o da categoria, ou o próprio fenómeno quando é só intensidade (ex.: -SHRASN) */
+function catCodeOf(cat, labs){
+  if (cat === "int"){ const f = (labs || []).find(x => /^[+-]?[A-Z]{2,}/.test(x) && !CODE_WORDS.test(x)); return f || "INT"; }
+  return CAT_CODE[cat] || cat;
+}
 function cellCodeHtml(cat, labs, hard){
+  if (cat === "int"){ const c = catCodeOf(cat, labs); return `<span class="cc">${esc(c)}</span>`; }
   let code = CAT_CODE[cat] || (labs[0] || "").slice(0, 5);
   if (cat === "lim"){ const z = (hard || []).find(r => r.code === "LIM"), m = z && /(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT/.exec(z.txt);
     if (/NOT ALLOWED|LDG/.test(labs.join(" "))) code = "LDG NA";
@@ -55,10 +61,10 @@ function v2Summary(r, slots){
   const hz = t => pad(new Date(t).getUTCHours()) + "Z";
   const det = g => { const rest = [...new Set(g.labs)].filter(s => !CODE_WORDS.test(s) && s !== CAT_CODE[g.cat]).map(s => s.replace(/^WND\s+/, "")); return rest.slice(0, 2).join(" "); };
   let h = "";
-  if (cur) h += `<div class="v2st k-${cur.cat}"><b>${esc(CAT_CODE[cur.cat] || cur.cat)} ${esc(det(cur))}</b> agora até ${hz(cur.e)}`;
+  if (cur) h += `<div class="v2st k-${cur.cat}"><b>${esc(catCodeOf(cur.cat, cur.labs))} ${cur.cat === "int" ? "" : esc(det(cur))}</b> agora até ${hz(cur.e)}`;
   else if (nxt) h += `<div class="v2st ok"><b>Sem alerta agora</b>`;
   else return `<div class="v2st ok"><b>Sem alertas</b> no período do TAF</div>`;
-  if (nxt) h += ` <span class="v2nx k-${nxt.cat}">${cur ? "depois" : "a partir das " + hz(nxt.s)} ${esc(CAT_CODE[nxt.cat] || nxt.cat)} ${cur ? hz(nxt.s) + "–" : ""}${hz(nxt.e)}</span>`;
+  if (nxt) h += ` <span class="v2nx k-${nxt.cat}">${cur ? "depois" : "a partir das " + hz(nxt.s)} ${esc(catCodeOf(nxt.cat, nxt.labs))} ${cur ? hz(nxt.s) + "–" : ""}${hz(nxt.e)}</span>`;
   try { const g = cur || nxt, m = /RWY(\w+)/.exec(g.labs.join(" ")), rw = m && m[1], B = rw && RWY_BELOW[r.icao] && RWY_BELOW[r.icao][rw], V = rw && RWY_MINIMA[r.icao] && RWY_MINIMA[r.icao][rw];
     if (B || V) h += `<div class="v2mn">RWY ${esc(rw)} · ${B ? `BMIN &lt; ${B[0] ? B[0] + " ft / " : ""}${B[1]} m` : ""}${B && V ? " · " : ""}${V ? `RVAC ≤ ${V[0]} ft / ${V[1]} m` : ""}</div>`; } catch(e){}
   try { if (typeof fltCache !== "undefined" && fltCache){ const L = fltCache.P.flights.filter(f => f.dst === r.icao && f.alert && !f.landed).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta));
@@ -95,10 +101,10 @@ function v2Cards(slots){
     const segs = r.T && !r.T.error ? v2Segs(r, slots) : [];
     const g = segs.find(s => s.s <= Date.now() && Date.now() < s.e) || segs[0];
     const bar = (r.res || []).slice(0, N).map(x => `<i class="${x.level === "red" && x.cat ? "k-" + x.cat : x.level}"></i>`).join("");
-    const det = g ? [...new Set(g.labs)].filter(s => !CODE_WORDS.test(s) && s !== CAT_CODE[g.cat]).map(s => s.replace(/^WND\s+/, "")).slice(0, 3).join(" ") : "";
-    const when = segs.slice(0, 3).map(s => `${CAT_CODE[s.cat] || s.cat} ${hz(s.s)}–${hz(s.e)}`).join(" · ");
+    const det = g && g.cat !== "int" ? [...new Set(g.labs)].filter(s => !CODE_WORDS.test(s) && s !== CAT_CODE[g.cat]).map(s => s.replace(/^WND\s+/, "")).slice(0, 3).join(" ") : "";
+    const when = segs.slice(0, 3).map(s => `${catCodeOf(s.cat, s.labs)} ${hz(s.s)}–${hz(s.e)}`).join(" · ");
     const F = fl[ic] || [];
-    out.push(`<button type="button" class="mc${g ? " k-" + g.cat : ""}" data-mc="${ic}"><div class="mt"><b>${ic}</b><span>${esc(iataOf(ic) || "")}</span><span class="sp"></span>${g ? `<span class="mtag">${esc(CAT_CODE[g.cat] || g.cat)}</span>` : `<span class="mok">${r.T ? "sem alerta" : "sem TAF"}</span>`}</div>`
+    out.push(`<button type="button" class="mc${g ? " k-" + g.cat : ""}" data-mc="${ic}"><div class="mt"><b>${ic}</b><span>${esc(iataOf(ic) || "")}</span><span class="sp"></span>${g ? `<span class="mtag">${esc(catCodeOf(g.cat, g.labs))}</span>` : `<span class="mok">${r.T ? "sem alerta" : "sem TAF"}</span>`}</div>`
       + `<div class="mb">${bar}</div>${when ? `<div class="mm">${esc(when)}</div>` : ""}${det ? `<div class="mm">${esc(det)}</div>` : ""}`
       + (F.length ? `<div class="mf">✈ ${F.slice(0, 2).map(f => `${esc(f.fl)} ${hhmm(f.eta ?? f.sta)}Z`).join(" · ")}${F.length > 2 ? " · +" + (F.length - 2) : ""}</div>` : "") + `</button>`);
   }
