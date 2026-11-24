@@ -286,7 +286,7 @@ def test_numeros_do_taf_abrem_o_filtro_certo(browser, server, mock):
     page.wait_for_function("document.getElementById('pNew').textContent==='2'")
     for tf, lst in (('now', 'DST'), ('nextwin', 'DST'), ('new', '')):
         page.click('[data-nav="portal"]')
-        page.click(f'[data-tf="{tf}"]')
+        page.locator(f'[data-tf="{tf}"]:visible').first.click()
         assert visible(page, '#tafView')
         page.wait_for_timeout(300)
         assert f.evaluate('ui.filter') == tf and f.evaluate('ui.list') == lst

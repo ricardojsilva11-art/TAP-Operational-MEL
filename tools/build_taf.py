@@ -96,8 +96,8 @@ s = rep(s, '  $("#legendCodes").textContent = ',
         '    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
         f'    win: {WX_H}, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => ({{icao: r.icao, name: nameOf(r.icao)}})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
-        f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), kc: catColor(worstOf(ks)), rank: ks.length ? catSev(worstOf(ks)) : 99, now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (x.rank - y.rank) || (y.now - x.now) || (x.from - y.from)),\n'
-        '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], kc: worstCatColor(r), rank: worstCatRank(r), alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (a.rank - b.rank) || (b.at || 0) - (a.at || 0)),\n'
+        f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), kc: catColor(worstOf(ks)), rank: ks.length ? catSev(worstOf(ks)) : 99, now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), tags: ks.slice().sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y)).map(k => ({{c: CAT_CODE[k] || k, kc: catColor(k), ki: catInk(k)}})), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (x.rank - y.rank) || (y.now - x.now) || (x.from - y.from)),\n'
+        '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], kc: worstCatColor(r), rank: worstCatRank(r), code: CAT_CODE[worstCat(r)] || "", ki: catInk(worstCat(r)), alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (a.rank - b.rank) || (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
         '  $("#legendCodes").textContent = ')
 
@@ -297,7 +297,7 @@ s = rep(s, '.rep-text{', """.flt-drop{display:flex;flex-direction:column;align-i
 .ftl-now{top:-2px;bottom:-2px;width:2px;background:var(--accent);z-index:2}
 .rep-text{""")
 s = rep(s, '  $("#grid").innerHTML = h + "</tbody>";', '  $("#grid").innerHTML = h + "</tbody>";\n  try { decorateFlights(slots); } catch(e){ console.error("Voos:", e); }')
-s = rep(s, '  el.innerHTML = h;\n', '  el.innerHTML = h;\n  try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }\n')
+s = rep(s, '  el.innerHTML = h;\n', '  el.innerHTML = h;\n  try { v2Panel(el, r, slots); } catch(e){ console.error("Painel:", e); }\n  try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }\n')
 s = rep(s, '  if (!r){ el.innerHTML = ""; el.classList.add("closed");', '  if (!r){ try { fltDock(null, slots); } catch(e){} el.innerHTML = ""; el.classList.add("closed");')
 s = rep(s, '<div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>', '<div class="gridwrap" id="gridwrap"><table class="grid" id="grid"></table></div>\n    <section class="fltdock" id="fltDock" hidden></section>')
 s = rep(s, '@media (max-width:1100px){.d-resize{display:none}', '.fltdock{grid-row:2;grid-column:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 16px 12px;min-width:0;height:var(--dock-h,380px);overflow:auto;position:relative}\n.fd-resize{position:sticky;top:0;z-index:4;height:12px;margin:0 -16px 2px;cursor:row-resize;display:flex;justify-content:center;align-items:center;background:var(--panel);touch-action:none}\n.fd-resize::before{content:"";width:44px;height:4px;border-radius:2px;background:var(--line)}\n.fd-resize:hover::before,.fd-resize.drag::before{background:var(--accent)}\nbody.resizing-v{cursor:row-resize;user-select:none}\n.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 140px - var(--dock-h,380px));min-height:180px}\n.layout:has(.fltdock:not([hidden])) .detail,.layout:has(.fltdock:not([hidden])) .d-resize{grid-row:1 / span 2}\n.layout:has(.fltdock:not([hidden])){grid-template-rows:auto 1fr}.fltdock{align-self:start}\n@media (max-width:1100px){.fltdock{grid-column:auto;grid-row:auto;height:auto}.fd-resize{display:none}.layout:has(.fltdock:not([hidden])) .detail{grid-row:auto}.layout:has(.fltdock:not([hidden])) .gridwrap{max-height:calc(100vh - 230px)}}\n@media (max-width:1100px){.d-resize{display:none}')
@@ -560,11 +560,11 @@ function fltTimelineHtml(r, list, slots){
   const grid = `background-image:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px calc(100% / ${N / 3}))`;
   const now = Date.now() >= s0 && Date.now() < s1 ? `<span class="ftl-now" style="left:${x(Date.now())}"></span>` : "";
   let h = `<div class="ftl2"><div class="ftl-lab"></div><div class="ftl-trk ftl-ax">${slots.map((t, i) => i % 3 ? "" : `<span style="left:${x(t)}">${pad(new Date(t).getUTCHours())}Z</span>`).join("")}</div>`;
-  h += `<div class="ftl-lab">TAF</div><div class="ftl-trk" style="${grid}">${segs.filter(g => g.k).map(g => `<span class="ftl-seg k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}" title="${esc(g.n)} ${hhmm(g.s)}–${hhmm(g.e)}Z">${pc(g.e) - pc(g.s) > 9 ? esc(g.n) + " " + pad(new Date(g.s).getUTCHours()) + "–" + pad(new Date(g.e).getUTCHours()) + "Z" : ""}</span>`).join("")}${now}</div>`;
+  h += `<div class="ftl-lab">TAF</div><div class="ftl-trk" style="${grid}">${segs.filter(g => g.k).map(g => `<span class="ftl-seg k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}" title="${esc(g.n)} ${hhmm(g.s)}–${hhmm(g.e)}Z">${pc(g.e) - pc(g.s) > 9 ? esc(CAT_CODE[g.k] || g.n) + " " + pad(new Date(g.s).getUTCHours()) + "–" + pad(new Date(g.e).getUTCHours()) + "Z" : ""}</span>`).join("")}${now}</div>`;
   for (const f of list){
     const tA = f.eta ?? f.sta, tD = fltEtd(f), k = f.alert ? "k-" + (FLT_KEY[f.alert.name] || "int") : "";
     if (tA + FLT_WIN <= s0 || (tD ?? tA) >= s1) continue;
-    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
+    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
     const right = pc(tA + FLT_WIN) > 62;
     h += `<div class="ftl-lab ${k}">${esc(f.fl)}</div><div class="ftl-trk ${k}" style="${grid}">`
       + (tD != null ? `<span class="ftl-fy" style="left:${x(tD)};width:${w(tD, tA)}"></span>` + (tD >= s0 ? `<span class="ftl-fd" style="left:${x(tD)}"></span>` : "") : "")
@@ -584,7 +584,7 @@ function fltPaneHtml(r, list, hit, slots){
   let h = `<div class="fd-cols"><div class="fd-c">`;
   h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.full || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
@@ -648,6 +648,8 @@ function decorateFlights(slots){
   fltCache = null;
   if (st && st.text){ try { fltCache = flightRows(st.text); } catch(e){ console.error("Voos:", e); postFlightsError("Erro ao analisar os voos: " + (e && e.message || e)); $("#fltInfo").textContent = "Erro ao analisar os voos: " + (e && e.message || e); return; } }
   try { fltGridRows(fltSlots); } catch(e){ console.error("Voos (grelha):", e); }
+  try { v2Sync(); } catch(e){}
+  try { v2Cards(fltSlots); } catch(e){ console.error("Cartões:", e); }
   postFlights(st);
   if (!$("#flights").hidden) renderFlights();
 }
@@ -666,7 +668,7 @@ function postFlights(st){
       blocks: (fltBlocks() || {}).n || 0,
       missing: C && fltBlocks() ? C.P.flights.filter(f => f.miss).map(f => ({fl: f.fl, org: apIata(f.org), dst: apIata(f.dst), other: f.miss.other})) : [], blkSrc: C ? C.P.flights.reduce((o, f) => { if (f.blockSrc) o[f.blockSrc] = (o[f.blockSrc] || 0) + 1; return o; }, {}) : {},
       outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0, landed: C ? C.P.flights.filter(f => f.landed).length : 0,
-      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
+      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name), code: CAT_CODE[FLT_KEY[r.name]] || r.name, kc: catColor(FLT_KEY[r.name]), ki: catInk(FLT_KEY[r.name])})) : []}, location.origin);
   } catch(e){}
 }
 let fltLast = null;
@@ -857,6 +859,11 @@ const catSev = k => k === "lim" ? 0 : repSev(REP_CAT_NAME[k] || "");
 const worstOf = ks => ks.slice().sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y))[0] || null;
 function worstCat(r){ return worstOf([...new Set((r.res || []).filter(x => x.level === "red").flatMap(x => x.hard || []).map(h => catOfCode(h.code)))]); }
 function worstCatColor(r){ return catColor(worstCat(r)); }
+function catInk(k){
+  if (!k) return null; const C = catInk.c = catInk.c || {}; if (k in C) return C[k];
+  const e = document.createElement("span"); e.className = "k-" + k; e.style.display = "none"; document.body.appendChild(e);
+  const v = getComputedStyle(e).getPropertyValue("--ki").trim() || null; e.remove(); return C[k] = v;
+}
 function worstCatRank(r){ const k = worstCat(r); return k ? catSev(k) : 99; }
 /* TAF de um aeroporto para a janela do Início: cores dos alertas passadas para estilos (o portal não tem as classes) */
 function tafPopupHtml(icao){
@@ -925,6 +932,15 @@ s = rep(s, ".fltab{font-size:13px;width:100%}", ".minima{margin-top:10px}.mintab
 
 # 3p. pistas paralelas (ex.: 06L/06R): usa os mínimos mais baixos das pistas na mesma direção
 s = rep(s, '  let rw = u && !u.calm ? u.ids.split("/").find(x => M[x]) : null;', '  let rw = u && !u.calm ? (u.ids.split("/").filter(x => M[x]).sort((a, b) => M[a][1] - M[b][1] || M[a][0] - M[b][0])[0] || null) : null;')
+
+
+# 3q. layout v2: paleta nova e códigos curtos nas células da grelha
+_D = os.path.dirname(os.path.abspath(__file__))
+_k = s.index('</style>', s.index('--k-conv:'))
+s = s[:_k] + open(os.path.join(_D, 'layout_v2.css'), encoding='utf-8').read() + s[_k:]
+s = rep(s, '      const g = labs.length ? `<span>${esc(labs[0])}</span>` + (labs[1] ? `<span>${esc(labs[1])}${labs.length > 2 ? "+" : ""}</span>` : "") : "";',
+           '      const g = labs.length ? cellCodeHtml(x.cat, labs) : "";')
+s = rep(s, 'function closeReport(){', open(os.path.join(_D, 'layout_v2.js'), encoding='utf-8').read() + 'function closeReport(){')
 
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]

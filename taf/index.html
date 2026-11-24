@@ -488,6 +488,55 @@ body.resizing{cursor:col-resize;user-select:none}
   .grid td.c{transition:filter .12s}
   .grid td.c:hover{filter:brightness(1.12)}
 }
+/* ===== layout v2: paleta (BMIN vermelho = o mais limitativo; LIM magenta; RVAC amarelo; teto baixo oliva; perto do limite verde-azulado claro) ===== */
+:root{--k-bmin:#d32f2f;--k-bmin-i:#ffffff;--k-lim:#b0177e;--k-lim-i:#ffffff;--k-rvac:#f2c230;--k-rvac-i:#2b2100;
+  --k-cig4:#8a9a2b;--k-cig4-i:#ffffff;--k-mar:#4fb3b0;--k-mar-i:#03201e;--k-vis:#6d4c41;--k-vis-i:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+  --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}}
+:root[data-theme="dark"]{--k-bmin:#e5323b;--k-bmin-i:#ffffff;--k-lim:#d43aa8;--k-lim-i:#ffffff;
+  --k-rvac:#f2c230;--k-rvac-i:#1f1600;--k-cig4:#9aab3a;--k-cig4-i:#141a00;--k-mar:#57c2bf;--k-mar-i:#032421;--k-vis:#7b5e57;--k-vis-i:#ffffff}
+/* células: código curto (BMIN, LVO, RVAC…) e, por baixo, a pista ou a condição */
+.grid td.c span.cc{font-weight:800;font-size:10.5px;letter-spacing:.02em}
+.grid td.c span.cd{font-weight:500;font-size:9.5px;opacity:.95}
+.grid td.c .fpl{top:auto;bottom:0;right:0;font-size:9.5px;line-height:13px;padding:0 3px}
+/* barra única */
+.strip.v2bar{align-items:center;gap:8px;flex-wrap:wrap}
+.strip.v2bar .summary{flex:0 1 auto}
+.strip.v2bar .stat{flex:none;max-width:none;padding:5px 12px 5px 8px}
+.strip.v2bar .stat .icaos{display:none}
+.strip.v2bar .stat .l b{white-space:nowrap}
+.strip.v2bar .v2sep{width:1px;align-self:stretch;background:var(--line);margin:2px 2px}
+.strip.v2bar .seg button[data-f="now"]{display:none}
+.v2sel{font:600 13.5px var(--f-ui);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 10px;cursor:pointer;height:36px}
+.v2sel.on{border-color:var(--accent);background:var(--accent-soft)}
+#cats{margin-top:8px}
+/* resumo no topo do painel */
+.v2sum{margin:0 0 6px}
+.v2st{padding:10px 12px;border-radius:8px;border-left:4px solid var(--kc,var(--accent));background:color-mix(in srgb,var(--kc,var(--accent)) 18%,var(--panel));font-size:14px;line-height:1.45}
+.v2st.ok{--kc:var(--c-ok-ink)}
+.v2st > b{font:800 15px var(--f-mono)}
+.v2nx{display:inline-block;font:700 11px/16px var(--f-mono);background:var(--kc);color:var(--ki,#fff);border-radius:4px;padding:0 6px;margin-left:4px;vertical-align:1px}
+.v2mn{font:500 12.5px var(--f-mono);color:var(--muted);margin-top:3px}
+.v2fl{margin-top:4px;font-size:13.5px}
+.v2fl b{font-family:var(--f-mono)}
+.fchip,.fraw .ftag,.ftl-seg,.v2nx{color:var(--ki,#fff)!important}
+/* telemóvel: cartões em vez da grelha */
+.mcards{display:none}
+@media (max-width:700px){
+  .mcards{display:grid;gap:8px;margin:8px 0}
+  .layout .gridwrap{display:none}
+  .mc{all:unset;box-sizing:border-box;display:block;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--kc,var(--line));border-radius:10px;padding:10px 12px;cursor:pointer}
+  .mc .mt{display:flex;align-items:center;gap:8px}.mc .mt b{font:800 16px var(--f-mono)}.mc .mt span{color:var(--muted);font-family:var(--f-mono)}.mc .sp{flex:1}
+  .mc .mtag{font:700 11px/18px var(--f-mono)!important;color:var(--ki,#fff)!important;background:var(--kc);border-radius:4px;padding:0 7px}
+  .mc .mok{font-size:12px}
+  .mc .mb{display:flex;gap:2px;margin:8px 0 6px}.mc .mb i{flex:1;height:9px;border-radius:2px;background:var(--c-ok)}
+  .mc .mb i[class*="k-"]{background:var(--kc)}.mc .mb i.none{background:var(--c-none)}
+  .mc .mm{font:500 12.5px var(--f-mono);color:var(--muted)}
+  .mc .mf{font:700 12.5px var(--f-mono);margin-top:4px}
+  .strip.v2bar .stat .l small,.strip.v2bar .stat .l > :not(b){display:none}
+}
+@media (max-width:700px){.mcards .mall{width:100%;margin-top:4px}}
+@media (max-width:700px){.strip.v2bar .summary{flex-wrap:wrap}.strip.v2bar .stat{padding:4px 10px 4px 6px}}
 </style>
 
 <header class="bar">
@@ -1822,8 +1871,8 @@ function render(){
     now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),
     win: 8, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 8).includes("red")).map(r => ({icao: r.icao, name: nameOf(r.icao)})),
     noTaf: allRows.filter(r => !r.T || r.T.error).length,
-    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 8).includes("red")).map(r => { const a = r.levels.indexOf("red"); let b = r.levels.slice(0, 8).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, 8).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {icao: r.icao, name: nameOf(r.icao), kc: catColor(worstOf(ks)), rank: ks.length ? catSev(worstOf(ks)) : 99, now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {}).label || k), cond: cellLabels(hard).slice(0, 10)}; }).sort((x, y) => (x.rank - y.rank) || (y.now - x.now) || (x.from - y.from)),
-    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], kc: worstCatColor(r), rank: worstCatRank(r), alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (a.rank - b.rank) || (b.at || 0) - (a.at || 0)),
+    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, 8).includes("red")).map(r => { const a = r.levels.indexOf("red"); let b = r.levels.slice(0, 8).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, 8).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {icao: r.icao, name: nameOf(r.icao), kc: catColor(worstOf(ks)), rank: ks.length ? catSev(worstOf(ks)) : 99, now: a === 0, from: slots[a], to: slots[b] + HOUR, open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {}).label || k), tags: ks.slice().sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y)).map(k => ({c: CAT_CODE[k] || k, kc: catColor(k), ki: catInk(k)})), cond: cellLabels(hard).slice(0, 10)}; }).sort((x, y) => (x.rank - y.rank) || (y.now - x.now) || (x.from - y.from)),
+    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\bAMD\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], kc: worstCatColor(r), rank: worstCatRank(r), code: CAT_CODE[worstCat(r)] || "", ki: catInk(worstCat(r)), alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (a.rank - b.rank) || (b.at || 0) - (a.at || 0)),
     error: fetchError || null}, location.origin); } catch(e){}
   $("#legendCodes").textContent = `Cor = cenário mais grave na hora · VIS300m visibilidade · BKN002 teto · W30 vento kt · G35 rajada kt · CB020 nuvem CB/TCU · fenómeno tal como no TAF (TSRA, BR, -FZDZ…) · + mais alertas · carregue num aeroporto para ver o TAF`;
   document.querySelectorAll(".seg button[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === ui.filter)));
@@ -1872,7 +1921,7 @@ function render(){
       const labs = x.level === "red" ? cellLabels(x.hard) : [];
       const isEnd = !!keys[k] && winEnd[k] === k && k < keys.length - 1;
       const win = keys[k] ? ` · janela ${fmtHZ(slots[winStart[k]])}–${fmtHZ(slots[winEnd[k]])} (até ${pad(new Date(slots[winEnd[k]]).getUTCHours())}:59Z)` : "";
-      const g = labs.length ? `<span>${esc(labs[0])}</span>` + (labs[1] ? `<span>${esc(labs[1])}${labs.length > 2 ? "+" : ""}</span>` : "") : "";
+      const g = labs.length ? cellCodeHtml(x.cat, labs) : "";
       const lab = x.level === "red" ? "Alerta" : x.level === "ok" ? "OK" : "Sem TAF";
       const det = x.level === "red" ? x.hard.map(z => z.txt).join(", ") : "";
       return `<td class="c ${x.level}${x.cat ? " k-" + x.cat : ""}${dstart.has(k) ? " dstart" : ""}${isEnd ? " wend" : ""}" data-k="${k}" title="${r.icao} ${pad(new Date(slots[k]).getUTCHours())}:00–${pad(new Date(slots[k]).getUTCHours())}:59Z — ${lab}${det ? ": " + esc(det) : ""}${win}">${g}</td>`;
@@ -2060,6 +2109,7 @@ function renderDetail(slots){
     h += `<div class="d-sec"><h3>Grupos</h3><div class="gtabwrap"><table class="gtab"><thead><tr><th>Grupo</th><th>Período</th><th>Vis</th><th>Teto</th><th>Tempo</th><th>Avaliação</th></tr></thead><tbody>${rowsG}</tbody></table></div></div>`;
   }
   el.innerHTML = h;
+  try { v2Panel(el, r, slots); } catch(e){ console.error("Painel:", e); }
   try { fltDock(r, slots); } catch(e){ console.error("Voos:", e); }
   // secções do painel abrem e fecham ao carregar no título; a escolha fica guardada
   ui.secClosed = ui.secClosed || {};
@@ -2903,11 +2953,11 @@ function fltTimelineHtml(r, list, slots){
   const grid = `background-image:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px calc(100% / ${N / 3}))`;
   const now = Date.now() >= s0 && Date.now() < s1 ? `<span class="ftl-now" style="left:${x(Date.now())}"></span>` : "";
   let h = `<div class="ftl2"><div class="ftl-lab"></div><div class="ftl-trk ftl-ax">${slots.map((t, i) => i % 3 ? "" : `<span style="left:${x(t)}">${pad(new Date(t).getUTCHours())}Z</span>`).join("")}</div>`;
-  h += `<div class="ftl-lab">TAF</div><div class="ftl-trk" style="${grid}">${segs.filter(g => g.k).map(g => `<span class="ftl-seg k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}" title="${esc(g.n)} ${hhmm(g.s)}–${hhmm(g.e)}Z">${pc(g.e) - pc(g.s) > 9 ? esc(g.n) + " " + pad(new Date(g.s).getUTCHours()) + "–" + pad(new Date(g.e).getUTCHours()) + "Z" : ""}</span>`).join("")}${now}</div>`;
+  h += `<div class="ftl-lab">TAF</div><div class="ftl-trk" style="${grid}">${segs.filter(g => g.k).map(g => `<span class="ftl-seg k-${g.k}" style="left:${x(g.s)};width:${w(g.s, g.e)}" title="${esc(g.n)} ${hhmm(g.s)}–${hhmm(g.e)}Z">${pc(g.e) - pc(g.s) > 9 ? esc(CAT_CODE[g.k] || g.n) + " " + pad(new Date(g.s).getUTCHours()) + "–" + pad(new Date(g.e).getUTCHours()) + "Z" : ""}</span>`).join("")}${now}</div>`;
   for (const f of list){
     const tA = f.eta ?? f.sta, tD = fltEtd(f), k = f.alert ? "k-" + (FLT_KEY[f.alert.name] || "int") : "";
     if (tA + FLT_WIN <= s0 || (tD ?? tA) >= s1) continue;
-    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
+    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
     const right = pc(tA + FLT_WIN) > 62;
     h += `<div class="ftl-lab ${k}">${esc(f.fl)}</div><div class="ftl-trk ${k}" style="${grid}">`
       + (tD != null ? `<span class="ftl-fy" style="left:${x(tD)};width:${w(tD, tA)}"></span>` + (tD >= s0 ? `<span class="ftl-fd" style="left:${x(tD)}"></span>` : "") : "")
@@ -2927,7 +2977,7 @@ function fltPaneHtml(r, list, hit, slots){
   let h = `<div class="fd-cols"><div class="fd-c">`;
   h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip">${esc(a.full || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
@@ -2999,6 +3049,8 @@ function decorateFlights(slots){
     if (!fltCache && ui.filter === "flt"){ ui.filter = "all"; saveUI(); setTimeout(render, 0); }
     const key = [...set].sort().join(",");
     if (ui.filter === "flt" && key !== fltFilterKey){ fltFilterKey = key; setTimeout(render, 0); } else fltFilterKey = key; }
+  try { v2Sync(); } catch(e){}
+  try { v2Cards(fltSlots); } catch(e){ console.error("Cartões:", e); }
   postFlights(st);
   if (!$("#flights").hidden) renderFlights();
 }
@@ -3017,7 +3069,7 @@ function postFlights(st){
       blocks: (fltBlocks() || {}).n || 0,
       missing: C && fltBlocks() ? C.P.flights.filter(f => f.miss).map(f => ({fl: f.fl, org: apIata(f.org), dst: apIata(f.dst), other: f.miss.other})) : [], blkSrc: C ? C.P.flights.reduce((o, f) => { if (f.blockSrc) o[f.blockSrc] = (o[f.blockSrc] || 0) + 1; return o; }, {}) : {},
       outside: C ? C.P.outside : [], bad: C ? C.P.bad.length : 0, landed: C ? C.P.flights.filter(f => f.landed).length : 0,
-      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name)})) : []}, location.origin);
+      rows: C ? C.rows.map(r => ({fl: r.f.fl, org: apIata(r.f.org), dst: apIata(r.f.dst), side: r.side, t: r.t, est: !!r.est, icao: r.ap, zone: REP_ZONE_NAME[repZone(r.ap)] || "", name: r.name, full: r.full, cond: r.cond, restr: FLT_RESTR.has(r.name), code: CAT_CODE[FLT_KEY[r.name]] || r.name, kc: catColor(FLT_KEY[r.name]), ki: catInk(FLT_KEY[r.name])})) : []}, location.origin);
   } catch(e){}
 }
 let fltLast = null;
@@ -3137,6 +3189,11 @@ const catSev = k => k === "lim" ? 0 : repSev(REP_CAT_NAME[k] || "");
 const worstOf = ks => ks.slice().sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y))[0] || null;
 function worstCat(r){ return worstOf([...new Set((r.res || []).filter(x => x.level === "red").flatMap(x => x.hard || []).map(h => catOfCode(h.code)))]); }
 function worstCatColor(r){ return catColor(worstCat(r)); }
+function catInk(k){
+  if (!k) return null; const C = catInk.c = catInk.c || {}; if (k in C) return C[k];
+  const e = document.createElement("span"); e.className = "k-" + k; e.style.display = "none"; document.body.appendChild(e);
+  const v = getComputedStyle(e).getPropertyValue("--ki").trim() || null; e.remove(); return C[k] = v;
+}
 function worstCatRank(r){ const k = worstCat(r); return k ? catSev(k) : 99; }
 /* TAF de um aeroporto para a janela do Início: cores dos alertas passadas para estilos (o portal não tem as classes) */
 function tafPopupHtml(icao){
@@ -3178,6 +3235,111 @@ function minimaHtml(icao){
   const m = minCfg(), src = [m.src, m.cat ? "Cat " + m.cat : ""].filter(Boolean).join(" · ");
   return `<div class="minima"><span class="rwy-tag">Mínimos de aproximação${src ? " · " + esc(src) : ""}</span><div class="gtabwrap"><table class="gtab mintab"><thead><tr><th>Pista</th><th>Melhor aproximação</th><th>BELOW MIN</th><th>RVAC</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint" style="margin:4px 0 0">BELOW MIN: abaixo da melhor aproximação (sem LPV). RVAC: até ao CAT I + 200 ft / + 1000 m. LVO segue a fuel policy.</p></div>`;
 }
+/* layout v2: código curto da categoria para as células e etiquetas */
+const CAT_CODE = {lim: "LIM", cig: "LVO", bmin: "BMIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SN", wind: "WND", mar: "WND", cig4: "CIG", obsc: "BR", int: "INT", capt: "CAPT"};
+const CODE_WORDS = /^(BELOW MIN|LVO|RVAC|OUT OF LIM|LDG NOT ALLOWED|CAPT)$/;
+function cellCodeHtml(cat, labs){
+  let code = CAT_CODE[cat] || (labs[0] || "").slice(0, 5);
+  const rest = labs.filter(s => !CODE_WORDS.test(s) && s !== code).map(s => s.replace(/^WND\s+/, ""));
+  if (cat === "ice" && rest[0] && !/SN/.test(rest[0])) code = "ICE";
+  let det = rest[0] || "";
+  if (code === det) det = rest[1] || "";
+  if (labs.length > 2 && det) det += "+";
+  return `<span class="cc">${esc(code)}</span>` + (det ? `<span class="cd">${esc(det)}</span>` : "");
+}
+/* layout v2: uma só barra de controlos — contadores (filtram), zona e categorias em menus, pesquisa */
+(function v2Bar(){
+  const st = document.querySelector(".strip"), tb = document.querySelector(".toolbar");
+  if (!st || !tb || st.dataset.v2) return; st.dataset.v2 = "1";
+  st.classList.add("v2bar");
+  const areas = document.getElementById("areas");
+  const sel = document.createElement("select"); sel.id = "areaSel"; sel.className = "v2sel"; sel.setAttribute("aria-label", "Zona");
+  sel.innerHTML = [...areas.querySelectorAll("[data-area]")].map(b => `<option value="${b.dataset.area}">${b.dataset.area ? b.textContent.trim() : "Todas as zonas"}</option>`).join("");
+  sel.addEventListener("change", () => { const b = areas.querySelector(`[data-area="${sel.value}"]`); if (b) b.click(); });
+  areas.hidden = true;
+  const cb = document.createElement("button"); cb.type = "button"; cb.id = "catsBtn"; cb.className = "v2sel"; cb.setAttribute("aria-expanded", "false"); cb.textContent = "Categorias ▾";
+  cb.addEventListener("click", () => { ui.catsOpen = !ui.catsOpen; saveUI(); v2Sync(); });
+  areas.after(sel); sel.after(cb);
+  const sep = document.createElement("span"); sep.className = "v2sep";
+  st.append(sep, ...tb.children); tb.remove();
+})();
+function v2Sync(){
+  const sel = document.getElementById("areaSel"); if (sel) sel.value = ui.area || "";
+  const cats = document.getElementById("cats"), cb = document.getElementById("catsBtn"); if (!cats || !cb) return;
+  const n = cats.querySelectorAll(".cat:not(.zero)").length, open = !!ui.catsOpen || !!ui.cat;
+  cats.hidden = !open; cb.setAttribute("aria-expanded", String(open));
+  cb.textContent = `Categorias${n ? " (" + n + ")" : ""}${ui.cat ? " · filtro ativo" : ""} ${open ? "▴" : "▾"}`;
+  cb.classList.toggle("on", !!ui.cat);
+}
+/* layout v2: painel do aeroporto por ordem de decisão — resumo do alerta (agora e a seguir) e próximo voo afetado,
+   depois pista/mínimos e TAF; METAR, rosa dos ventos, janelas e grupos recolhidos por omissão */
+function v2Segs(r, slots){
+  const segs = [];
+  (r.res || []).forEach((x, k) => {
+    const cat = x.level === "red" ? x.cat : null, l = segs[segs.length - 1];
+    if (l && l.cat === cat) { l.e = slots[k] + HOUR; if (cat) l.labs.push(...cellLabels(x.hard)); }
+    else segs.push({cat, s: slots[k], e: slots[k] + HOUR, labs: cat ? cellLabels(x.hard) : []});
+  });
+  return segs.filter(g => g.cat);
+}
+function v2Summary(r, slots){
+  if (!r.T || r.T.error || !slots || !slots.length) return "";
+  const now = Date.now(), segs = v2Segs(r, slots);
+  const cur = segs.find(g => g.s <= now && now < g.e), nxt = segs.find(g => g.s > now && g !== cur);
+  const hz = t => pad(new Date(t).getUTCHours()) + "Z";
+  const det = g => { const rest = [...new Set(g.labs)].filter(s => !CODE_WORDS.test(s) && s !== CAT_CODE[g.cat]).map(s => s.replace(/^WND\s+/, "")); return rest.slice(0, 2).join(" "); };
+  let h = "";
+  if (cur) h += `<div class="v2st k-${cur.cat}"><b>${esc(CAT_CODE[cur.cat] || cur.cat)} ${esc(det(cur))}</b> agora até ${hz(cur.e)}`;
+  else if (nxt) h += `<div class="v2st ok"><b>Sem alerta agora</b>`;
+  else return `<div class="v2st ok"><b>Sem alertas</b> no período do TAF</div>`;
+  if (nxt) h += ` <span class="v2nx k-${nxt.cat}">${cur ? "depois" : "a partir das " + hz(nxt.s)} ${esc(CAT_CODE[nxt.cat] || nxt.cat)} ${cur ? hz(nxt.s) + "–" : ""}${hz(nxt.e)}</span>`;
+  try { const g = cur || nxt, m = /RWY(\w+)/.exec(g.labs.join(" ")), rw = m && m[1], B = rw && RWY_BELOW[r.icao] && RWY_BELOW[r.icao][rw], V = rw && RWY_MINIMA[r.icao] && RWY_MINIMA[r.icao][rw];
+    if (B || V) h += `<div class="v2mn">RWY ${esc(rw)} · ${B ? `BMIN &lt; ${B[0] ? B[0] + " ft / " : ""}${B[1]} m` : ""}${B && V ? " · " : ""}${V ? `RVAC ≤ ${V[0]} ft / ${V[1]} m` : ""}</div>`; } catch(e){}
+  try { if (typeof fltCache !== "undefined" && fltCache){ const L = fltCache.P.flights.filter(f => f.dst === r.icao && f.alert && !f.landed).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta));
+    if (L.length){ const f = L[0], t = f.eta ?? f.sta; h += `<div class="v2fl">✈ ${L.length} ${L.length === 1 ? "voo afetado" : "voos afetados"} · próximo <b>${esc(f.fl)} ${hhmm(t)}Z</b> <span class="v2nx k-${FLT_KEY[f.alert.name] || "int"}">${esc(CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name)}</span></div>`; } } } catch(e){}
+  return h + `</div>`;
+}
+function v2Panel(el, r, slots){
+  const head = el.querySelector(".d-head"); if (!head) return;
+  const secs = [...el.querySelectorAll(":scope > .d-sec")], key = s => ((s.querySelector(":scope > h3") || {}).textContent || "").split(/\s[·(]/)[0].trim().toUpperCase();
+  const ORDER = ["PISTAS", "TAF", "AGORA", "METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"];
+  const rank = s => { const k = key(s); const i = ORDER.findIndex(o => k.startsWith(o)); return i < 0 ? ORDER.length : i; };
+  let after = head;
+  const sm = v2Summary(r, slots);
+  if (sm){ const d = document.createElement("div"); d.className = "v2sum"; d.innerHTML = sm; head.after(d); after = d; }
+  secs.slice().sort((a, b) => rank(a) - rank(b)).forEach(s => { after.after(s); after = s; });
+  ui.secClosed = ui.secClosed || {};
+  if (!ui.v2sec){ ui.v2sec = 1; for (const k of ["METAR", "LIMITAÇÕES DE VENTO", "JANELAS DE ALERTA", "GRUPOS"]) if (!(k in ui.secClosed)) ui.secClosed[k] = true; saveUI(); }
+}
+/* layout v2 — telemóvel: em vez da grelha, cartões dos aeroportos (os mesmos da grelha, pela mesma ordem) com o
+   código do alerta, uma barra das próximas horas, o período, a condição e os voos afetados; tocar abre o aeroporto */
+function v2Cards(slots){
+  let box = document.getElementById("mcards");
+  if (!box){ const gw = document.getElementById("gridwrap"); if (!gw) return; box = document.createElement("div"); box.id = "mcards"; box.className = "mcards"; gw.before(box);
+    box.addEventListener("click", e => { const c = e.target.closest("[data-mc]"); if (!c) return; const tr = document.querySelector(`#grid tr.row[data-icao="${c.dataset.mc}"]`); if (tr) tr.click(); }); }
+  if (!window.matchMedia("(max-width:700px)").matches){ box.innerHTML = ""; return; }
+  const ics = [...document.querySelectorAll("#grid tr.row[data-icao]")].map(tr => tr.dataset.icao);
+  const N = Math.min(16, (slots || []).length), hz = t => pad(new Date(t).getUTCHours()) + "Z";
+  const fl = {}; try { if (fltCache) fltCache.P.flights.filter(f => f.alert && !f.landed).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)).forEach(f => (fl[f.dst] = fl[f.dst] || []).push(f)); } catch(e){}
+  const out = []; let hidden = 0;
+  for (const ic of ics){
+    const r = rowsCache.find(x => x.icao === ic); if (!r) continue;
+    if (!ui.mAll && !(r.levels || []).includes("red") && !fl[ic]){ hidden++; continue; }
+    const segs = r.T && !r.T.error ? v2Segs(r, slots) : [];
+    const g = segs.find(s => s.s <= Date.now() && Date.now() < s.e) || segs[0];
+    const bar = (r.res || []).slice(0, N).map(x => `<i class="${x.level === "red" && x.cat ? "k-" + x.cat : x.level}"></i>`).join("");
+    const det = g ? [...new Set(g.labs)].filter(s => !CODE_WORDS.test(s) && s !== CAT_CODE[g.cat]).map(s => s.replace(/^WND\s+/, "")).slice(0, 3).join(" ") : "";
+    const when = segs.slice(0, 3).map(s => `${CAT_CODE[s.cat] || s.cat} ${hz(s.s)}–${hz(s.e)}`).join(" · ");
+    const F = fl[ic] || [];
+    out.push(`<button type="button" class="mc${g ? " k-" + g.cat : ""}" data-mc="${ic}"><div class="mt"><b>${ic}</b><span>${esc(iataOf(ic) || "")}</span><span class="sp"></span>${g ? `<span class="mtag">${esc(CAT_CODE[g.cat] || g.cat)}</span>` : `<span class="mok">${r.T ? "sem alerta" : "sem TAF"}</span>`}</div>`
+      + `<div class="mb">${bar}</div>${when ? `<div class="mm">${esc(when)}</div>` : ""}${det ? `<div class="mm">${esc(det)}</div>` : ""}`
+      + (F.length ? `<div class="mf">✈ ${F.slice(0, 2).map(f => `${esc(f.fl)} ${hhmm(f.eta ?? f.sta)}Z`).join(" · ")}${F.length > 2 ? " · +" + (F.length - 2) : ""}</div>` : "") + `</button>`);
+  }
+  box.innerHTML = (out.join("") || `<p class="hint" style="padding:12px">Nenhum aeroporto em alerta.</p>`)
+    + (hidden || ui.mAll ? `<button type="button" class="v2sel mall" data-mall="1">${ui.mAll ? "Mostrar só os aeroportos em alerta" : `Mostrar também os sem alerta (${hidden})`}</button>` : "");
+  const ma = box.querySelector("[data-mall]"); if (ma) ma.onclick = e => { e.stopPropagation(); ui.mAll = !ui.mAll; saveUI(); v2Cards(slots); };
+}
+let v2rz = null; window.addEventListener("resize", () => { clearTimeout(v2rz); v2rz = setTimeout(() => { try { v2Cards(fltSlots); } catch(e){} }, 200); });
 function closeReport(){ $("#report").hidden = true; $("#btnReport").focus(); }
 const saveRep = () => store.set("tafmon.rep", repUI);
 $("#btnReport").addEventListener("click", openReport);
