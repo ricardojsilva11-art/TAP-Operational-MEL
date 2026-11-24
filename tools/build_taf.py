@@ -922,6 +922,10 @@ s = rep(s, _pistas, _pistas + '    try { h += minimaHtml(r.icao); } catch(e){}\n
 s = rep(s, 'function closeReport(){', open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'minima.js'), encoding='utf-8').read() + 'function closeReport(){')
 s = rep(s, ".fltab{font-size:13px;width:100%}", ".minima{margin-top:10px}.mintab{font-size:12.5px;width:100%}.mintab td{vertical-align:top}.mintab td small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}\n.fltab{font-size:13px;width:100%}")
 
+
+# 3p. pistas paralelas (ex.: 06L/06R): usa os mínimos mais baixos das pistas na mesma direção
+s = rep(s, '  let rw = u && !u.calm ? u.ids.split("/").find(x => M[x]) : null;', '  let rw = u && !u.calm ? (u.ids.split("/").filter(x => M[x]).sort((a, b) => M[a][1] - M[b][1] || M[a][0] - M[b][0])[0] || null) : null;')
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 
