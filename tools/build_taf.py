@@ -877,6 +877,22 @@ function tafPopupHtml(icao){
 s = rep(s, 'function closeReport(){', _fn + 'function closeReport(){')
 s = rep(s, '  } else if (d.type === "taf-favs"){\n', '  } else if (d.type === "taf-popup" && d.icao){\n    const P = tafPopupHtml(d.icao);\n    try { window.parent.postMessage({type: "taf-popup", icao: d.icao, title: P.title, html: P.html}, location.origin); } catch(e){}\n  } else if (d.type === "taf-favs"){\n')
 
+
+# 3l. tabela do relatório (cópia para Word/Outlook/Teams): largura fixa da página, colunas com larguras definidas,
+#     a linha da zona ocupa todas as colunas e os voos quebram linha dentro da coluna VOOS
+s = rep(s, '? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +',
+  '? `<table style="border-collapse:collapse;font-size:10.5pt;width:680px;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +')
+s = rep(s, '`<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`',
+  '`<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`')
+s = rep(s, '`<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\\n/g, "<br>")}</td>`',
+  '`<td style="border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\\n/g, ", ") : esc(c).replace(/\\n/g, "<br>")}</td>`')
+s = rep(s, 'function reportText(){', """/* larguras das colunas da tabela copiada (total 680 px, a largura útil de uma página A4) */
+function repColgroup(){
+  const W = REP_COLS.length > 4 ? [92, 84, 170, 170, 164] : [110, 100, 235, 235];
+  return `<colgroup>${W.map(w => `<col style="width:${w}px" width="${w}">`).join("")}</colgroup>`;
+}
+function reportText(){""")
+
 k = s.rindex('</body>')
 s = s[:k] + gate + s[k:]
 
