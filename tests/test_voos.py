@@ -371,7 +371,7 @@ def test_minimos_de_aproximacao_partilhados(browser, server, mock):
     f = taf_frame(page)
     page.wait_for_function("tafSum!==null", timeout=15000)
     page.set_input_files('#pFltFile', os.path.join(os.path.dirname(__file__), 'fixtures', 'minimos-exemplo.json'))
-    page.wait_for_function("document.getElementById('pFltBlk').innerText.includes('Mínimos de aproximação')", timeout=15000)
+    page.wait_for_function("document.getElementById('pFltBlk').innerText.includes('Exemplo · carregados por')", timeout=15000)
     assert mock.taf_cfg['cfg']['minima']['ap']['LPPT']['02']['bv'] == 200
     f.wait_for_function("RWY_BELOW.LPPT && RWY_BELOW.LPPT['02'][1] === 200", timeout=15000)
     assert f.evaluate("[RWY_MINIMA.LPPT['02'], RWY_MINIMA.LPPT['20']]") == [[400, 1750], [400, 1550]]
