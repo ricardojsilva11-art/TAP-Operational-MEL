@@ -392,7 +392,7 @@ def test_minimos_incluidos_sem_carregar(browser, server, mock):
     assert 'incluídos no site' in page.inner_text('#pFltBlk')
     f.wait_for_function("RWY_BELOW.LPPT && RWY_BELOW.LPPT['02'][1] === 75", timeout=15000)
     assert f.evaluate("[RWY_BELOW.LPMA['23'], RWY_MINIMA.LPMA['23'], RWY_BELOW.LPPD['12'], RWY_MINIMA.LPPD['12']]") == [[1200, 7000], [1400, 8000], [520, 2100], [720, 3100]]
-    assert f.evaluate("[RWY_BELOW.LEMD['18L'], RWY_BELOW.LEBB['12'], RWY_MINIMA.LEBB['12'], RWY_MINIMA.LEMG['31']]") == [[0, 75], [350, 1200], [550, 2200], [530, 1800]]
+    assert f.evaluate("[RWY_BELOW.LEMD['18L'], RWY_BELOW.LEBB['12'], RWY_MINIMA.LEBB['12'], RWY_MINIMA.LEMG['31']]") == [[0, 75], [790, 2400], [1050, 3400], [970, 3400]]
     # pistas paralelas: usa a de mínimos mais baixos na mesma direção (32L/32R → 32R)
     assert f.evaluate("minimaRwy('LEMD', {tok: '32015KT', spd: 15}).rw") == '32R'
     assert not errors
