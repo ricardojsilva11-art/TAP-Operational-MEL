@@ -50,3 +50,5 @@
 /* rosa dos ventos a vermelho; seta azul / amarela / vermelha */
 .rose-wrap{--k-lim:#e5323b;--rose-lim:#e5323b;--rose-mrg:#f2c230;--rose-ok:#3d8bfd}
 .d-sec:has(.rose-wrap){--k-lim:#e5323b;--k-mar:#e0a800}
+.fsrc{font:600 11px/16px var(--f-mono);padding:0 5px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}.fsrc.met{border-color:var(--accent);color:var(--accent)}
+@media (min-width:1101px){.fd-cols{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)!important}}.fltab td,.fltab th{padding-left:6px;padding-right:6px}

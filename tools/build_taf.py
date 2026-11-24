@@ -564,7 +564,7 @@ function fltTimelineHtml(r, list, slots){
   for (const f of list){
     const tA = f.eta ?? f.sta, tD = fltEtd(f), k = f.alert ? "k-" + (FLT_KEY[f.alert.name] || "int") : "";
     if (tA + FLT_WIN <= s0 || (tD ?? tA) >= s1) continue;
-    const txt = `ETA ${hhmm(tA)}Z${f.alert ? ` · ${CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
+    const txt = f._src === "METAR" ? `ETA ${hhmm(tA)}Z · no ar · ${CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name} no METAR ${hhmm(f._obs)}Z` : `ETA ${hhmm(tA)}Z${f.alert ? ` · ${CAT_CODE[FLT_KEY[f.alert.name]] || f.alert.name} ${hhmm(f.alert.from)}–${hhmm(f.alert.to)}Z` : ""}`;
     const right = pc(tA + FLT_WIN) > 62;
     h += `<div class="ftl-lab ${k}">${esc(f.fl)}</div><div class="ftl-trk ${k}" style="${grid}">`
       + (tD != null ? `<span class="ftl-fy" style="left:${x(tD)};width:${w(tD, tA)}"></span>` + (tD >= s0 ? `<span class="ftl-fd" style="left:${x(tD)}"></span>` : "") : "")
@@ -582,15 +582,38 @@ function fltPaneHtml(r, list, hit, slots){
   if (fltSel.icao !== r.icao || (fltSel.key !== "*" && !hit.some(f => fltKey(f) === fltSel.key))) fltSel = {icao: r.icao, key: hit.length ? fltKey(hit[0]) : null};
   const shown = fltSel.key === "*" ? hit : hit.filter(f => fltKey(f) === fltSel.key), one = fltSel.key !== "*" ? shown[0] : null;
   let h = `<div class="fd-cols"><div class="fd-c">`;
-  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
+  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Fonte</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m"><b>${hhmm(a.from)}–${hhmm(a.to)}Z</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m">${f._src === "METAR" ? `<span class="fsrc met" title="Voo já saiu: METAR de ${hhmm(f._obs)}Z">METAR ${hhmm(f._obs)}Z</span>` : `<span class="fsrc" title="${f._dep ? "Voo já saiu mas não há METAR recente (até 90 min)" : "Voo ainda não saiu"}">${esc(f._src)}</span>`}</td><td class="m"><b>${f._src === "METAR" ? "agora" : `${hhmm(a.from)}–${hhmm(a.to)}Z`}</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
-  if (list.some(f => f.etaEst)) h += `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo. Afetado = parte da hora seguinte à chegada em que o TAF tem o alerta.</p>`;
+  if (list.some(f => f.etaEst)) h += `<p class="hint" style="margin:6px 0 0">~ = ETA estimada: ETD (ou STD) + tempo de voo. Afetado = parte da hora seguinte à chegada em que o TAF tem o alerta. Voos que já saíram: alerta pelo METAR atual do destino (se tiver até 90 min).</p>`;
   const sw = hit.length > 1 ? `<div class="fd-sw">${one ? `A mostrar <b>${esc(one.fl)}</b> · <button type="button" data-fsel="*">ver todos (${hit.length})</button>` : `A mostrar todos · escolha um voo na tabela para ver só esse`}</div>` : "";
-  return h + `</div><div class="fd-c">` + sw + fltTafHtml(r, shown) + fltTimelineHtml(r, shown, slots) + `</div></div>`;
+  const sT = shown.filter(f => f._src !== "METAR"), sM = shown.filter(f => f._src === "METAR");
+  return h + `</div><div class="fd-c">` + sw + (sM.length ? fltMetarHtml(r, sM) : "") + (sT.length || !sM.length ? fltTafHtml(r, sT) : "") + fltTimelineHtml(r, shown, slots) + `</div></div>`;
+}
+/* alerta pelo METAR atual (para voos que já saíram); METAR com mais de 90 min não conta */
+function fltMetarAlert(icao){
+  const M = metars[icao]; if (!M || !M.raw || !(Date.now() - M.obs <= 90 * 60000)) return null;
+  let rr = evalMetar(icao, M.raw).filter(z => !["obsc", "int"].includes(catOfCode(z.code)));
+  if (rr.some(z => z.code === "LIM")) rr = rr.filter(z => z.code !== "MRG");
+  if (!rr.length) return {obs: M.obs, raw: M.raw, alert: null};
+  const k = catOf(rr), name = Object.keys(FLT_KEY).find(n => FLT_KEY[n] === k) || (CAT_CODE[k] || k);
+  const labs = cellLabels(rr), cond = labs.filter(s => !CODE_WORDS.test(s)).map(s => s.replace(/^WND\s+/, "")).slice(0, 3).join(" ");
+  return {obs: M.obs, raw: M.raw, alert: {name, cond, full: name, from: M.obs, to: M.obs + HOUR, toks: labs, metar: true, reasons: rr}};
+}
+/* METAR com o que afeta os voos que já saíram sublinhado */
+function fltMetarHtml(r, fl){
+  const M = metars[r.icao]; if (!M) return "";
+  const a = fl[0].alert, k = FLT_KEY[a.name] || "int", keys = a.toks || [];
+  const T = M.raw.split(/\s+/), lowC = T.filter(t => /^(BKN|OVC|VV)(\d{3})/.test(t)).sort((x, y) => +x.slice(-3).replace(/\D/g, "") - +y.slice(-3).replace(/\D/g, ""))[0];
+  const hitTok = t => keys.some(kk => fltTokMatch(t, kk)) || (a.reasons || []).some(z => z.txt && z.txt.split(" ")[0] === t)
+    || (() => { try { return tokenCat(t, r.icao) === k; } catch(e){ return false; } })()
+    || (["bmin", "rvac", "cig"].includes(k) && (/^\d{4}$/.test(t) || t === lowC));
+  const html = T.map((t, i) => i > 1 && hitTok(t) ? `<u class="k-${k}">${esc(t)}</u>` : esc(t)).join(" ");
+  const tags = fl.map(f => `<span class="ftag k-${k}">${esc(f.fl)} · no ar</span>`).join("");
+  return `<h4 class="fd-h">METAR · ${hhmm(M.obs)}Z · voos que já saíram</h4><div class="raw fraw">${html} ${tags}</div>`;
 }
 /* por baixo da grelha: voos afetados do aeroporto selecionado (o painel lateral fica só com a meteorologia) */
 /* quadro de baixo: fecha e muda de altura independentemente do painel lateral; fica com o aeroporto que mostrava
@@ -603,9 +626,13 @@ function fltDock(r, slots){
   fltDockIc = r.icao;
   const C = fltCache;
   const list = r && C ? C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)) : [];
-  const hit = list.filter(f => f.alert);
+  const MA = fltMetarAlert(r.icao), now = Date.now();
+  const L2 = list.map(f => { const tD = fltEtd(f), dep = tD != null && tD <= now;
+    if (dep && MA) return Object.assign({}, f, {alert: MA.alert, _src: "METAR", _obs: MA.obs, _dep: true});
+    return Object.assign({}, f, {_src: dep ? "TAF (sem METAR)" : "TAF", _dep: dep}); });
+  const hit = L2.filter(f => f.alert);
   if (!hit.length){ D.hidden = true; D.innerHTML = ""; return; }
-  D.innerHTML = `<div class="fd-resize" id="fltDockResize" role="separator" aria-orientation="horizontal" aria-label="Arrastar para mudar a altura" title="Arraste para mudar a altura · duplo clique repõe"></div><div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, list, hit, slots);
+  D.innerHTML = `<div class="fd-resize" id="fltDockResize" role="separator" aria-orientation="horizontal" aria-label="Arrastar para mudar a altura" title="Arraste para mudar a altura · duplo clique repõe"></div><div class="fd-head"><h3>Voos afetados · ${esc(r.icao)}${iataOf(r.icao) ? " / " + esc(iataOf(r.icao)) : ""} <span>(${hit.length})</span></h3><button type="button" class="d-close" id="fltDockClose" aria-label="Fechar voos afetados" title="Fechar">×</button></div>` + fltPaneHtml(r, L2, hit, slots);
   D.hidden = false;
   D.querySelector("#fltDockClose").addEventListener("click", () => { D.hidden = true; fltDockShut = fltDockIc; });
   D.querySelectorAll("[data-fsel]").forEach(el => el.addEventListener("click", () => { fltSel = {icao: r.icao, key: el.dataset.fsel}; const sc = D.scrollTop; fltDock(r, slots); D.scrollTop = sc; }));
