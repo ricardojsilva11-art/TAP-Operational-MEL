@@ -678,3 +678,16 @@ def test_mel_favoritas_sobem_para_o_topo(browser, server, mock):
     assert order() == ['r1', 'r2', 'r3', 'r4', 'r5'] and page.evaluate("document.querySelectorAll('#rows tr.grp').length") == 0
     assert not errors
     ctx.close()
+
+
+def test_metar_agora_no_inicio(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("parent.postMessage(%s,location.origin)" % SUMMARY.replace("alerts:[", "metarNow:[{icao:'LSGG',name:'Genebra',obs:Date.UTC(2026,10,10,7,50),raw:'METAR LSGG 100750Z 00000KT 0300 FG VV001',kc:'#f07b1d',rank:2,tags:[{c:'LVO',kc:'#f07b1d',ki:'#fff'}],cond:['LVO','VV001','VIS300m','FG']}],metarStatus:'ok',alerts:[", 1))
+    page.wait_for_selector('#pMetarList .p-wxrow')
+    row = page.inner_text('#pMetarList .p-wxrow').replace('\n', ' ')
+    assert 'LSGG' in row and '0750Z' in row and 'AGORA' in row and 'LVO' in row and 'VIS300m' in row
+    assert 'METAR' in page.inner_text('#pStrip .p-tile') and 'LSGG LVO' in page.inner_text('#pStrip .p-tile')
+    assert 'AGORA' not in page.inner_text('#pAlertList')                # no TAF já não aparece
+    assert not errors
+    ctx.close()
