@@ -691,3 +691,15 @@ def test_metar_agora_no_inicio(browser, server, mock):
     assert 'AGORA' not in page.inner_text('#pAlertList')                # no TAF já não aparece
     assert not errors
     ctx.close()
+
+
+def test_metar_agora_vem_do_taf_monitor(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    page.wait_for_function("tafSum!==null", timeout=20000)
+    f.evaluate("metars=Object.fromEntries(rowsCache.filter(r=>inList(r.icao,'DST')).slice(0,3).map((r,i)=>[r.icao,{obs:Date.now()-600000,raw:'METAR '+r.icao+' 260800Z 00000KT '+['0300 FG VV001','CAVOK','0700 SN VV003'][i]+' 01/01 Q1020'}]));metarStatus='ok';render()")
+    page.wait_for_function("(tafSum.metarNow||[]).length===2", timeout=5000)   # o CAVOK não entra
+    page.wait_for_function("document.querySelectorAll('#pMetarList .p-wxrow').length===2")
+    assert 'AGORA' in page.inner_text('#pMetarList') and 'VIS300m' in page.inner_text('#pMetarList')
+    assert not errors
+    ctx.close()
