@@ -96,6 +96,7 @@ s = rep(s, '  $("#legendCodes").textContent = ',
         '    now: allRows.filter(r => inList(r.icao, "DST") && r.levels[0] === "red").map(r => ({icao: r.icao, name: nameOf(r.icao)})),\n'
         f'    win: {WX_H}, nextWin: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => ({{icao: r.icao, name: nameOf(r.icao)}})),\n'
         '    noTaf: allRows.filter(r => !r.T || r.T.error).length,\n'
+        '    metarNow: metarNowList(), metarStatus: typeof metarStatus !== "undefined" ? metarStatus : null,\n'
         f'    alerts: allRows.filter(r => inList(r.icao, "DST") && r.levels.slice(0, {WX_H}).includes("red")).map(r => {{ const a = r.levels.indexOf("red"); let b = r.levels.slice(0, {WX_H}).lastIndexOf("red"); while (b + 1 < r.levels.length && r.levels[b + 1] === "red") b++; const hard = r.res.slice(0, {WX_H}).filter(x => x.level === "red").flatMap(x => x.hard); const ks = [...new Set(hard.map(h => catOfCode(h.code)))].sort((x, y) => catRank(x) - catRank(y)); return {{icao: r.icao, name: nameOf(r.icao), kc: catColor(worstOf(ks)), rank: ks.length ? catSev(worstOf(ks)) : 99, now: a === 0, from: a === 0 ? alertStart(r, slots[0]) : slots[a], to: slots[b], open: b === r.levels.length - 1, cats: ks.map(k => (CATS.find(c => c.k === k) || {{}}).label || k), tags: ks.slice().sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y)).map(k => ({{c: catCodeOf(k, cellLabels(hard.filter(h => catOfCode(h.code) === k))), kc: catColor(k), ki: catInk(k)}})), cond: cellLabels(hard).slice(0, 10)}}; }}).sort((x, y) => (x.rank - y.rank) || (y.now - x.now) || (x.from - y.from)),\n'
         '    newTafs: allRows.filter(r => r.isNew).map(r => ({icao: r.icao, name: nameOf(r.icao), amd: /\\bAMD\\b/.test((r.T && r.T.raw) || ""), at: (tafChanged[r.icao] || {}).at || null, issue: (r.T && r.T.issue) || null, level: r.levels[0], kc: worstCatColor(r), rank: worstCatRank(r), code: CAT_CODE[worstCat(r)] || "", ki: catInk(worstCat(r)), alert: r.levels.includes("red"), dest: inList(r.icao, "DST")})).sort((a, b) => (a.rank - b.rank) || (b.at || 0) - (a.at || 0)),\n'
         '    error: fetchError || null}, location.origin); } catch(e){}\n'
@@ -602,6 +603,17 @@ function fltMetarAlert(icao){
   const k = catOf(rr), name = Object.keys(FLT_KEY).find(n => FLT_KEY[n] === k) || (CAT_CODE[k] || k);
   const labs = cellLabels(rr), cond = labs.filter(s => !CODE_WORDS.test(s)).map(s => s.replace(/^WND\s+/, "")).slice(0, 3).join(" ");
   return {obs: M.obs, raw: M.raw, alert: {name, cond, full: name, from: M.obs, to: M.obs + HOUR, toks: labs, metar: true, reasons: rr}};
+}
+/* resumo do METAR atual dos destinos (início do portal): só o que é observado agora; METAR com mais de 90 min não conta */
+function metarNowList(){
+  try { return allRows.filter(r => inList(r.icao, "DST")).map(r => { const M = metars[r.icao]; if (!M || !M.raw || !(Date.now() - M.obs <= 90 * 60000)) return null;
+    let rr = evalMetar(r.icao, M.raw).filter(z => !["obsc", "int"].includes(catOfCode(z.code)));
+    if (rr.some(z => z.code === "LIM")) rr = rr.filter(z => z.code !== "MRG");
+    if (!rr.length) return null;
+    const ks = [...new Set(rr.map(z => catOfCode(z.code)))].sort((x, y) => catSev(x) - catSev(y) || catRank(x) - catRank(y));
+    return {icao: r.icao, name: nameOf(r.icao), obs: M.obs, raw: M.raw, kc: catColor(ks[0]), rank: catSev(ks[0]),
+      tags: ks.map(k => ({c: catCodeOf(k, cellLabels(rr.filter(h => catOfCode(h.code) === k))), kc: catColor(k), ki: catInk(k)})), cond: cellLabels(rr).slice(0, 10)};
+  }).filter(Boolean).sort((a, b) => a.rank - b.rank); } catch(e){ return []; }
 }
 /* METAR com o que afeta os voos que já saíram sublinhado */
 function fltMetarHtml(r, fl){
