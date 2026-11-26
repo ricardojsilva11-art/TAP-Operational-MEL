@@ -687,7 +687,7 @@ def test_metar_agora_no_inicio(browser, server, mock):
     page.wait_for_selector('#pMetarList .p-wxrow')
     row = page.inner_text('#pMetarList .p-wxrow').replace('\n', ' ')
     assert 'LSGG' in row and '0750Z' in row and 'AGORA' in row and 'LVO' in row and 'VIS300m' in row
-    assert 'METAR' in page.inner_text('#pStrip .p-tile') and 'LSGG LVO' in page.inner_text('#pStrip .p-tile')
+    assert 'no TAF' in page.inner_text('#pStrip .p-tile') and 'METAR' not in page.inner_text('#pStrip .p-tile')
     assert 'AGORA' not in page.inner_text('#pAlertList')                # no TAF já não aparece
     assert not errors
     ctx.close()
