@@ -307,7 +307,7 @@ def test_resumo_do_taf_so_com_destinos(browser, server, mock):
 def test_texto_escuro_fica_legivel_no_tom_escuro(browser, server, mock):
     mock.rows[0]['operational_impact_html'] = '<span style="color:#000000">preto</span> <span style="color:rgb(31,31,31)">quase</span> <font color="#000080">azul</font> <span style="color:#d62f37">vermelho</span>'
     ctx, page, errors = open_app(browser, server, mock, logged_in({'mel-theme': 'dark'}))
-    marked = page.evaluate("[...document.querySelectorAll('#rows td.impact .dk')].map(e=>e.textContent)")
+    marked = page.evaluate("[...document.querySelectorAll('#rows td.impact:not(.ioc) .dk')].map(e=>e.textContent)")
     assert marked == ['preto', 'quase', 'azul']
     col = page.evaluate("getComputedStyle(document.querySelector('#rows td.impact .dk')).color")
     assert col != 'rgb(0, 0, 0)'
