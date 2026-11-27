@@ -97,7 +97,7 @@ def test_exportar_excel_ordenado_e_formatado(browser, server, mock, tmp_path):
     assert rows[1][3] == 'VENT AVNCS SYS FAULT not displayed\nMay be inoperative provided that:\n1) The blower fan\n2) The EXTRACT fan'
     assert rows[4][3] == 'Linha 1\nLinha 2'
     assert ws.cell(2, 4).alignment.wrap_text
-    assert rows[0][6] == 'Rev. 45 · desde 01/10/2026'
+    assert rows[0][7] == 'Rev. 45 · desde 01/10/2026'
     ctx.close()
 
 
@@ -171,10 +171,35 @@ def test_dispatch_e_ioc_notes(browser, server, mock):
     row = page.locator('#rows tr[data-id="r1"]')
     assert row.locator('td.ioc .imp-txt').inner_text() == row.locator('td.impact:not(.ioc) .imp-txt').inner_text() == 'Impacto 1'
     assert row.locator('.cell-cpy').count() == 2 and row.locator('.actions [data-copy]').count() == 0
-    assert page.locator('#melIoc').count() == 0                      # não há campo à parte: é o mesmo texto
+    # sem a coluna na base de dados: IOC só de leitura e não vai no pedido
+    page.click('#rows tr[data-id="r2"] [data-edit]')
+    page.wait_for_selector('#modal.show')
+    assert page.get_attribute('#editorIoc', 'contenteditable') == 'false' and page.is_visible('#iocHint')
     assert not errors
     ctx.close()
 
+
+def test_ioc_notes_independentes(browser, server, mock):
+    for r in mock.rows: r['ioc_notes'] = None; r['ioc_notes_html'] = None
+    mock.rows[0].update(ioc_notes='Só IOC', ioc_notes_html='Só IOC')
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id]')
+    assert page.inner_text('#rows tr[data-id="r1"] td.ioc .imp-txt') == 'Só IOC'
+    assert page.inner_text('#rows tr[data-id="r2"] td.ioc .imp-txt') == 'Impacto 2'          # ainda não gravado: igual às Dispatch
+    # apagar as Dispatch Notes não mexe nas IOC Notes
+    page.click('#rows tr[data-id="r2"] [data-edit]')
+    page.wait_for_selector('#modal.show')
+    assert page.get_attribute('#editorIoc', 'contenteditable') == 'true'
+    page.evaluate("document.getElementById('editor').innerHTML='Novo dispatch'")
+    page.click('#recordForm button.primary')
+    page.wait_for_function("!document.querySelector('#modal').classList.contains('show')")
+    body = json.loads([b for m, p, b in mock.requests if 'mel_records' in p and m in ('PATCH', 'POST')][-1])
+    assert body['operational_impact'] == 'Novo dispatch' and body['ioc_notes'] == 'Impacto 2'
+    # o lápis da IOC abre o editor da IOC
+    page.click('#rows tr[data-id="r1"] td.ioc [data-editnotes]')
+    page.wait_for_function("document.activeElement&&document.activeElement.id==='editorIoc'", timeout=2000)
+    assert not errors
+    ctx.close()
 
 def test_notas_sem_numero_da_mel(browser, server, mock):
     mock.rows[0]['operational_impact_html'] = '<b>MEL 21-26-01 Avionics Equipment Ventilation</b><br>Blower fan INOP.'
