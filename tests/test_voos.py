@@ -485,3 +485,33 @@ def test_relatorio_so_destinos_com_voos_afetados(browser, server, mock):
     assert len(linhas()) == len(antes)
     assert not errors
     ctx.close()
+
+
+def test_voos_afetados_mostra_minimos_a_chegada(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    def taf3(route):            # Lisboa 300 m (acima do CAT IIIB) e Porto 150 m VV001 (abaixo do CAT II)
+        if 'type=metar' in route.request.url:
+            return route.fulfill(status=200, content_type='application/json', body='[]')
+        t0 = int(time.time() // 3600 * 3600) - 3600
+        g = lambda t: time.strftime('%d%H', time.gmtime(t))
+        iss, per, it = time.strftime('%d%H%MZ', time.gmtime(t0)), f'{g(t0)}/{g(t0 + 30 * 3600)}', time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t0))
+        tafs = [{'icaoId': 'LPPT', 'issueTime': it, 'rawTAF': f'TAF LPPT {iss} {per} VRB02KT 0300 FG VV001'},
+                {'icaoId': 'LPPR', 'issueTime': it, 'rawTAF': f'TAF LPPR {iss} {per} 18005KT 0150 FG VV001'}]
+        return route.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(tafs))
+    ctx.route(WORKER, taf3)
+    page.set_viewport_size({'width': 1900, 'height': 1000})
+    f = taf_frame(page)
+    now = time.time()
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))",
+               f'TP1353  LHR  LIS  {_hhmm(now + 3600)}  {_hhmm(now + 3 * 3600)}\nTP1940  LIS  OPO  {_hhmm(now + 3600)}  {_hhmm(now + 2 * 3600)}')
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===2", timeout=20000)
+    page.evaluate("tafSelect('LPPT')")
+    f.wait_for_selector('#fltDock:not([hidden]) .fmin')
+    assert 'MÍNIMOS' in f.inner_text('#fltDock thead').upper() and f.inner_text('#fltDock .fmin').startswith('ACIMA')
+    page.evaluate("tafSelect('LPPR')")
+    f.wait_for_function("document.querySelector('#fltDock h3').textContent.includes('LPPR')")
+    assert f.inner_text('#fltDock .fmin').startswith('ABAIXO')
+    assert 'CAT II 100/300' in f.inner_text('#fltDock .fmn')
+    assert not errors
+    ctx.close()

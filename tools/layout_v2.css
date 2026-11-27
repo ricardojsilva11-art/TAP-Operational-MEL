@@ -52,3 +52,6 @@
 .d-sec:has(.rose-wrap){--k-lim:#e5323b;--k-mar:#e0a800}
 .fsrc{font:600 11px/16px var(--f-mono);padding:0 5px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}.fsrc.met{border-color:var(--accent);color:var(--accent)}
 @media (min-width:1101px){.fd-cols{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)!important}}.fltab td,.fltab th{padding-left:6px;padding-right:6px}
+
+/* voos afetados: mínimos à chegada */
+.fmin{display:inline-block;font:800 11px/18px ui-monospace,Menlo,Consolas,monospace;padding:0 7px;border-radius:4px;white-space:nowrap;letter-spacing:.03em}.fmn{display:block;font:600 10.5px/14px ui-monospace,Menlo,Consolas,monospace;color:var(--muted);white-space:nowrap;margin-top:2px}.fmin.bad{background:#e5323b;color:#fff}.fmin.ok{background:color-mix(in srgb,#2e9e5b 22%,transparent);color:#3fbf72;border:1px solid #2e9e5b}.fmin.na{color:var(--muted)}

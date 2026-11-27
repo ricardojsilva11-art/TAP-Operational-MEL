@@ -582,14 +582,31 @@ function fltTimelineHtml(r, list, slots){
 /* voo escolhido no quadro de baixo: o TAF e a linha do tempo mostram só esse voo ("todos" mostra todos) */
 let fltSel = {icao: null, key: null};
 const fltKey = f => f.fl + "|" + f.std;
+/* mínimos à chegada: com a meteorologia (METAR para voos no ar, TAF da ETA até 1 h depois) o destino fica abaixo
+   dos mínimos da melhor aproximação (BMIN) ou não; pista pela etiqueta RWY dos alertas, se houver */
+function fltMinInfo(f){
+  const ic = f.dst, M = (minCfg().ap || {})[ic]; if (!M) return null;
+  const tA = f.eta ?? f.sta; let codes = [], labs = "";
+  if (f._src === "METAR"){ const MA = fltMetarAlert(ic), rr = MA && MA.alert ? MA.alert.reasons : []; codes = rr.map(z => z.code); labs = cellLabels(rr).join(" "); }
+  else if (tA != null){ const its = ((fltCache && fltCache.all) || []).filter(it => it.icao === ic && it.start < tA + FLT_WIN && it.end > tA); codes = its.map(it => it.code); labs = its.map(it => (it.raw || "") + " " + (it.label || "")).join(" "); }
+  const below = codes.includes("BMIN"), m = /RWY\s?(\d{2}[LRC]?)/.exec(labs), rw = m && M[m[1]] ? m[1] : null;
+  const d = k => `RWY${k} ${M[k].best} ${M[k].bd} ft / ${M[k].bv} m`;
+  return {below, rw, txt: rw ? d(rw) : "", all: Object.keys(M).sort().map(d).join("\n")};
+}
+function fltMinCell(f){
+  const I = fltMinInfo(f); if (!I) return `<span class="fmin na" title="Sem mínimos carregados para este aeroporto">—</span>`;
+  const tip = (I.below ? "Abaixo dos mínimos da melhor aproximação" : "Acima dos mínimos da melhor aproximação") + (f._src === "METAR" ? " (METAR atual)" : " (TAF à chegada)") + "\n" + I.all;
+  const M = I.rw && (minCfg().ap || {})[f.dst][I.rw];
+  return `<span class="fmin ${I.below ? "bad" : "ok"}" title="${esc(tip)}">${I.below ? "ABAIXO" : "ACIMA"}</span>${M ? `<span class="fmn" title="${esc(tip)}">RWY${esc(I.rw)} ${esc(M.best.replace(/^ILS /, ""))} ${M.bd}/${M.bv}</span>` : ""}`;
+}
 function fltPaneHtml(r, list, hit, slots){
   const route = f => `${esc(apIata(f.org))}→${esc(apIata(f.dst))}`;
   if (fltSel.icao !== r.icao || (fltSel.key !== "*" && !hit.some(f => fltKey(f) === fltSel.key))) fltSel = {icao: r.icao, key: hit.length ? fltKey(hit[0]) : null};
   const shown = fltSel.key === "*" ? hit : hit.filter(f => fltKey(f) === fltSel.key), one = fltSel.key !== "*" ? shown[0] : null;
   let h = `<div class="fd-cols"><div class="fd-c">`;
-  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Fonte</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
+  h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Fonte</th><th>Afetado</th><th>Alerta</th><th>Mínimos</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m">${f._src === "METAR" ? `<span class="fsrc met" title="Voo já saiu: METAR de ${hhmm(f._obs)}Z">METAR ${hhmm(f._obs)}Z</span>` : `<span class="fsrc" title="${f._dep ? "Voo já saiu mas não há METAR recente (até 90 min)" : "Voo ainda não saiu"}">${esc(f._src)}</span>`}</td><td class="m"><b>${f._src === "METAR" ? "agora" : `${hhmm(a.from)}–${hhmm(a.to)}Z`}</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m">${f._src === "METAR" ? `<span class="fsrc met" title="Voo já saiu: METAR de ${hhmm(f._obs)}Z">METAR ${hhmm(f._obs)}Z</span>` : `<span class="fsrc" title="${f._dep ? "Voo já saiu mas não há METAR recente (até 90 min)" : "Voo ainda não saiu"}">${esc(f._src)}</span>`}</td><td class="m"><b>${f._src === "METAR" ? "agora" : `${hhmm(a.from)}–${hhmm(a.to)}Z`}</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td>${fltMinCell(f)}</td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}${f._src === "METAR" ? ` <span class="fsrc met" title="Voo já saiu: METAR das ${hhmm(f._obs)}Z sem restrição">METAR ${hhmm(f._obs)}Z OK</span>` : ""}`).join(" · ")}</details>`;
