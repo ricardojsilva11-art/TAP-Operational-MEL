@@ -427,7 +427,7 @@ def test_resumo_dos_destinos_com_as_horas_do_taf(browser, server, mock):
     ctx.close()
 
 
-def test_voo_no_ar_com_metar_limpo_continua_na_lista_pelo_taf(browser, server, mock):
+def test_voo_no_ar_conta_o_metar_em_todo_o_lado(browser, server, mock):
     ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
     ctx.route(WORKER, _taf_json)
     f = taf_frame(page)
@@ -436,10 +436,17 @@ def test_voo_no_ar_com_metar_limpo_continua_na_lista_pelo_taf(browser, server, m
     f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))", lista)
     page.evaluate("postTaf({type:'taf-refresh'})")
     page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===1", timeout=20000)
-    f.evaluate("metars.LPPT={obs:Date.now()-600000,raw:'METAR LPPT 270800Z 00000KT CAVOK 10/05 Q1020'}")
+    # METAR limpo: o voo já saiu, por isso conta o METAR e deixa de estar afetado (grelha e Início também)
+    f.evaluate("metars.LPPT={obs:Date.now()-600000,raw:'METAR LPPT 270800Z 00000KT CAVOK 10/05 Q1020'};render()")
+    page.wait_for_function("fltSum.restr===0&&fltSum.alert===0", timeout=10000)
+    assert f.locator('#grid tr.row[data-icao="LPPT"] .fpl').count() == 0
+    # METAR com nevoeiro: volta a estar afetado, com fonte METAR
+    f.evaluate("metars.LPPT={obs:Date.now()-600000,raw:'METAR LPPT 270800Z 00000KT 0200 FG VV001 10/10 Q1020'};render()")
+    page.wait_for_function("fltSum.restr===1", timeout=10000)
     page.evaluate("tafSelect('LPPT')")
     f.wait_for_selector('#fltDock:not([hidden])')
     txt = f.inner_text('#fltDock')
-    assert 'TP1357' in txt and 'METAR OK' in txt
+    assert 'TP1357' in txt and 'METAR' in txt
+    assert f.locator('#grid tr.row[data-icao="LPPT"] .fpl').count() == 1
     assert not errors
     ctx.close()
