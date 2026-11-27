@@ -641,6 +641,7 @@ body.resizing{cursor:col-resize;user-select:none}
         <div class="seg" role="group" aria-label="Turno" id="repBlk"></div>
         <span class="rep-win" id="repWin" hidden></span>
         <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>
+        <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>
       </div>
       <div class="rep-prev" id="repPrev" aria-label="Relatório"></div>
       <textarea class="rep-text rep-hidden" id="repText" tabindex="-1" aria-hidden="true" readonly spellcheck="false" aria-label="Texto do relatório"></textarea>
@@ -2556,7 +2557,7 @@ function fltData(){
    Só o número do voo, 4 por linha dentro da célula. */
 function repFlights(r){
   const C = fltData(); if (!C) return "";
-  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null)
+  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null && !(f._src === "METAR" && !f.alert))
     .map(f => ({f, t: f.eta ?? f.sta}))
     .filter(x => (r.wins || []).some(w => x.t < w.e && x.t + FLT_WIN > w.s))
     .sort((a, b) => a.t - b.t)
@@ -2586,16 +2587,17 @@ function repColgroup(){
 function reportText(){
   { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat(["VOOS"]) : REP_COLS_BASE; }
   const T = reportTable();
-  const B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur), first = !!B.cur;
+  let B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur); const first = !!B.cur;
+  const onlyFlt = !!(repUI.onlyFlt && fltData()); if (onlyFlt) B = Object.assign({}, B, {rows: B.rows.filter(r => repFlights(r))});
   const now = new Date();
   const fz = t => { const d = new Date(t); return pad(d.getUTCDate()) + "/" + pad(d.getUTCHours()) + "Z"; };
-  const head = `ALERTAS TAF · ${pad(now.getUTCDate())}/${pad(now.getUTCMonth() + 1)} ${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z · ${B.name === "24 H" ? "PRÓXIMAS 24 H" : B.custom ? B.name : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}`;
+  const head = `ALERTAS TAF · ${pad(now.getUTCDate())}/${pad(now.getUTCMonth() + 1)} ${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z · ${B.name === "24 H" ? "PRÓXIMAS 24 H" : B.custom ? B.name : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}${onlyFlt ? " · SÓ VOOS AFETADOS" : ""}`;
   const early = first && B.ds < B.s ? `Inclui as horas desde ${fz(B.ds)}.` : "";
   /* resumo só do turno escolhido */
   const cs = {}; B.rows.forEach(r => (r.names || [r.name]).forEach(n => (cs[n] = cs[n] || new Set()).add(r.icao)));
   const nA = new Set(B.rows.map(r => r.icao)).size;
   const summary = Object.entries(cs).sort((a, b) => repSev(a[0]) - repSev(b[0])).map(([n, x]) => `${n} ${x.size}`).join(" · ");
-  const sub = B.rows.length ? `${summary}  (${nA} ${nA === 1 ? "aeroporto" : "aeroportos"})` : "Sem alertas neste período.";
+  const sub = B.rows.length ? `${summary}  (${nA} ${nA === 1 ? "aeroporto" : "aeroportos"})` : onlyFlt ? "Nenhum destino com voos afetados neste período." : "Sem alertas neste período.";
   const cells = B.rows.map(repCells);
   const W = REP_COLS.map((h, i) => Math.max(h.length, ...cells.map(c => Math.max(...String(c[i]).split("\n").map(x => x.length)))));
   const line = c => c.map((x, i) => i === c.length - 1 ? x : x.padEnd(W[i])).join("  ").trimEnd();
@@ -2632,6 +2634,7 @@ function renderReport(){
   }
   $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto (condições e alertas juntos), por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
   $("#repVis").checked = !!repUI.onlyVis;
+  $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;
 }
 $("#repBlk").addEventListener("click", e => { const b = e.target.closest("[data-blk]"); if (!b) return; repBlk = +b.dataset.blk; setRepTab(repBlk); renderReport(); });
 /* faixa personalizada: horas 00-23 no início, 01-24 no fim; aplica assim que as duas estão completas */
@@ -3409,6 +3412,7 @@ $("#report").addEventListener("click", e => { if (e.target.id === "report") clos
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#report").hidden) closeReport(); });
 $("#repCats").addEventListener("change", () => { repUI.cats = [...document.querySelectorAll("#repCats input:checked")].map(x => x.value); saveRep(); renderReport(); });
 $("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });
+$("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });
 $("#repCopy").addEventListener("click", () => {
   const R = reportText(), txt = R.copyText;
   const ok = () => { $("#repMsg").textContent = "Tabela copiada. Cole com Ctrl+V no Outlook, Teams, Word ou Excel."; };

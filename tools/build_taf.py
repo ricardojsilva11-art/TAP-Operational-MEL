@@ -804,7 +804,7 @@ function fltData(){
    Só o número do voo, 4 por linha dentro da célula. */
 function repFlights(r){
   const C = fltData(); if (!C) return "";
-  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null)
+  return C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null && !(f._src === "METAR" && !f.alert))
     .map(f => ({f, t: f.eta ?? f.sta}))
     .filter(x => (r.wins || []).some(w => x.t < w.e && x.t + FLT_WIN > w.s))
     .sort((a, b) => a.t - b.t)
@@ -812,6 +812,19 @@ function repFlights(r){
     .reduce((L, fl, k) => { if (k % 4 === 0) L.push([]); L[L.length - 1].push(fl); return L; }, []).map(g => g.join(", ")).join("\\n");
 }""")
 s = rep(s, "function reportText(){", "function reportText(){\n  { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat([\"VOOS\"]) : REP_COLS_BASE; }")
+
+# 3j2) Relatório «só destinos com voos afetados»: só as linhas com voos a chegar no período do alerta ou até 1 h depois
+#      (voos no ar com METAR sem restrição não contam, como no resto do site)
+s = rep(s, '        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>',
+        '        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>\n        <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>')
+s = rep(s, "  const B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur), first = !!B.cur;",
+        "  let B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur); const first = !!B.cur;\n"
+        "  const onlyFlt = !!(repUI.onlyFlt && fltData()); if (onlyFlt) B = Object.assign({}, B, {rows: B.rows.filter(r => repFlights(r))});")
+s = rep(s, ' : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}`;', ' : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}${onlyFlt ? " · SÓ VOOS AFETADOS" : ""}`;')
+s = rep(s, ': "Sem alertas neste período.";', ': onlyFlt ? "Nenhum destino com voos afetados neste período." : "Sem alertas neste período.";')
+s = rep(s, '  $("#repVis").checked = !!repUI.onlyVis;\n}', '  $("#repVis").checked = !!repUI.onlyVis;\n  $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;\n}')
+s = rep(s, '$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });',
+        '$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });\n$("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });')
 
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'

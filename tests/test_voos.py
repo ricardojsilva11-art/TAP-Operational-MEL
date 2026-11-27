@@ -1,3 +1,4 @@
+import re
 """Voos: PDF da lista de voos lido no browser e cruzado com o TAF (Início, janela Voos e grelha do TAF)."""
 import json
 import os
@@ -448,5 +449,39 @@ def test_voo_no_ar_conta_o_metar_em_todo_o_lado(browser, server, mock):
     txt = f.inner_text('#fltDock')
     assert 'TP1357' in txt and 'METAR' in txt
     assert f.locator('#grid tr.row[data-icao="LPPT"] .fpl').count() == 1
+    assert not errors
+    ctx.close()
+
+
+def test_relatorio_so_destinos_com_voos_afetados(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    def taf2(route):            # Lisboa e Porto com nevoeiro; só Lisboa tem voos
+        if 'type=metar' in route.request.url:
+            return route.fulfill(status=200, content_type='application/json', body='[]')
+        t0 = int(time.time() // 3600 * 3600) - 3600
+        g = lambda t: time.strftime('%d%H', time.gmtime(t))
+        iss, per, it = time.strftime('%d%H%MZ', time.gmtime(t0)), f'{g(t0)}/{g(t0 + 30 * 3600)}', time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t0))
+        tafs = [{'icaoId': ic, 'issueTime': it, 'rawTAF': f'TAF {ic} {iss} {per} VRB02KT 0300 FG VV001'} for ic in ('LPPT', 'LPPR')]
+        return route.fulfill(status=200, content_type='application/json', headers={'Access-Control-Allow-Origin': '*'}, body=json.dumps(tafs))
+    ctx.route(WORKER, taf2)
+    f = taf_frame(page)
+    now = time.time()
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))",
+               f'TP1353  LHR  LIS  {_hhmm(now + 3600)}  {_hhmm(now + 3 * 3600)}')
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===1", timeout=20000)
+    page.click('[data-nav="taf"]')
+    f.click('#btnReport')
+    f.click('#repBlk [data-blk="2"]')   # 24 H
+    linhas = lambda: [l for l in f.input_value('#repText').splitlines() if re.match(r'^[A-Z]{4}/', l)]
+    antes = linhas()
+    assert any('TP1353' not in l for l in antes)               # há destinos com alerta mas sem voos
+    assert f.locator('#repFltLab').is_visible()
+    f.check('#repFlt')
+    depois = linhas()
+    assert depois and all('TP1353' in l for l in depois) and all(l.startswith('LPPT/LIS') for l in depois)
+    assert 'SÓ VOOS AFETADOS' in f.input_value('#repText')
+    f.uncheck('#repFlt')
+    assert len(linhas()) == len(antes)
     assert not errors
     ctx.close()
