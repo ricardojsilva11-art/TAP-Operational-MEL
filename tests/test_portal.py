@@ -703,3 +703,22 @@ def test_metar_agora_vem_do_taf_monitor(browser, server, mock):
     assert 'AGORA' in page.inner_text('#pMetarList') and 'VIS300m' in page.inner_text('#pMetarList')
     assert not errors
     ctx.close()
+
+
+def test_voos_afetados_janela_de_tempo(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("""(()=>{const n=Date.now(),r=(fl,h,restr)=>({fl,org:'LIS',dst:'MAD',side:'CHEGADA',t:n+h*36e5,est:true,icao:'LEMD',zone:'EUROPE',name:'LVO',full:'LVO',cond:'VV002',restr,code:restr?'LVO':'SN',kc:'#f07b1d',ki:'#fff'});
+      parent.postMessage({type:'taf-flights',has:true,name:'v.pdf',at:n,total:9,restr:2,alert:1,blocks:0,missing:[],blkSrc:{},outside:[],bad:0,landed:0,rows:[r('TP2',20,true),r('TP1',1,true),r('TP3',2,false)]},location.origin)})()""")
+    page.wait_for_selector('#pFltList .p-fltrow')
+    page.evaluate("try{localStorage.removeItem('portal.fltH')}catch(_){}")
+    page.click('[data-flth="12"]')
+    rows = page.locator('#pFltList .p-fltrow b').all_inner_texts()
+    assert rows == ['TP1', 'TP3']                                   # por hora; o de daqui a 20 h fica de fora
+    assert page.inner_text('#pFltRestr') == '1' and page.inner_text('#pFltAlert') == '1'
+    page.click('[data-flth="all"]')
+    assert page.locator('#pFltList .p-fltrow b').all_inner_texts() == ['TP1', 'TP3', 'TP2']
+    page.click('[data-fltonly]')
+    assert page.locator('#pFltList .p-fltrow b').all_inner_texts() == ['TP1', 'TP2']
+    assert not errors
+    ctx.close()
