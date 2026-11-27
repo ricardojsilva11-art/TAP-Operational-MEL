@@ -2213,7 +2213,7 @@ function reportItems(){
 /* ---------- relatório em tabela: 2 blocos de 12 h, uma linha por aeroporto e tipo de alerta ---------- */
 const REP_CAT_NAME = {cig: "LVO", bmin: "BELOW MIN", rvac: "RVAC", conv: "TS", vis: "VA", ice: "SNOW/ICE", wind: "WIND", mar: "WND NEAR LIM", cig4: "LOW CIG", obsc: "MIST", int: "INTENSITY"};
 /* ordem do relatório: gravidade e depois zona (Portugal, Europa, América do Sul, América do Norte, África) */
-const REP_SEV = {"OUT OF LIM": 0, "LDG NOT ALLOWED": 0, "BELOW MIN": 0, "LVO": 1, "TS": 2, "VA": 2.5, "LOW CIG": 3, "RVAC": 3,
+const REP_SEV = {"OUT OF LIM": 0, "LDG NOT ALLOWED": 0, "BELOW MIN": 0, "LVO": 1, "TS": 2, "VA": 2.5, "RVAC": 1.5, "LOW CIG": 3,
   "SNOW/ICE": 4, "WIND": 5, "WND NEAR LIM": 6, "CAPT TKOF/LDG": 6, "MIST": 7, "INTENSITY": 8};
 const repSev = n => n in REP_SEV ? REP_SEV[n] : 9;
 const REP_ZONE_NAME = ["PORTUGAL", "EUROPE", "SOUTH AMERICA", "NORTH AMERICA", "AFRICA", "OTHER"];
