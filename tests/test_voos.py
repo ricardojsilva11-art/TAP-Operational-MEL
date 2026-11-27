@@ -425,3 +425,21 @@ def test_resumo_dos_destinos_com_as_horas_do_taf(browser, server, mock):
     assert f'{g(t0 - 2 * H)}/{g(t0 + 2 * H)}' in txt and 'AGORA' not in txt
     assert not errors
     ctx.close()
+
+
+def test_voo_no_ar_com_metar_limpo_continua_na_lista_pelo_taf(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    ctx.route(WORKER, _taf_json)
+    f = taf_frame(page)
+    now = time.time()
+    lista = f'TP1357  LHR  LIS  {_hhmm(now - 1800)}  {_hhmm(now + 3600)}'          # já saiu; chega dentro de 1 h
+    f.evaluate("t=>localStorage.setItem('tafmon.voos',JSON.stringify({text:t,name:'l.pdf',at:Date.now()}))", lista)
+    page.evaluate("postTaf({type:'taf-refresh'})")
+    page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===1", timeout=20000)
+    f.evaluate("metars.LPPT={obs:Date.now()-600000,raw:'METAR LPPT 270800Z 00000KT CAVOK 10/05 Q1020'}")
+    page.evaluate("tafSelect('LPPT')")
+    f.wait_for_selector('#fltDock:not([hidden])')
+    txt = f.inner_text('#fltDock')
+    assert 'TP1357' in txt and 'METAR OK' in txt
+    assert not errors
+    ctx.close()

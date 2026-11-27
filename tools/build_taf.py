@@ -585,7 +585,7 @@ function fltPaneHtml(r, list, hit, slots){
   let h = `<div class="fd-cols"><div class="fd-c">`;
   h += hit.length ? `<div class="gtabwrap"><table class="gtab fltab"><thead><tr><th>Voo</th><th>Rota</th><th>ETD → ETA</th><th>Fonte</th><th>Afetado</th><th>Alerta</th><th>Condição</th></tr></thead><tbody>${hit.map(f => {
       const a = f.alert, tD = fltEtd(f);
-      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m">${f._src === "METAR" ? `<span class="fsrc met" title="Voo já saiu: METAR de ${hhmm(f._obs)}Z">METAR ${hhmm(f._obs)}Z</span>` : `<span class="fsrc" title="${f._dep ? "Voo já saiu mas não há METAR recente (até 90 min)" : "Voo ainda não saiu"}">${esc(f._src)}</span>`}</td><td class="m"><b>${f._src === "METAR" ? "agora" : `${hhmm(a.from)}–${hhmm(a.to)}Z`}</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
+      return `<tr class="k-${FLT_KEY[a.name] || "int"}${one && fltKey(f) === fltKey(one) ? " fsel" : ""}" data-fsel="${esc(fltKey(f))}" title="Ver só este voo no TAF e na linha do tempo"><td><b>${esc(f.fl)}</b></td><td>${route(f)}</td><td class="m">${tD != null ? hm(tD) + " → " : ""}<b>${hmE(f.eta ?? f.sta, f.etaEst)}</b></td><td class="m">${f._src === "METAR" ? `<span class="fsrc met" title="Voo já saiu: METAR de ${hhmm(f._obs)}Z">METAR ${hhmm(f._obs)}Z</span>` : `<span class="fsrc" title="${f._metok ? `Voo já saiu. METAR das ${hhmm(f._metok)}Z sem restrição; o alerta vem do TAF para a hora de chegada` : f._dep ? "Voo já saiu mas não há METAR recente (até 90 min)" : "Voo ainda não saiu"}">${esc(f._src)}</span>`}</td><td class="m"><b>${f._src === "METAR" ? "agora" : `${hhmm(a.from)}–${hhmm(a.to)}Z`}</b></td><td><span class="fchip" title="${esc(a.full || a.name)}">${esc(CAT_CODE[FLT_KEY[a.name]] || a.name)}</span></td><td class="m">${esc(a.cond)}</td></tr>`;
     }).join("")}</tbody></table></div>` : `<p class="hint" style="margin:0">Nenhum voo com alerta à chegada (da ETA até 1 h depois).</p>`;
   const ok = list.filter(f => !f.alert);
   if (ok.length) h += `<details class="hint" style="margin:8px 0 0"><summary>Sem alerta à chegada (${ok.length})</summary>${ok.map(f => `<b>${esc(f.fl)}</b> ${route(f)} ${hmE(f.eta ?? f.sta, f.etaEst)}`).join(" · ")}</details>`;
@@ -640,7 +640,9 @@ function fltDock(r, slots){
   const list = r && C ? C.P.flights.filter(f => f.dst === r.icao && !f.landed && (f.eta ?? f.sta) != null).sort((a, b) => (a.eta ?? a.sta) - (b.eta ?? b.sta)) : [];
   const MA = fltMetarAlert(r.icao), now = Date.now();
   const L2 = list.map(f => { const tD = fltEtd(f), dep = tD != null && tD <= now;
-    if (dep && MA) return Object.assign({}, f, {alert: MA.alert, _src: "METAR", _obs: MA.obs, _dep: true});
+    if (dep && MA && MA.alert) return Object.assign({}, f, {alert: MA.alert, _src: "METAR", _obs: MA.obs, _dep: true});
+    /* já saiu e o METAR está sem restrição: o voo continua na lista pelo TAF (a hora de chegada ainda cai na previsão), com a nota do METAR */
+    if (dep && MA) return Object.assign({}, f, {_src: "TAF · METAR OK", _dep: true, _metok: MA.obs});
     return Object.assign({}, f, {_src: dep ? "TAF (sem METAR)" : "TAF", _dep: dep}); });
   const hit = L2.filter(f => f.alert);
   if (!hit.length){ D.hidden = true; D.innerHTML = ""; return; }
