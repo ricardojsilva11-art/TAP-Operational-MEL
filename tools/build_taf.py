@@ -9,7 +9,7 @@ Para atualizar o monitor: substituir tools/taf-monitor-original.html e correr  p
 """
 import os, re, sys
 
-WX_H = 8  # horas do resumo do Início (alerta nas próximas WX_H horas)
+WX_H = 24  # horas enviadas para o resumo do Início (o Início filtra 8 / 12 / 24 h)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src = open(os.path.join(ROOT, 'tools', 'taf-monitor-original.html'), encoding='utf-8').read()
@@ -107,7 +107,7 @@ s = rep(s, '  ui.detailClosed = false; saveUI();\n  const t0 = Math.floor(Date.n
         '  ui.detailClosed = false; saveUI();\n  try { if (window.parent !== window) window.parent.postMessage({type: "taf-opened", icao: selected}, location.origin); } catch(e){}\n  const t0 = Math.floor(Date.now() / HOUR) * HOUR;')
 
 # 3c) filtro só do portal: alerta nas próximas WX_H horas (o resumo do Início)
-s = rep(s, 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");', 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");\n    if (ui.filter === "nextwin") return r.levels.slice(0, %d).includes("red");' % WX_H)
+s = rep(s, 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");', 'if (ui.filter === "next6") return r.levels.slice(0, 6).includes("red");\n    if (ui.filter === "nextwin") return r.levels.slice(0, ui.nextH || 12).includes("red");')
 
 # 3d) aeroportos favoritos (de cada utilizador, guardados pelo portal): estrela na grelha
 s = rep(s, '<button type="button" aria-label="Ver TAF ${r.icao}" title="${esc(nameOf(r.icao) || r.icao)}"><span class="dot',
@@ -856,7 +856,7 @@ s = rep(s, main_end,
         '  } else if (d.type === "taf-favs"){\n'
         '    window.__portalFavs = d.list || []; render();\n'
         '  } else if (d.type === "taf-filter"){\n'
-        '    ui.filter = d.f || "all"; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();\n'
+        '    ui.filter = d.f || "all"; ui.nextH = +d.h || 12; ui.list = d.list || ""; ui.area = ""; ui.cat = ""; ui.q = ""; saveUI(); render();\n'
         '    const g = document.querySelector("#grid"); if (g) g.scrollIntoView({block: "start"});\n'
         '  } else if (d.type === "taf-refresh") load();\n'
         '  else if (d.type === "taf-role"){\n'

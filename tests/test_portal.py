@@ -722,3 +722,20 @@ def test_voos_afetados_janela_de_tempo(browser, server, mock):
     assert page.locator('#pFltList .p-fltrow b').all_inner_texts() == ['TP1', 'TP2']
     assert not errors
     ctx.close()
+
+
+def test_previsao_destinos_janela_8_12_24(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    f.evaluate("""(()=>{const n=Date.now(),H=36e5,a=(ic,h,now)=>({icao:ic,name:ic,now,from:n+h*H,to:n+(h+2)*H,open:false,kc:'#f2c230',rank:3,tags:[{c:'RVAC',kc:'#f2c230',ki:'#222'}],cond:['RVAC']});
+      parent.postMessage({type:'taf-summary',updatedAt:n,total:3,now:[{icao:'LPPR'}],nextWin:[],win:24,newTafs:[],alerts:[a('LPPR',0,true),a('LPPT',10,false),a('LEMD',20,false)]},location.origin)})()""")
+    page.wait_for_selector('#pAlertList .p-wxrow')
+    page.click('[data-wxh="12"]')
+    ics = lambda: page.locator('#pAlertList .p-wxrow b').all_inner_texts()
+    assert ics() == ['LPPR', 'LPPT'] and page.inner_text('#pNext') == '2'
+    page.click('[data-wxh="8"]')
+    assert ics() == ['LPPR']
+    page.click('[data-wxh="24"]')
+    assert ics() == ['LPPR', 'LPPT', 'LEMD'] and 'Ver no TAF (3)' in page.inner_text('#pWxAll')
+    assert not errors
+    ctx.close()
