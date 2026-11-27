@@ -1206,12 +1206,13 @@ function wxPhen(w){
   return PHEN.filter(p => !p.cloud && on.includes(p.k) && p.codes.some(c => codes.includes(c))).map(p => p.k);
 }
 /* limites de vento de aterragem por setor (direção do vento, graus). Limites de rajada: null = só vento médio.
-   LPMA: carta "LDG Wind limitations". Em setor 200–230 o limite de 25 kt aplica-se ao vento ou à rajada. */
+   LPMA: carta Lido "LDG Wind limitations" (VOR DME 23, efetiva 06-AUG-2026). Limites iguais para as duas pistas.
+   Em setor 200–230 o limite de 25 kt aplica-se ao vento ou à rajada (MID ou ROSARIO). */
 const LDG_LIMITS = {
   LPMA: {margin: 5, sectors: [
     {from: 300, to: 10,  spd: 15, gust: 25},
     {from: 20,  to: 40,  spd: 20, gust: 30},
-    {from: 120, to: 190, spd: 20, gust: 30},
+    {from: 120, to: 190, spd: 15, gust: 25},   /* carta Lido VOR DME 23 (30-JUL-2026): 15 kt (rajada 25 kt no MID) */
     {from: 200, to: 230, spd: 25, gust: 25}
   ]},
   /* LPLA: setor 195–255, vento (médio ou rajada) acima de 35 kt → LDG NOT ALLOWED (Note 3) */

@@ -515,3 +515,12 @@ def test_voos_afetados_mostra_minimos_a_chegada(browser, server, mock):
     assert 'CAT II 100/300' in f.inner_text('#fltDock .fmn')
     assert not errors
     ctx.close()
+
+
+def test_limites_vento_lpma_carta_lido(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
+    f = taf_frame(page)
+    lim = f.evaluate("[300,5,30,150,215,90].map(d=>{const l=ldgLimit('LPMA',d);return l?[l.spd,l.gust]:null})")
+    assert lim == [[15, 25], [15, 25], [20, 30], [15, 25], [25, 25], None]
+    assert not errors
+    ctx.close()
