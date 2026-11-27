@@ -198,3 +198,18 @@ def test_copiar_numero_da_mel(browser, server, mock):
     assert page.evaluate("navigator.clipboard.readText()") == 'M-21-26-01'
     assert not errors
     ctx.close()
+
+
+def test_lapis_nas_notas_abre_o_editor(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id]')
+    page.click('#rows tr[data-id="r2"] td.ioc [data-editnotes]')
+    page.wait_for_selector('#modal.show')
+    page.wait_for_function("document.activeElement&&document.activeElement.id==='editor'", timeout=2000)
+    page.keyboard.type(' EDITADO')
+    page.click('#recordForm button.primary')
+    page.wait_for_function("!document.querySelector('#modal').classList.contains('show')")
+    body = [b for m, p, b in mock.requests if 'mel_records' in p and m in ('PATCH', 'POST')]
+    assert json.loads(body[-1])['operational_impact'] == 'Impacto 2 EDITADO'
+    assert not errors
+    ctx.close()
