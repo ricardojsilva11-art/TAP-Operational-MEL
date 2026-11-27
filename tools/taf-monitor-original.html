@@ -1073,7 +1073,7 @@ const LDG_LIMITS = {
   LPMA: {margin: 5, sectors: [
     {from: 300, to: 10,  spd: 15, gust: 25},
     {from: 20,  to: 40,  spd: 20, gust: 30},
-    {from: 120, to: 190, spd: 15, gust: 25},   /* carta Lido VOR DME 23 (30-JUL-2026): 15 kt (rajada 25 kt no MID) */
+    {from: 120, to: 190, spd: 20, gust: 30, rwy: {"23": {spd: 15, gust: 25}}},   /* RWY 23 em uso (carta VOR DME 23): 15 kt, rajada 25 kt no MID; RWY 05: 20/30 */
     {from: 200, to: 230, spd: 25, gust: 25}
   ]},
   /* LPLA: setor 195–255, vento (médio ou rajada) acima de 35 kt → LDG NOT ALLOWED (Note 3) */
@@ -1092,10 +1092,18 @@ function ldgLimit(icao, dir){
   const L = LDG_LIMITS[icao]; if (!L) return null;
   const S = L.sectors;
   if (dir == null){ // VRB: setor mais restritivo
-    return {spd: Math.min(...S.map(x => x.spd)), gust: Math.min(...S.map(x => x.gust)), label: "VRB · limite mais restritivo"};
+    const all = S.flatMap(x => [x, ...Object.values(x.rwy || {})]);
+    return {spd: Math.min(...all.map(x => x.spd)), gust: Math.min(...all.map(x => x.gust)), label: "VRB · limite mais restritivo"};
   }
-  const hit = S.find(x => inArc(dir, x.from, x.to));
-  return hit ? {spd: hit.spd, gust: hit.gust, label: pad3(hit.from) + "–" + pad3(hit.to)} : null;
+  const hit = S.find(x => inArc(dir, x.from, x.to)); if (!hit) return null;
+  const lab = pad3(hit.from) + "–" + pad3(hit.to);
+  if (hit.rwy){ /* limite diferente conforme a pista em uso: cabeceira com mais vento de frente (empate → a mais restritiva) */
+    let best = null, bh = -Infinity;
+    for (const e of rwyEnds(icao)){ const h = Math.cos((dir - e.hdg) * Math.PI / 180); const v = hit.rwy[e.id] || hit;
+      if (h > bh + 1e-6 || (Math.abs(h - bh) <= 1e-6 && best && v.spd < (hit.rwy[best.id] || hit).spd)){ bh = h; best = e; } }
+    if (best){ const v = hit.rwy[best.id] || hit; return {spd: v.spd, gust: v.gust, label: lab + " · RWY " + best.id}; }
+  }
+  return {spd: hit.spd, gust: hit.gust, label: lab};
 }
 /* rosa dos ventos com os setores de limitação de vento e o vento do METAR (painel do aeroporto) */
 /* pior vento do TAF: o maior vento médio ou rajada em qualquer grupo (com o período) */
@@ -1122,7 +1130,7 @@ function limitsRoseHtml(icao, row){
   svg += `<circle cx="${C}" cy="${C}" r="${R}" fill="var(--panel2)" stroke="var(--line)"/>`;
   for (const z of L.sectors) svg += `<path d="${arc(z.from, z.to)}" fill="var(--k-lim)" fill-opacity=".18" stroke="var(--k-lim)" stroke-opacity=".6" stroke-dasharray="3 2"/>`;
   const labs = L.sectors.map(z => { const span = ((z.to - z.from) % 360 + 360) % 360; const mid = (z.from + span / 2) % 360; const [x, y] = pt(mid, R + 13);
-    return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="var(--k-lim)" font-size="11" font-weight="700">${z.spd === z.gust ? z.spd : z.spd + "/" + z.gust}</text>`; }).join("");
+    return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="var(--k-lim)" font-size="11" font-weight="700">${z.spd === z.gust ? z.spd : z.spd + "/" + z.gust}${z.rwy ? Object.entries(z.rwy).map(([k, v]) => `<tspan x="${x.toFixed(1)}" dy="12" font-size="9.5">R${k} ${v.spd}/${v.gust}</tspan>`).join("") : ""}</text>`; }).join("");
   for (let d = 0; d < 360; d += 10){ const [a, b] = [pt(d, R), pt(d, R - (d % 30 ? 4 : 8))]; svg += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="var(--muted)" stroke-width="${d % 90 ? 1 : 1.6}"/>`; }
   for (const [d, t] of [[0, "N"], [90, "E"], [180, "S"], [270, "W"]]){ const [x, y] = pt(d, R - 16); svg += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">${t}</text>`; }
   for (const [id, , hdg] of RUNWAYS[icao] || []){ if (hdg == null) continue;

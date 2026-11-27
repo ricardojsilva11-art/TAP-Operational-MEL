@@ -520,7 +520,9 @@ def test_voos_afetados_mostra_minimos_a_chegada(browser, server, mock):
 def test_limites_vento_lpma_carta_lido(browser, server, mock):
     ctx, page, errors = open_app(browser, server, mock, logged_in(), view='portal')
     f = taf_frame(page)
-    lim = f.evaluate("[300,5,30,150,215,90].map(d=>{const l=ldgLimit('LPMA',d);return l?[l.spd,l.gust]:null})")
-    assert lim == [[15, 25], [15, 25], [20, 30], [15, 25], [25, 25], None]
+    lim = f.evaluate("[300,5,30,125,150,190,215,90,null].map(d=>{const l=ldgLimit('LPMA',d);return l?[l.spd,l.gust]:null})")
+    # 120–190: RWY 05 em uso (vento até 135°) 20/30; RWY 23 em uso 15/25; VRB → o mais restritivo
+    assert lim == [[15, 25], [15, 25], [20, 30], [20, 30], [15, 25], [15, 25], [25, 25], None, [15, 25]]
+    assert 'RWY 23' in f.evaluate("ldgLimit('LPMA',160).label") and 'RWY 05' in f.evaluate("ldgLimit('LPMA',125).label")
     assert not errors
     ctx.close()
