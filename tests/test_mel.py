@@ -187,3 +187,14 @@ def test_notas_sem_numero_da_mel(browser, server, mock):
         assert page.inner_text(f'#rows tr[data-id="r2"] {sel}').startswith('Extract fan INOP')
     assert not errors
     ctx.close()
+
+
+def test_copiar_numero_da_mel(browser, server, mock):
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    ctx.grant_permissions(['clipboard-read', 'clipboard-write'], origin=server.url[:-1])
+    page.wait_for_selector('#rows tr[data-id]')
+    page.click('#rows tr[data-id="r1"] [data-copymel]')
+    page.wait_for_timeout(300)
+    assert page.evaluate("navigator.clipboard.readText()") == 'M-21-26-01'
+    assert not errors
+    ctx.close()
