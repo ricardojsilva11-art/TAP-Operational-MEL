@@ -213,3 +213,15 @@ def test_lapis_nas_notas_abre_o_editor(browser, server, mock):
     assert json.loads(body[-1])['operational_impact'] == 'Impacto 2 EDITADO'
     assert not errors
     ctx.close()
+
+
+def test_editor_legivel_no_tema_escuro(browser, server, mock):
+    mock.rows[1]['operational_impact_html'] = '<span style="color:#17324d">texto escuro</span>'
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.evaluate("document.documentElement.dataset.theme='dark'")
+    page.wait_for_selector('#rows tr[data-id]')
+    page.click('#rows tr[data-id="r2"] [data-edit]')
+    page.wait_for_selector('#modal.show')
+    assert page.evaluate("getComputedStyle(document.getElementById('editor')).backgroundColor") == 'rgb(255, 255, 255)'
+    assert not errors
+    ctx.close()
