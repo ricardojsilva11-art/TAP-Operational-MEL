@@ -97,7 +97,7 @@ def test_exportar_excel_ordenado_e_formatado(browser, server, mock, tmp_path):
     assert rows[1][3] == 'VENT AVNCS SYS FAULT not displayed\nMay be inoperative provided that:\n1) The blower fan\n2) The EXTRACT fan'
     assert rows[4][3] == 'Linha 1\nLinha 2'
     assert ws.cell(2, 4).alignment.wrap_text
-    assert rows[0][6] == 'Rev. 45 · desde 01/10/2026'
+    assert rows[0][7] == 'Rev. 45 · desde 01/10/2026'
     ctx.close()
 
 
@@ -160,4 +160,22 @@ def test_copiar_sai_branco_com_letras_pretas_no_tema_escuro(browser, server, moc
     for h in (h1, h2):
         assert 'color:#000000;background-color:#ffffff' in h
         assert 'rgb(219' not in h and 'COPILOT SEAT INOP' in h
+    ctx.close()
+
+
+def test_dispatch_e_ioc_notes(browser, server, mock):
+    for r in mock.rows: r['ioc_notes'] = ''
+    mock.rows[0]['ioc_notes'] = 'Avisar MCC antes do despacho'
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id]')
+    assert page.inner_text('#melTable thead').upper().count('DISPATCH NOTES') == 1 and 'IOC NOTES' in page.inner_text('#melTable thead').upper()
+    assert 'Avisar MCC antes do despacho' in page.inner_text('#rows tr[data-id="r1"] td.ioc')
+    page.click('#rows tr[data-id="r2"] [data-edit]')
+    page.wait_for_selector('#modal.show')
+    page.fill('#melIoc', 'Nova nota IOC')
+    page.click('#recordForm button.primary')
+    page.wait_for_function("!document.querySelector('#modal').classList.contains('show')")
+    body = [b for m, p, b in mock.requests if 'mel_records' in p and m in ('PATCH', 'POST')]
+    assert body and json.loads(body[-1])['ioc_notes'] == 'Nova nota IOC'
+    assert not errors
     ctx.close()
