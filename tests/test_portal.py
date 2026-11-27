@@ -317,7 +317,7 @@ def test_texto_escuro_fica_legivel_no_tom_escuro(browser, server, mock):
 
 def test_larguras_guardadas_cabem_na_pagina(browser, server, mock):
     # larguras antigas, maiores do que o ecrã e com a coluna Ações estreita
-    ctx, page, _ = open_app(browser, server, mock, logged_in({'mel-colw': '[400,1400,300,300,120]'}), view='portal')
+    ctx, page, _ = open_app(browser, server, mock, logged_in({'mel-colw': '[400,1100,400,300,300,120]'}), view='portal')
     page.set_viewport_size({'width': 1400, 'height': 900})
     page.click('[data-nav="home"]')
     page.wait_for_timeout(400)
