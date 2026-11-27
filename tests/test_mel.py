@@ -174,3 +174,16 @@ def test_dispatch_e_ioc_notes(browser, server, mock):
     assert page.locator('#melIoc').count() == 0                      # não há campo à parte: é o mesmo texto
     assert not errors
     ctx.close()
+
+
+def test_notas_sem_numero_da_mel(browser, server, mock):
+    mock.rows[0]['operational_impact_html'] = '<b>MEL 21-26-01 Avionics Equipment Ventilation</b><br>Blower fan INOP.'
+    mock.rows[1]['operational_impact_html'] = 'M-21-26-02 – Extract fan INOP'
+    ctx, page, errors = open_app(browser, server, mock, logged_in())
+    page.wait_for_selector('#rows tr[data-id]')
+    for sel in ('td.impact:not(.ioc) .imp-txt', 'td.ioc .imp-txt'):
+        t1 = page.inner_text(f'#rows tr[data-id="r1"] {sel}')
+        assert t1.startswith('Avionics Equipment Ventilation') and '21-26-01' not in t1
+        assert page.inner_text(f'#rows tr[data-id="r2"] {sel}').startswith('Extract fan INOP')
+    assert not errors
+    ctx.close()
