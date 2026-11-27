@@ -508,10 +508,10 @@ def test_voos_afetados_mostra_minimos_a_chegada(browser, server, mock):
     page.wait_for_function("fltSum&&fltSum.has&&fltSum.restr===2", timeout=20000)
     page.evaluate("tafSelect('LPPT')")
     f.wait_for_selector('#fltDock:not([hidden]) .fmin')
-    assert 'MÍNIMOS' in f.inner_text('#fltDock thead').upper() and f.inner_text('#fltDock .fmin').startswith('ACIMA')
+    assert 'MINIMA' in f.inner_text('#fltDock thead').upper() and f.inner_text('#fltDock .fmin').startswith('ABOVE MIN')
     page.evaluate("tafSelect('LPPR')")
     f.wait_for_function("document.querySelector('#fltDock h3').textContent.includes('LPPR')")
-    assert f.inner_text('#fltDock .fmin').startswith('ABAIXO')
+    assert f.inner_text('#fltDock .fmin').startswith('BELOW MIN')
     assert 'CAT II 100/300' in f.inner_text('#fltDock .fmn')
     assert not errors
     ctx.close()
