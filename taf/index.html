@@ -645,6 +645,7 @@ body.resizing{cursor:col-resize;user-select:none}
         <span class="rep-win" id="repWin" hidden></span>
         <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>
         <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>
+        <label class="chk rep-cm" title="Largura da tabela ao copiar para o Word/Outlook. Mede na régua do Word a caixa onde colas.">Largura da tabela ao copiar <input type="number" id="repCm" min="8" max="30" step="0.5" style="width:64px"> cm</label>
       </div>
       <div class="rep-prev" id="repPrev" aria-label="Relatório"></div>
       <textarea class="rep-text rep-hidden" id="repText" tabindex="-1" aria-hidden="true" readonly spellcheck="false" aria-label="Texto do relatório"></textarea>
@@ -2592,9 +2593,11 @@ function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringif
 function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
 function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
 /* larguras das colunas da tabela copiada, em pontos (o Word respeita pt; % e px eram convertidos para mais do que
-   a caixa onde se cola). Total 420 pt ≈ 14,8 cm, cabe numa caixa/célula dentro de uma página A4.
+   a caixa onde se cola). Largura total escolhida no relatório («Largura ao copiar», cm; por defeito 12,5 cm).
    As larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
-function repW(){ return REP_COLS.length > 4 ? [56, 54, 88, 98, 124] : [70, 66, 140, 144]; }
+function repW(){ const B = REP_COLS.length > 4 ? [14, 14, 21, 23, 28] : [17, 16, 33, 34], T = repCm() * 72 / 2.54;
+  return B.map(b => Math.round(T * b / 100)); }
+const repCm = () => { const v = +repUI.cm; return v >= 8 && v <= 30 ? v : 12.5; };
 const repTot = () => repW().reduce((a, b) => a + b, 0);
 function repColgroup(){
   const W = repW();
@@ -2651,6 +2654,7 @@ function renderReport(){
   $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto (condições e alertas juntos), por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
   $("#repVis").checked = !!repUI.onlyVis;
   $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;
+  if (document.activeElement !== $("#repCm")) $("#repCm").value = repCm();
 }
 $("#repBlk").addEventListener("click", e => { const b = e.target.closest("[data-blk]"); if (!b) return; repBlk = +b.dataset.blk; setRepTab(repBlk); renderReport(); });
 /* faixa personalizada: horas 00-23 no início, 01-24 no fim; aplica assim que as duas estão completas */
@@ -3446,6 +3450,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#repor
 $("#repCats").addEventListener("change", () => { repUI.cats = [...document.querySelectorAll("#repCats input:checked")].map(x => x.value); saveRep(); renderReport(); });
 $("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });
 $("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });
+$("#repCm").addEventListener("change", e => { const v = parseFloat(String(e.target.value).replace(",", ".")); repUI.cm = v >= 8 && v <= 30 ? v : 12.5; e.target.value = repUI.cm; saveRep(); renderReport(); });
 $("#repCopy").addEventListener("click", () => {
   const R = reportText(), txt = R.copyText;
   const ok = () => { $("#repMsg").textContent = "Tabela copiada. Cole com Ctrl+V no Outlook, Teams, Word ou Excel."; };
