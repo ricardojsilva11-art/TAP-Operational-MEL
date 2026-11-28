@@ -963,14 +963,17 @@ s = rep(s, '  } else if (d.type === "taf-favs"){\n', '  } else if (d.type === "t
 
 # 3l. tabela do relatório (cópia para Word/Outlook/Teams): tabela "natural", sem larguras fixas, para o Word a poder
 #     ajustar (Ajuste automático / arrastar as colunas) como antes; a linha da zona ocupa todas as colunas e os voos
-#     vão 3 por linha dentro da coluna VOOS, os alertas "A / B" partem em duas linhas e o PERÍODO (UTC) em duas, para a coluna não alargar a tabela
+#     vão 3 por linha dentro da coluna VOOS (tabela a 85% da caixa, colunas em %), os alertas "A / B" partem em duas linhas e o PERÍODO (UTC) em duas, para a coluna não alargar a tabela
 s = rep(s, '? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +',
-  '? `<table style="border-collapse:collapse;font-size:10pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 5px;text-align:left;vertical-align:bottom">${esc(h).replace(" (UTC)", "<br>(UTC)")}</th>`).join("")}</tr>` +')
+  '? `<table width="85%" style="border-collapse:collapse;font-size:10pt;width:85%"><tr>${REP_COLS.map((h, i) => `<th width="${repPct()[i]}%" style="width:${repPct()[i]}%;border:1px solid #999;background:#e8e8e8;padding:3px 5px;text-align:left;vertical-align:bottom">${esc(h).replace(" (UTC)", "<br>(UTC)")}</th>`).join("")}</tr>` +')
 s = rep(s, '`<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`',
   '`<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 5px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`')
 s = rep(s, '`<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\\n/g, "<br>")}</td>`',
-  '`<td style="border:1px solid #999;padding:3px 5px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}${i === 4 ? ";font-size:9pt" : ""};vertical-align:top">${i === 4 ? repFltLines(c) : esc(c).replace(/\\n/g, "<br>").replace(/ \\/ /g, " /<br>")}</td>`')
-s = rep(s, 'function reportText(){', """/* voos da tabela copiada: 3 por linha (a tabela fica com ~575 px, como a de 4 colunas que cabia na página) */
+  '`<td width="${repPct()[i]}%" style="width:${repPct()[i]}%;border:1px solid #999;padding:3px 5px;${i <= 1 ? "white-space:nowrap" : ""}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}${i === 4 ? ";font-size:9pt" : ""};vertical-align:top">${i === 4 ? repFltLines(c) : esc(c).replace(/\\n/g, "<br>").replace(/ \\/ /g, " /<br>")}</td>`')
+s = rep(s, 'function reportText(){', """/* tabela copiada a 85% da largura da caixa onde se cola: o Word estica as tabelas até à largura da célula, e no
+   briefing a célula passa da margem da página (o próprio texto fica cortado); colunas em % */
+function repPct(){ return REP_COLS.length > 4 ? [14, 13, 21, 25, 27] : [17, 16, 33, 34]; }
+/* voos da tabela copiada: 3 por linha */
 function repFltLines(c){ const L = String(c || "").split(/\\s*[,\\n]\\s*/).filter(Boolean), out = [];
   for (let k = 0; k < L.length; k += 3) out.push(L.slice(k, k + 3).map(esc).join(", "));
   return out.join(",<br>"); }
