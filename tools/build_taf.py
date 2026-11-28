@@ -964,17 +964,17 @@ s = rep(s, '  } else if (d.type === "taf-favs"){\n', '  } else if (d.type === "t
 # 3l. tabela do relatório (cópia para Word/Outlook/Teams): largura fixa da página, colunas com larguras definidas,
 #     a linha da zona ocupa todas as colunas e os voos quebram linha dentro da coluna VOOS
 s = rep(s, '? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +',
-  '? `<table width="660" style="border-collapse:collapse;font-size:10.5pt;width:660px;max-width:660px;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${repW()[i]}" style="width:${repW()[i]}px;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +')
+  '? `<table width="100%" style="border-collapse:collapse;font-size:10.5pt;width:100%;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${repW()[i]}%" style="width:${repW()[i]}%;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +')
 s = rep(s, '`<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`',
   '`<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`')
 s = rep(s, '`<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\\n/g, "<br>")}</td>`',
-  '`<td width="${repW()[i]}" style="width:${repW()[i]}px;max-width:${repW()[i]}px;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\\n/g, ", ") : esc(c).replace(/\\n/g, "<br>")}</td>`')
-s = rep(s, 'function reportText(){', """/* larguras das colunas da tabela copiada (total 660 px, cabe na largura útil de uma página A4 e no Outlook);
-   as larguras vão também em cada célula, porque o Outlook/OneNote ignoram o colgroup */
-function repW(){ return REP_COLS.length > 4 ? [86, 80, 150, 160, 184] : [110, 100, 225, 225]; }
+  '`<td width="${repW()[i]}%" style="width:${repW()[i]}%;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\\n/g, ", ") : esc(c).replace(/\\n/g, "<br>")}</td>`')
+s = rep(s, 'function reportText(){', """/* larguras das colunas da tabela copiada em % da largura da página (o Word/Outlook ajustam a tabela à margem);
+   as larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
+function repW(){ return REP_COLS.length > 4 ? [13, 13, 21, 24, 29] : [16, 16, 34, 34]; }
 function repColgroup(){
   const W = repW();
-  return `<colgroup>${W.map(w => `<col style="width:${w}px" width="${w}">`).join("")}</colgroup>`;
+  return `<colgroup>${W.map(w => `<col style="width:${w}%" width="${w}%">`).join("")}</colgroup>`;
 }
 function reportText(){""")
 
