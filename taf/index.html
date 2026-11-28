@@ -2591,9 +2591,11 @@ function repWin(){ try { const w = JSON.parse(localStorage.getItem("tafmon.repwi
 function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringify(w)); } catch(e){} }
 function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
 function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
-/* larguras das colunas da tabela copiada (total 680 px, a largura útil de uma página A4) */
+/* larguras das colunas da tabela copiada (total 660 px, cabe na largura útil de uma página A4 e no Outlook);
+   as larguras vão também em cada célula, porque o Outlook/OneNote ignoram o colgroup */
+function repW(){ return REP_COLS.length > 4 ? [86, 80, 150, 160, 184] : [110, 100, 225, 225]; }
 function repColgroup(){
-  const W = REP_COLS.length > 4 ? [92, 84, 170, 170, 164] : [110, 100, 235, 235];
+  const W = repW();
   return `<colgroup>${W.map(w => `<col style="width:${w}px" width="${w}">`).join("")}</colgroup>`;
 }
 function reportText(){
@@ -2618,8 +2620,8 @@ function reportText(){
   if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } { const parts = cells[k].map(x => String(x).split("\n")), nl = Math.max(...parts.map(q => q.length)); for (let j = 0; j < nl; j++) out.push(line(parts.map(q => q[j] || ""))); } }); }
   const nHead = (early ? 3 : 2) + 1; /* linhas do cabeçalho: não vão na cópia */
   const tbl = (cells.length
-      ? `<table style="border-collapse:collapse;font-size:10.5pt;width:680px;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
-        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td style="border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\n/g, ", ") : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
+      ? `<table width="660" style="border-collapse:collapse;font-size:10.5pt;width:660px;max-width:660px;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${repW()[i]}" style="width:${repW()[i]}px;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
+        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td width="${repW()[i]}" style="width:${repW()[i]}px;max-width:${repW()[i]}px;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\n/g, ", ") : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
       : `<p style="margin:0">${esc(sub)}</p>`);
   const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p style="margin:0 0 8px"><b>${esc(head)}</b><br>${esc(sub)}${early ? "<br>" + esc(early) : ""}</p>` + (cells.length ? tbl : "") + `</div>`;
   /* cópia: só a tabela, sem título nem resumo */
