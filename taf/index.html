@@ -2591,12 +2591,14 @@ function repWin(){ try { const w = JSON.parse(localStorage.getItem("tafmon.repwi
 function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringify(w)); } catch(e){} }
 function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
 function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
-/* larguras das colunas da tabela copiada em % da largura da página (o Word/Outlook ajustam a tabela à margem);
-   as larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
-function repW(){ return REP_COLS.length > 4 ? [13, 13, 21, 24, 29] : [16, 16, 34, 34]; }
+/* larguras das colunas da tabela copiada, em pontos (o Word respeita pt; % e px eram convertidos para mais do que
+   a caixa onde se cola). Total 420 pt ≈ 14,8 cm, cabe numa caixa/célula dentro de uma página A4.
+   As larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
+function repW(){ return REP_COLS.length > 4 ? [56, 54, 88, 98, 124] : [70, 66, 140, 144]; }
+const repTot = () => repW().reduce((a, b) => a + b, 0);
 function repColgroup(){
   const W = repW();
-  return `<colgroup>${W.map(w => `<col style="width:${w}%" width="${w}%">`).join("")}</colgroup>`;
+  return `<colgroup>${W.map(w => `<col style="width:${w}pt" width="${Math.round(w * 4 / 3)}">`).join("")}</colgroup>`;
 }
 function reportText(){
   { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat(["VOOS"]) : REP_COLS_BASE; }
@@ -2620,8 +2622,8 @@ function reportText(){
   if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } { const parts = cells[k].map(x => String(x).split("\n")), nl = Math.max(...parts.map(q => q.length)); for (let j = 0; j < nl; j++) out.push(line(parts.map(q => q[j] || ""))); } }); }
   const nHead = (early ? 3 : 2) + 1; /* linhas do cabeçalho: não vão na cópia */
   const tbl = (cells.length
-      ? `<table width="100%" style="border-collapse:collapse;font-size:10.5pt;width:100%;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${repW()[i]}%" style="width:${repW()[i]}%;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
-        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td width="${repW()[i]}%" style="width:${repW()[i]}%;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:10pt" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\n/g, ", ") : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
+      ? `<table width="${repTot()}" style="border-collapse:collapse;font-size:10pt;width:${repTot()}pt;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
+        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:9.5pt" : ""}${i === 4 ? ";font-size:9pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\n/g, ", ") : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
       : `<p style="margin:0">${esc(sub)}</p>`);
   const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p style="margin:0 0 8px"><b>${esc(head)}</b><br>${esc(sub)}${early ? "<br>" + esc(early) : ""}</p>` + (cells.length ? tbl : "") + `</div>`;
   /* cópia: só a tabela, sem título nem resumo */

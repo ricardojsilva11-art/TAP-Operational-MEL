@@ -482,7 +482,7 @@ def test_relatorio_so_destinos_com_voos_afetados(browser, server, mock):
     assert depois and all('TP1353' in l for l in depois) and all(l.startswith('LPPT/LIS') for l in depois)
     assert 'SÓ VOOS AFETADOS' in f.input_value('#repText')
     html = f.evaluate('reportText().copyHtml')                  # tabela copiada: larguras em % em cada célula
-    assert 'width="100%"' in html and '<td width="29%"' in html and '<th width="13%"' in html
+    assert 'width:420pt' in html and 'width:124pt' in html and 'width:56pt' in html
     f.uncheck('#repFlt')
     assert len(linhas()) == len(antes)
     assert not errors
