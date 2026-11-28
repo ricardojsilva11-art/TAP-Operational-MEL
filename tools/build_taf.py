@@ -833,15 +833,15 @@ s = rep(s, "function reportText(){", "function reportText(){\n  { const C = fltD
 # 3j2) Relatório «só destinos com voos afetados»: só as linhas com voos a chegar no período do alerta ou até 1 h depois
 #      (voos no ar com METAR sem restrição não contam, como no resto do site)
 s = rep(s, '        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>',
-        '        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>\n        <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>\n        <label class="chk rep-cm" title="Largura da tabela ao copiar para o Word/Outlook. Mede na régua do Word a caixa onde colas.">Largura da tabela ao copiar <input type="number" id="repCm" min="8" max="30" step="0.5" style="width:64px"> cm</label>')
+        '        <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>\n        <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>')
 s = rep(s, "  const B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur), first = !!B.cur;",
         "  let B = (repBlk === -1 ? T.blocks.find(b => b.cur) : T.blocks[repBlk]) || T.blocks.find(b => b.cur); const first = !!B.cur;\n"
         "  const onlyFlt = !!(repUI.onlyFlt && fltData()); if (onlyFlt) B = Object.assign({}, B, {rows: B.rows.filter(r => repFlights(r))});")
 s = rep(s, ' : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}`;', ' : "TURNO " + B.name} · ${fz(B.s)}-${fz(B.e)}${onlyFlt ? " · SÓ VOOS AFETADOS" : ""}`;')
 s = rep(s, ': "Sem alertas neste período.";', ': onlyFlt ? "Nenhum destino com voos afetados neste período." : "Sem alertas neste período.";')
-s = rep(s, '  $("#repVis").checked = !!repUI.onlyVis;\n}', '  $("#repVis").checked = !!repUI.onlyVis;\n  $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;\n  if (document.activeElement !== $("#repCm")) $("#repCm").value = repCm();\n}')
+s = rep(s, '  $("#repVis").checked = !!repUI.onlyVis;\n}', '  $("#repVis").checked = !!repUI.onlyVis;\n  $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;\n}')
 s = rep(s, '$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });',
-        '$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });\n$("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });\n$("#repCm").addEventListener("change", e => { const v = parseFloat(String(e.target.value).replace(",", ".")); repUI.cm = v >= 8 && v <= 30 ? v : 12.5; e.target.value = repUI.cm; saveRep(); renderReport(); });')
+        '$("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });\n$("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });')
 
 # 4) mensagens do portal: abrir aeroporto, atualizar, tipo de acesso
 main_end = '\nload();\n</script>'
@@ -961,25 +961,19 @@ s = rep(s, 'function closeReport(){', _fn + 'function closeReport(){')
 s = rep(s, '  } else if (d.type === "taf-favs"){\n', '  } else if (d.type === "taf-popup" && d.icao){\n    const P = tafPopupHtml(d.icao);\n    try { window.parent.postMessage({type: "taf-popup", icao: d.icao, title: P.title, html: P.html}, location.origin); } catch(e){}\n  } else if (d.type === "taf-favs"){\n')
 
 
-# 3l. tabela do relatório (cópia para Word/Outlook/Teams): largura fixa da página, colunas com larguras definidas,
-#     a linha da zona ocupa todas as colunas e os voos quebram linha dentro da coluna VOOS
+# 3l. tabela do relatório (cópia para Word/Outlook/Teams): tabela "natural", sem larguras fixas, para o Word a poder
+#     ajustar (Ajuste automático / arrastar as colunas) como antes; a linha da zona ocupa todas as colunas e os voos
+#     vão 4 por linha dentro da coluna VOOS, para a coluna não alargar a tabela
 s = rep(s, '? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left">${esc(h)}</th>`).join("")}</tr>` +',
-  '? `<table width="${repTot()}" style="border-collapse:collapse;font-size:10pt;width:${repTot()}pt;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +')
+  '? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +')
 s = rep(s, '`<tr><td colspan="4" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`',
-  '`<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`')
+  '`<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>`')
 s = rep(s, '`<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""};vertical-align:top">${esc(c).replace(/\\n/g, "<br>")}</td>`',
-  '`<td width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:9.5pt" : ""}${i === 4 ? ";font-size:9pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\\n/g, ", ") : esc(c).replace(/\\n/g, "<br>")}</td>`')
-s = rep(s, 'function reportText(){', """/* larguras das colunas da tabela copiada, em pontos (o Word respeita pt; % e px eram convertidos para mais do que
-   a caixa onde se cola). Largura total escolhida no relatório («Largura ao copiar», cm; por defeito 12,5 cm).
-   As larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
-function repW(){ const B = REP_COLS.length > 4 ? [14, 14, 21, 23, 28] : [17, 16, 33, 34], T = repCm() * 72 / 2.54;
-  return B.map(b => Math.round(T * b / 100)); }
-const repCm = () => { const v = +repUI.cm; return v >= 8 && v <= 30 ? v : 12.5; };
-const repTot = () => repW().reduce((a, b) => a + b, 0);
-function repColgroup(){
-  const W = repW();
-  return `<colgroup>${W.map(w => `<col style="width:${w}pt" width="${Math.round(w * 4 / 3)}">`).join("")}</colgroup>`;
-}
+  '`<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? repFltLines(c) : esc(c).replace(/\\n/g, "<br>")}</td>`')
+s = rep(s, 'function reportText(){', """/* voos da tabela copiada: 4 por linha */
+function repFltLines(c){ const L = String(c || "").split(/\\s*[,\\n]\\s*/).filter(Boolean), out = [];
+  for (let k = 0; k < L.length; k += 4) out.push(L.slice(k, k + 4).map(esc).join(", "));
+  return out.join(",<br>"); }
 function reportText(){""")
 
 

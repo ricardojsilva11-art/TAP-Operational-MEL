@@ -645,7 +645,6 @@ body.resizing{cursor:col-resize;user-select:none}
         <span class="rep-win" id="repWin" hidden></span>
         <label class="chk"><input type="checkbox" id="repVis"> Só os aeroportos visíveis na grelha (filtros atuais)</label>
         <label class="chk" id="repFltLab" hidden><input type="checkbox" id="repFlt"> ✈ Só destinos com voos afetados (chegada no período do alerta ou até 1 h depois)</label>
-        <label class="chk rep-cm" title="Largura da tabela ao copiar para o Word/Outlook. Mede na régua do Word a caixa onde colas.">Largura da tabela ao copiar <input type="number" id="repCm" min="8" max="30" step="0.5" style="width:64px"> cm</label>
       </div>
       <div class="rep-prev" id="repPrev" aria-label="Relatório"></div>
       <textarea class="rep-text rep-hidden" id="repText" tabindex="-1" aria-hidden="true" readonly spellcheck="false" aria-label="Texto do relatório"></textarea>
@@ -2592,17 +2591,10 @@ function repWin(){ try { const w = JSON.parse(localStorage.getItem("tafmon.repwi
 function setRepWin(w){ try { localStorage.setItem("tafmon.repwin", JSON.stringify(w)); } catch(e){} }
 function repTabSaved(){ try { const v = +localStorage.getItem("tafmon.reptab"); return v === 2 || v === 3 ? v : -1; } catch(e){ return -1; } }
 function setRepTab(v){ try { localStorage.setItem("tafmon.reptab", String(v)); } catch(e){} }
-/* larguras das colunas da tabela copiada, em pontos (o Word respeita pt; % e px eram convertidos para mais do que
-   a caixa onde se cola). Largura total escolhida no relatório («Largura ao copiar», cm; por defeito 12,5 cm).
-   As larguras vão também em cada célula, porque o Word/Outlook/OneNote ignoram o colgroup */
-function repW(){ const B = REP_COLS.length > 4 ? [14, 14, 21, 23, 28] : [17, 16, 33, 34], T = repCm() * 72 / 2.54;
-  return B.map(b => Math.round(T * b / 100)); }
-const repCm = () => { const v = +repUI.cm; return v >= 8 && v <= 30 ? v : 12.5; };
-const repTot = () => repW().reduce((a, b) => a + b, 0);
-function repColgroup(){
-  const W = repW();
-  return `<colgroup>${W.map(w => `<col style="width:${w}pt" width="${Math.round(w * 4 / 3)}">`).join("")}</colgroup>`;
-}
+/* voos da tabela copiada: 4 por linha */
+function repFltLines(c){ const L = String(c || "").split(/\s*[,\n]\s*/).filter(Boolean), out = [];
+  for (let k = 0; k < L.length; k += 4) out.push(L.slice(k, k + 4).map(esc).join(", "));
+  return out.join(",<br>"); }
 function reportText(){
   { const C = fltData(); REP_COLS = C && C.P.flights.length ? REP_COLS_BASE.concat(["VOOS"]) : REP_COLS_BASE; }
   const T = reportTable();
@@ -2625,8 +2617,8 @@ function reportText(){
   if (cells.length){ out.push("", line(REP_COLS), line(W.map(w => "-".repeat(w)))); let zz = -1; B.rows.forEach((r, k) => { const z = repZone(r.icao); if (z !== zz){ if (zz !== -1) out.push(""); out.push("== " + REP_ZONE_NAME[z] + " =="); zz = z; } { const parts = cells[k].map(x => String(x).split("\n")), nl = Math.max(...parts.map(q => q.length)); for (let j = 0; j < nl; j++) out.push(line(parts.map(q => q[j] || ""))); } }); }
   const nHead = (early ? 3 : 2) + 1; /* linhas do cabeçalho: não vão na cópia */
   const tbl = (cells.length
-      ? `<table width="${repTot()}" style="border-collapse:collapse;font-size:10pt;width:${repTot()}pt;table-layout:fixed">${repColgroup()}<tr>${REP_COLS.map((h, i) => `<th width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;background:#e8e8e8;padding:3px 6px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
-        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 6px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td width="${Math.round(repW()[i] * 4 / 3)}" style="width:${repW()[i]}pt;border:1px solid #999;padding:3px 6px;${i <= 1 ? "white-space:nowrap" : "word-wrap:break-word;overflow-wrap:anywhere"}${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace;font-size:9.5pt" : ""}${i === 4 ? ";font-size:9pt" : ""};vertical-align:top">${i === 4 ? esc(c).replace(/\n/g, ", ") : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
+      ? `<table style="border-collapse:collapse;font-size:10.5pt"><tr>${REP_COLS.map(h => `<th style="border:1px solid #999;background:#e8e8e8;padding:3px 8px;text-align:left;vertical-align:bottom">${esc(h)}</th>`).join("")}</tr>` +
+        cells.map((r, k) => { const z = repZone(B.rows[k].icao), zh = k === 0 || repZone(B.rows[k - 1].icao) !== z ? `<tr><td colspan="${REP_COLS.length}" style="border:1px solid #999;background:#d9e7f2;padding:3px 8px;font-weight:bold">${REP_ZONE_NAME[z]}</td></tr>` : ""; return zh + `<tr>${r.map((c, i) => `<td style="border:1px solid #999;padding:3px 8px;white-space:nowrap${i === 1 || i === 3 ? ";font-weight:bold" : ""}${i === 2 ? ";font-family:Consolas,monospace" : ""}${i === 4 ? ";font-size:9.5pt" : ""};vertical-align:top">${i === 4 ? repFltLines(c) : esc(c).replace(/\n/g, "<br>")}</td>`).join("")}</tr>`; }).join("") + `</table>`
       : `<p style="margin:0">${esc(sub)}</p>`);
   const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p style="margin:0 0 8px"><b>${esc(head)}</b><br>${esc(sub)}${early ? "<br>" + esc(early) : ""}</p>` + (cells.length ? tbl : "") + `</div>`;
   /* cópia: só a tabela, sem título nem resumo */
@@ -2654,7 +2646,6 @@ function renderReport(){
   $("#repInfo").textContent = `${nR} ${nR === 1 ? "linha" : "linhas"} em ${nA} ${nA === 1 ? "aeroporto" : "aeroportos"} · uma linha por aeroporto (condições e alertas juntos), por zona (Portugal, Europa, América do Sul, América do Norte, África) e, em cada zona, por gravidade (LVO, trovoada, teto baixo/RVAC, neve/gelo, vento) · «Copiar» cola como tabela no Outlook e no Teams.`;
   $("#repVis").checked = !!repUI.onlyVis;
   $("#repFltLab").hidden = !fltData(); $("#repFlt").checked = !!repUI.onlyFlt;
-  if (document.activeElement !== $("#repCm")) $("#repCm").value = repCm();
 }
 $("#repBlk").addEventListener("click", e => { const b = e.target.closest("[data-blk]"); if (!b) return; repBlk = +b.dataset.blk; setRepTab(repBlk); renderReport(); });
 /* faixa personalizada: horas 00-23 no início, 01-24 no fim; aplica assim que as duas estão completas */
@@ -3450,7 +3441,6 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#repor
 $("#repCats").addEventListener("change", () => { repUI.cats = [...document.querySelectorAll("#repCats input:checked")].map(x => x.value); saveRep(); renderReport(); });
 $("#repVis").addEventListener("change", e => { repUI.onlyVis = e.target.checked; saveRep(); renderReport(); });
 $("#repFlt").addEventListener("change", e => { repUI.onlyFlt = e.target.checked; saveRep(); renderReport(); });
-$("#repCm").addEventListener("change", e => { const v = parseFloat(String(e.target.value).replace(",", ".")); repUI.cm = v >= 8 && v <= 30 ? v : 12.5; e.target.value = repUI.cm; saveRep(); renderReport(); });
 $("#repCopy").addEventListener("click", () => {
   const R = reportText(), txt = R.copyText;
   const ok = () => { $("#repMsg").textContent = "Tabela copiada. Cole com Ctrl+V no Outlook, Teams, Word ou Excel."; };
